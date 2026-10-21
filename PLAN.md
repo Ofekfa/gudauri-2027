@@ -2,15 +2,15 @@
 
 ## Status
 
-| Phase | Scope                                                                    | Status  | Tag    |
-| ----- | ------------------------------------------------------------------------ | ------- | ------ |
+| Phase | Scope                                                                    | Status         | Tag    |
+| ----- | ------------------------------------------------------------------------ | -------------- | ------ |
 | 1     | Scaffold, tooling, CI, Pages, nav shell, trip config, countdown, flights | 🚧 In progress | v0.1.0 |
-| 2     | Avatars, map background, visual identity                                 | — | v0.2.0 |
-| 3     | Packing list                                                             | —       | v0.3.0 |
-| 4     | Fun facts + pop-ups                                                      | —       | v0.4.0 |
-| 5     | Skiing game                                                              | —       | v0.5.0 |
-| 6     | Voice AI assistant + Worker proxy                                        | —       | v0.6.0 |
-| 7     | Polish: a11y, perf, mobile QA                                            | —       | v1.0.0 |
+| 2     | Avatars, map background, visual identity                                 | —              | v0.2.0 |
+| 3     | Packing list                                                             | —              | v0.3.0 |
+| 4     | Fun facts + pop-ups                                                      | —              | v0.4.0 |
+| 5     | Skiing game                                                              | —              | v0.5.0 |
+| 6     | Voice AI assistant + Worker proxy                                        | —              | v0.6.0 |
+| 7     | Polish: a11y, perf, mobile QA                                            | —              | v1.0.0 |
 
 ### Deviations from the original plan
 

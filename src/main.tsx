@@ -1,4 +1,7 @@
 import { render } from 'preact';
+import { App } from './app';
+import './styles/tokens.css';
+import './styles/global.css';
 
 const root = document.getElementById('app');
-if (root) render(<h1>Gudauri 2027</h1>, root);
+if (root) render(<App />, root);

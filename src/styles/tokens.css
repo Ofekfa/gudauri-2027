@@ -1,0 +1,77 @@
+/* Design tokens. Components use only these variables, never raw colors. */
+:root {
+  color-scheme: light;
+
+  /* Palette */
+  --color-bg: #eef5fb;
+  --color-bg-sky: #d6ebfb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f3f8fd;
+  --color-border: #d3e2ef;
+  --color-ink: #0e2a47;
+  --color-ink-muted: #46607a;
+  --color-primary: #1059a8;
+  --color-primary-ink: #ffffff;
+  --color-primary-soft: #e1eefc;
+  --color-accent: #9b1b40; /* Saperavi wine */
+  --color-accent-soft: #fbe6ec;
+  --color-sun: #ffcf5c;
+  --color-mountain-far: #c4dcf0;
+  --color-mountain-near: #e9f3fb;
+  --color-focus: #ff9f1c;
+  --shadow-card: 0 1px 2px rgb(14 42 71 / 6%), 0 6px 20px rgb(14 42 71 / 8%);
+
+  /* Type */
+  --font-display: 'Fredoka', ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-2xl: clamp(2rem, 7vw, 2.75rem);
+  --text-countdown: clamp(2.25rem, 12vw, 4.5rem);
+
+  /* Spacing & shape */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-pill: 999px;
+
+  /* Layout */
+  --content-max: 46rem;
+  --header-height: 3.5rem;
+  --tab-bar-height: 4rem;
+  --gutter: 1rem;
+  --breakpoint-desktop: 56rem; /* documented; media queries repeat the literal value */
+
+  --transition-fast: 150ms ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --color-bg: #0a1626;
+    --color-bg-sky: #0f2238;
+    --color-surface: #13263d;
+    --color-surface-muted: #182f4a;
+    --color-border: #24405f;
+    --color-ink: #e8f1fa;
+    --color-ink-muted: #a7bdd3;
+    --color-primary: #7cc0ff;
+    --color-primary-ink: #06203a;
+    --color-primary-soft: #183757;
+    --color-accent: #ff8fab;
+    --color-accent-soft: #3a1a29;
+    --color-sun: #ffd166;
+    --color-mountain-far: #15304d;
+    --color-mountain-near: #102540;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 30%), 0 6px 20px rgb(0 0 0 / 25%);
+  }
+}
