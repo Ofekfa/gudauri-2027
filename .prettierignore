@@ -3,3 +3,6 @@ node_modules
 package-lock.json
 coverage
 src/data/pistes.json
+worker/node_modules
+worker/package-lock.json
+worker/.wrangler

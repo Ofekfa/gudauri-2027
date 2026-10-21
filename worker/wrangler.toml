@@ -1,0 +1,22 @@
+name = "gudauri-2027-assistant"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+# Workers AI: no API key needed; usage counts against the free daily allowance.
+[ai]
+binding = "AI"
+
+# Per-IP burst protection (period must be 10 or 60 seconds).
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+[vars]
+# Comma-separated list of sites allowed to call the assistant.
+ALLOWED_ORIGINS = "https://ofekfa.github.io,http://localhost:5173,http://localhost:4173"
+# Bigger/smarter but ~6x costlier per request: "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"
