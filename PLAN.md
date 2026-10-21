@@ -8,8 +8,8 @@
 | 2     | Avatars, map background, visual identity                                 | ✅ Done | v0.2.0 |
 | 3     | Packing list                                                             | ✅ Done | v0.3.0 |
 | 4     | Fun facts + pop-ups                                                      | ✅ Done | v0.4.0 |
-| 5     | Skiing game                                                              | ⏳ Next | v0.5.0 |
-| 6     | Voice AI assistant + Worker proxy                                        | —       | v0.6.0 |
+| 5     | Skiing game                                                              | ✅ Done | v0.5.0 |
+| 6     | Voice AI assistant + Worker proxy                                        | ⏳ Next | v0.6.0 |
 | 7     | Polish: a11y, perf, mobile QA                                            | —       | v1.0.0 |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/
@@ -23,6 +23,8 @@
 - Between phases 2 and 3: avatar tweaks per feedback (Maya brown eyes + glasses, Roy undercut, Ofek warmer skin), tagged as part of v0.3.0.
 - Phase 3: a generic toast system (`src/lib/toast`) landed early because undo-delete needs it; Phase 4 fact pop-ups reuse it. Import confirmation is inline rather than a browser dialog. The starter template marks everything "Already have" by default.
 - Phase 4: 55 facts (target 40+). A fact-check pass corrected the Kobi gondola year (2019), Khachapuri Index start (2011), speed-skiing record (255.5 km/h, 2023) and Military Road details. Unsupported details were dropped. Pop-ups are also paused on the Facts page, and the fact data loads lazily.
+- Between phases 4 and 5: the Fun facts page became a one-at-a-time viewer (← → keys, swipe, Previous/Next) per feedback.
+- Phase 5: the flags are obstacles (no slalom gates). The game is 60 fps in Chrome, with < 0.1 ms of JS per frame at p99. A real CPU-throttled phone trace is still to do in the Phase 7 QA pass.
 - Phase 2: the map page doesn't use pinch-zoom; zoom buttons (100–300%) plus native scrolling keep it simple and accessible. Phones open at 200%.
 
 ---
