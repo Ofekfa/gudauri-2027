@@ -1708,6 +1708,9 @@ main:focus {
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
 }
+.map-frame:focus-visible {
+  outline-offset: -3px;
+}
 .map-frame {
   height: min(70vh, 40rem);
   overflow: auto;
