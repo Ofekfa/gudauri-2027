@@ -7,11 +7,12 @@ import type { Env } from './env';
 import { createRouter } from './router';
 import { chatRoute } from './routes/chat';
 import { healthRoute } from './routes/health';
+import { ratesRoute } from './routes/rates';
 
 export type { Env } from './env';
 export { parseMessages } from './routes/chat';
 
-export const handleRequest = createRouter([healthRoute, chatRoute]);
+export const handleRequest = createRouter([healthRoute, chatRoute, ratesRoute]);
 
 export default {
   fetch: (request: Request, env: Env) => handleRequest(request, env),
