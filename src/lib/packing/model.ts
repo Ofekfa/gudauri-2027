@@ -1,4 +1,7 @@
 import type { TravelerId } from '../../data/trip';
+import { normalizeText } from '../list/text';
+
+export { defaultIdGenerator, type IdGenerator } from '../list/ids';
 
 export const CATEGORIES = ['clothing', 'essentials', 'electronics', 'ski'] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -47,7 +50,7 @@ export const MAX_ITEM_NAME_LENGTH = 80;
 export const MAX_ITEMS_PER_LIST = 300;
 
 export function normalizeName(name: string): string {
-  return name.replace(/\s+/g, ' ').trim().slice(0, MAX_ITEM_NAME_LENGTH);
+  return normalizeText(name, MAX_ITEM_NAME_LENGTH);
 }
 
 export function createEmptyState(travelers: readonly TravelerId[]): PackingState {
@@ -59,9 +62,3 @@ export function createEmptyState(travelers: readonly TravelerId[]): PackingState
   }
   return { version: STATE_VERSION, lists, templateDecided };
 }
-
-export type IdGenerator = () => string;
-
-export const defaultIdGenerator: IdGenerator = () =>
-  globalThis.crypto?.randomUUID?.() ??
-  `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
