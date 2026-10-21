@@ -1,6 +1,6 @@
 # Gudauri 2027 — Codebase Report
 
-_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.2 (`v1.3.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
+_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.3 (`v1.4.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
 
 ## Changelog since v1.0.0
 
@@ -52,6 +52,39 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **upda
 - Lesson: in-place `npm install` can drop optional platform bindings from a lockfile (npm/cli#4828). Regenerate it from scratch if CI reports "Cannot find native binding".
 
 **Tests:** 107 site + 22 Worker.
+
+### Phase 8.3 — Pre-flight to-do list (`v1.4.0`)
+
+**`src/lib/todo/`**
+
+- `model.ts`:
+  - `TodoListId` = traveler | `'shared'`;
+  - 5 categories;
+  - `TodoItem { id, title, note?, done, dueBy?, category, templateKey?, createdAt }`;
+  - `TodoState` v1.
+- `reducer.ts`, `selectors.ts` (`sortTodos`, `filterTodos`, `nextDue`, `dueStatus` in Israel calendar days), `importExport.ts` (app id `gudauri-2027/todo`).
+- `repository.ts`: key `todo`, `loadVersioned`, plus `loadTodoStateSync` for first paint.
+- `due.ts`: `formatDue`, date-input conversions, Israel time.
+- `useTodo.ts`.
+
+**Starter template** (`src/data/todoTemplate.ts`, `personalTemplate`/`sharedTemplate`): deadlines are derived from `trip.ts`.
+
+**Components**
+
+- `components/todo/`: `TodoRow`, `TodoAddForm`, `profiles.tsx` (`TODO_PROFILES` adds Shared), `NextTodos` (Home card, before phase).
+- `components/common/TemplateOffer.tsx`, now generic.
+- `ProfileSwitcher` grid sizes to the profile count.
+
+**Router and packing**
+
+- `parseHashQuery`, `href(path, params)`.
+- Packing honours `?who=&status=`.
+
+**Time:** `zoneOffsetMinutes`, `zonedTimeToIso` in `lib/time/format.ts`.
+
+**Route:** `#/todo` (lazy, More → Plan); fact pop-ups blocked there.
+
+**Tests:** 164 site + 28 Worker.
 
 ### Phase 8.2 — Currency converter (`v1.3.0`)
 
