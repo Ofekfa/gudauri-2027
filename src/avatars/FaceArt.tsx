@@ -29,8 +29,9 @@ const HAIR_FRONT: Record<HairStyle, string[]> = {
     'M33 60C32 72 33 84 36 94L40 94C37 82 36 70 37 58Z',
     'M87 60C88 72 87 84 84 94L80 94C83 82 84 70 83 58Z',
   ],
+  // Undercut: the cap stops above the ears; the shaved sides are drawn separately.
   bun: [
-    'M33 62C31 40 44 28 60 28C76 28 89 40 87 62C85 52 80 44 72 40C66 38 54 38 48 40C40 44 35 52 33 62Z',
+    'M35 53C33 38 46 28 60 28C74 28 87 38 85 53C82 45 77 40 71 38C65 37 55 37 49 38C43 40 38 45 35 53Z',
   ],
   wavy: [
     'M33 64C30 38 44 26 60 26C76 26 90 38 87 64C84 54 78 46 66 42C64 40 61 38 60 36C59 38 56 40 54 42C42 46 36 54 33 64Z',
@@ -38,6 +39,14 @@ const HAIR_FRONT: Record<HairStyle, string[]> = {
     'M87 60C89 70 86 78 88 86C86 90 83 92 80 94C82 86 80 78 83 70C84 66 84 62 83 58Z',
   ],
 };
+
+/** Short-buzzed sides under the bun (drawn at low opacity over the skin). */
+const SHAVED_SIDES =
+  'M35 53C35 48 37 44 41 41L43 49C40 53 38 58 36.5 63C35.5 60 35 56 35 53ZM85 53C85 48 83 44 79 41L77 49C80 53 82 58 83.5 63C84.5 60 85 56 85 53Z';
+const SHAVED_OPACITY = 0.4;
+
+const GLASSES_FRAME = '#3b2a24';
+const GLASSES_LENS_RADIUS = 8.2;
 
 const FRECKLES: [number, number][] = [
   [53, 71],
@@ -137,12 +146,23 @@ export function FaceArt({ look, shoulders = true, goggles = false }: FaceArtProp
       />
       <path d="M51 78Q60 88 69 78Q60 81 51 78Z" fill={MOUTH} />
 
+      {look.glasses && (
+        <g fill="none" stroke={GLASSES_FRAME} stroke-width={2.2} stroke-linecap="round">
+          <circle cx={49} cy={64} r={GLASSES_LENS_RADIUS} fill="#ffffff" fill-opacity={0.15} />
+          <circle cx={71} cy={64} r={GLASSES_LENS_RADIUS} fill="#ffffff" fill-opacity={0.15} />
+          <path d="M57.2 63Q60 61 62.8 63M40.8 62L35 59.5M79.2 62L85 59.5" />
+        </g>
+      )}
+
+      {look.hairStyle === 'bun' && (
+        <path d={SHAVED_SIDES} fill={look.hair} opacity={SHAVED_OPACITY} />
+      )}
       {HAIR_FRONT[look.hairStyle].map((d) => (
         <path key={d} d={d} fill={look.hair} />
       ))}
       {look.hairStyle === 'bun' && (
         <path
-          d="M46 36Q60 31 74 36M50 40Q60 36 70 40"
+          d="M45 34Q60 29.5 75 34"
           fill="none"
           stroke={look.hairShade}
           stroke-width={1.2}
