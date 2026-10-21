@@ -81,3 +81,42 @@ export function formatAgo(thenMs: number, nowMs: number): string {
   const days = Math.floor(diff / DAY_MS);
   return `${days} day${days === 1 ? '' : 's'} ago`;
 }
+
+/** Offset of `timeZone` from UTC at `instantMs`, in minutes (e.g. +120 for Israel in winter). */
+export function zoneOffsetMinutes(instantMs: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(instantMs);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((p) => p.type === type)?.value);
+  const asUtc = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour'),
+    get('minute'),
+    get('second'),
+  );
+  return Math.round((asUtc - Math.floor(instantMs / 1000) * 1000) / 60_000);
+}
+
+/**
+ * The instant at wall-clock `day` + `time` in `timeZone`, as a UTC ISO string.
+ * e.g. ("2027-02-10", "23:59", "Asia/Jerusalem") → "2027-02-10T21:59:00.000Z".
+ */
+export function zonedTimeToIso(day: string, time: string, timeZone: string): string {
+  const [y, m, d] = day.split('-').map(Number) as [number, number, number];
+  const [hh, mm] = time.split(':').map(Number) as [number, number];
+  const guess = Date.UTC(y, m - 1, d, hh, mm);
+  // Two passes handle a DST change between the guess and the answer.
+  const first = guess - zoneOffsetMinutes(guess, timeZone) * 60_000;
+  const second = guess - zoneOffsetMinutes(first, timeZone) * 60_000;
+  return new Date(second).toISOString();
+}
