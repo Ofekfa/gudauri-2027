@@ -30,6 +30,8 @@
   --run-unknown: #8a99a8;
   --map-hotel: #9b1b40;
   --backdrop-veil: rgb(238 245 251 / 72%);
+  --snowflake: #ffffff;
+  --snowflake-glow: rgb(31 111 209 / 35%);
   --color-focus: #ff9f1c;
   --shadow-card: 0 1px 2px rgb(14 42 71 / 6%), 0 6px 20px rgb(14 42 71 / 8%);
 
@@ -96,6 +98,8 @@
     --run-unknown: #8a99a8;
     --map-hotel: #ff8fab;
     --backdrop-veil: rgb(10 22 38 / 74%);
+    --snowflake: #e8f1fa;
+    --snowflake-glow: rgb(124 192 255 / 40%);
     --shadow-card: 0 1px 2px rgb(0 0 0 / 30%), 0 6px 20px rgb(0 0 0 / 25%);
   }
 }

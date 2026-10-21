@@ -553,7 +553,34 @@ main:focus {
   text-align: center;
 }
 
+/* ---------- Snowfall ---------- */
+.snowfall {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.snowfall span {
+  position: absolute;
+  top: -10px;
+  border-radius: 50%;
+  background: var(--snowflake);
+  box-shadow: 0 0 4px var(--snowflake-glow);
+  animation: snowfall linear infinite;
+  will-change: transform;
+}
+@keyframes snowfall {
+  to {
+    transform: translate3d(var(--drift), 105vh, 0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .snowfall {
+    display: none;
+  }
+
   *,
   *::before,
   *::after {
