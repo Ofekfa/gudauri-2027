@@ -1,6 +1,6 @@
 # Gudauri 2027 — Codebase Report
 
-_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.1 (`v1.2.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
+_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.2 (`v1.3.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
 
 ## Changelog since v1.0.0
 
@@ -52,6 +52,34 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **upda
 - Lesson: in-place `npm install` can drop optional platform bindings from a lockfile (npm/cli#4828). Regenerate it from scratch if CI reports "Cannot find native binding".
 
 **Tests:** 107 site + 22 Worker.
+
+### Phase 8.2 — Currency converter (`v1.3.0`)
+
+**Worker**
+
+- `GET /rates` (`worker/src/routes/rates.ts`):
+  - NBG unfiltered JSON → GEL per unit (ILS quantity 10). Fallback: open.er-api.com (attribution required).
+  - `getOrRefresh` with key `rates:v1`, TTL 12 h, max stale 7 days.
+  - `RL_DATA` 60/min; `Cache-Control: max-age=600`.
+  - Payload `{ base, gelPer:{ILS,EUR}, validFrom, source, fetchedAt, stale }`.
+- New bindings: `CACHE` (KV, id `3587a739aace4a73a4b2f88477cb2d41`) and `RL_DATA` (namespace 1002).
+- `worker/src/upstream/fetchJson.ts`: 8 s timeout, User-Agent.
+- `clearMemoryCache()` for tests.
+
+**Shared (`src/lib/currency/`)**
+
+- `rates.ts`: parsers for both sources, validators, bounds. Used by the site and the Worker; changes trigger a Worker deploy.
+- `convert.ts`: `convert`, `parseAmount`, `friendlyRound`, `quickTable`, `formatMoney`.
+- `ratesClient.ts`: fetch + versioned `currency:rates` cache.
+- `useRates.ts`.
+
+**Site**
+
+- `src/lib/worker/config.ts`: `WORKER_URL`, now also used by the assistant client.
+- `formatDay`/`formatAgo` in `lib/time/format.ts`.
+- `#/currency` (lazy, More → Tools); fact pop-ups blocked there.
+
+**Tests:** 144 site + 28 Worker.
 
 ### Phase 8.1 — Georgian words (`v1.2.0`)
 

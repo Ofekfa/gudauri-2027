@@ -13,8 +13,8 @@
 | 7     | Polish: a11y, perf, mobile QA                                            | ✅ Done | v1.0.0 |
 | 8.0   | Round 2 foundations (nav, Worker router + CI deploy, list toolkit…)      | ✅ Done | v1.1.0 |
 | 8.1   | Georgian words                                                           | ✅ Done | v1.2.0 |
-| 8.2   | Currency converter                                                       | ⏳ Next | v1.3.0 |
-| 8.3   | Pre-flight to-do list                                                    | —       | v1.4.0 |
+| 8.2   | Currency converter                                                       | ✅ Done | v1.3.0 |
+| 8.3   | Pre-flight to-do list                                                    | ⏳ Next | v1.4.0 |
 | 8.4   | Itinerary (Google Calendar)                                              | —       | v1.5.0 |
 | 8.5   | Weather, snow & webcams                                                  | —       | v1.6.0 |
 | 8.6   | Assistant live context + polish                                          | —       | v1.7.0 |
@@ -40,6 +40,8 @@
 
 - Phase 8.0 follow-up: Ofek added the Cloudflare secrets, and a manual run of the Worker deploy workflow succeeded with the minimal token (Workers Scripts: Edit + Workers KV Storage: Edit). Worker deploys are now automatic.
 - Phase 8.1: 27 words (target 20+) in `src/data/words.ts`, each with its own Wiktionary page. ანგარიში is glossed "account" on Wiktionary, so it's presented as "the bill (literally 'account')". No Georgian TTS voice was found on the test machine, so the "Hear it" button stays hidden there, by design. Georgian text uses system fonts via `:lang(ka)`; real-device rendering is on Ofek's checklist.
+
+- Phase 8.2: KV namespace `CACHE` created with Ofek's approval (id in `worker/wrangler.toml`). `/rates` serves official NBG rates (12 h TTL, 7-day stale), with an ExchangeRate-API fallback. Friendly rounding was tuned to 1s below 50 (so ₾20 ≈ ₪24, not ₪25). The selects use short labels (₪ ILS / ₾ GEL / € EUR) to fit 375 px. The site has no offline mode (no service worker), so "offline" means the page loaded but the rates request failed; cached rates then show with a notice.
 
 ### Content Security Policy decision (Round 2, Phase 8.0)
 
