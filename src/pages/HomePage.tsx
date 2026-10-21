@@ -1,4 +1,5 @@
 import { Countdown } from '../components/Countdown';
+import { Crew } from '../components/Crew';
 import { PageHeader } from '../components/PageHeader';
 import { SectionCards } from '../components/SectionCards';
 import { trip } from '../data/trip';
@@ -19,6 +20,12 @@ export function HomePage() {
         subtitle={`${formatDayRange(trip.firstDay, trip.lastDay)} · ${travelerNames}`}
       />
       <Countdown />
+      <section aria-labelledby="crew-title">
+        <h2 id="crew-title" class="section-title">
+          The crew
+        </h2>
+        <Crew />
+      </section>
       <section aria-labelledby="explore-title">
         <h2 id="explore-title" class="section-title">
           Explore

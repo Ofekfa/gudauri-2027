@@ -589,3 +589,32 @@ main:focus {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* ---------- Crew ---------- */
+.crew {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.crew__member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-bottom: 4px solid var(--member-color);
+}
+.crew__member svg {
+  max-width: 100%;
+  height: auto;
+}
+.crew__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
