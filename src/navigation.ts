@@ -68,7 +68,6 @@ export const SECTIONS: NavItem[] = [
     icon: 'map',
     blurb: 'Runs and lifts of Gudauri.',
     inTabBar: false,
-    comingSoon: true,
   },
   {
     path: '/assistant',

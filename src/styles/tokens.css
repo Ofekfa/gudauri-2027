@@ -16,8 +16,20 @@
   --color-accent: #9b1b40; /* Saperavi wine */
   --color-accent-soft: #fbe6ec;
   --color-sun: #ffcf5c;
-  --color-mountain-far: #c4dcf0;
-  --color-mountain-near: #e9f3fb;
+  --map-snow: #f7fbff;
+  --map-ridge: #dcebf7;
+  --map-pine: #7fa99b;
+  --map-casing: #ffffff;
+  --map-lift: #23384f;
+  --map-label: #0e2a47;
+  --map-label-halo: #ffffff;
+  --run-novice: #22914a;
+  --run-easy: #1f6fd1;
+  --run-intermediate: #d7263d;
+  --run-advanced: #111111;
+  --run-unknown: #8a99a8;
+  --map-hotel: #9b1b40;
+  --backdrop-veil: rgb(238 245 251 / 72%);
   --color-focus: #ff9f1c;
   --shadow-card: 0 1px 2px rgb(14 42 71 / 6%), 0 6px 20px rgb(14 42 71 / 8%);
 
@@ -70,8 +82,20 @@
     --color-accent: #ff8fab;
     --color-accent-soft: #3a1a29;
     --color-sun: #ffd166;
-    --color-mountain-far: #15304d;
-    --color-mountain-near: #102540;
+    --map-snow: #12263d;
+    --map-ridge: #1a3350;
+    --map-pine: #2d5a52;
+    --map-casing: #0a1626;
+    --map-lift: #c9d8e8;
+    --map-label: #e8f1fa;
+    --map-label-halo: #0a1626;
+    --run-novice: #4cc47a;
+    --run-easy: #5aa2ff;
+    --run-intermediate: #ff5a6e;
+    --run-advanced: #f1f5f9;
+    --run-unknown: #8a99a8;
+    --map-hotel: #ff8fab;
+    --backdrop-veil: rgb(10 22 38 / 74%);
     --shadow-card: 0 1px 2px rgb(0 0 0 / 30%), 0 6px 20px rgb(0 0 0 / 25%);
   }
 }
