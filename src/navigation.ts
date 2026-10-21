@@ -73,7 +73,6 @@ export const SECTIONS: NavItem[] = [
     icon: 'chat',
     blurb: 'Ask anything about skiing or our trip.',
     inTabBar: false,
-    comingSoon: true,
   },
 ];
 
