@@ -16,6 +16,20 @@ export interface NavItem {
   comingSoon?: boolean;
 }
 
+/** Sections are grouped on the More page. */
+export const NAV_GROUPS = ['plan', 'tools', 'fun'] as const;
+export type NavGroup = (typeof NAV_GROUPS)[number];
+
+export const GROUP_LABEL: Record<NavGroup, string> = {
+  plan: 'Plan',
+  tools: 'Tools',
+  fun: 'Fun',
+};
+
+export interface SectionItem extends NavItem {
+  group: NavGroup;
+}
+
 export const HOME: NavItem = {
   path: '/',
   title: 'Countdown',
@@ -25,9 +39,10 @@ export const HOME: NavItem = {
   inTabBar: true,
 };
 
-export const SECTIONS: NavItem[] = [
+export const SECTIONS: SectionItem[] = [
   {
     path: '/flights',
+    group: 'plan',
     title: 'Flights',
     navLabel: 'Flights',
     icon: 'plane',
@@ -36,6 +51,7 @@ export const SECTIONS: NavItem[] = [
   },
   {
     path: '/packing',
+    group: 'plan',
     title: 'Packing lists',
     navLabel: 'Packing',
     icon: 'backpack',
@@ -44,6 +60,7 @@ export const SECTIONS: NavItem[] = [
   },
   {
     path: '/game',
+    group: 'fun',
     title: 'Ski game',
     navLabel: 'Game',
     icon: 'game',
@@ -52,6 +69,7 @@ export const SECTIONS: NavItem[] = [
   },
   {
     path: '/facts',
+    group: 'fun',
     title: 'Fun facts',
     navLabel: 'Facts',
     icon: 'bulb',
@@ -60,6 +78,7 @@ export const SECTIONS: NavItem[] = [
   },
   {
     path: '/map',
+    group: 'tools',
     title: 'Ski map',
     navLabel: 'Map',
     icon: 'map',
@@ -68,6 +87,7 @@ export const SECTIONS: NavItem[] = [
   },
   {
     path: '/assistant',
+    group: 'tools',
     title: 'Trip assistant',
     navLabel: 'Assistant',
     icon: 'chat',
@@ -87,9 +107,18 @@ export const MORE: NavItem = {
 
 export const ALL_ITEMS: NavItem[] = [HOME, ...SECTIONS, MORE];
 
+/** Primary navigation: the mobile tab bar and the desktop header show the same five items. */
 export const TAB_BAR_ITEMS: NavItem[] = [HOME, ...SECTIONS.filter((s) => s.inTabBar), MORE];
 
-export const MORE_ITEMS: NavItem[] = SECTIONS.filter((s) => !s.inTabBar);
+export const MORE_ITEMS: SectionItem[] = SECTIONS.filter((s) => !s.inTabBar);
+
+/** More-page sections in group order, skipping empty groups. */
+export const MORE_GROUPS: { group: NavGroup; label: string; items: SectionItem[] }[] =
+  NAV_GROUPS.map((group) => ({
+    group,
+    label: GROUP_LABEL[group],
+    items: MORE_ITEMS.filter((item) => item.group === group),
+  })).filter((g) => g.items.length > 0);
 
 export function findNavItem(path: string): NavItem | undefined {
   return ALL_ITEMS.find((item) => item.path === path);
