@@ -71,6 +71,28 @@ You only do this once. You never need to copy an API key.
 
 For local development, put the same line in `.env.local` at the repo root (git-ignored): `VITE_ASSISTANT_URL=https://…workers.dev`.
 
+## Automatic deploys (GitHub Actions)
+
+`.github/workflows/worker-deploy.yml` tests and deploys the Worker on every push to `main` that touches `worker/**` or the shared site code it bundles (`src/data/**`, `src/lib/facts/types.ts`, and the weather, itinerary and currency libraries). You can also run it by hand from the Actions tab. If the secrets below are missing, the job still runs the tests but skips the deploy, with a warning.
+
+**One-time setup** (repository secrets):
+
+1. Create a Cloudflare API token:
+   - Dashboard → profile icon → **My Profile → API Tokens → Create Token → Create Custom Token**.
+   - Name: `gudauri-worker-deploy`.
+   - Permissions:
+     - **Account → Workers Scripts → Edit**
+     - **Account → Workers KV Storage → Edit**
+   - Account Resources: **Include → your account**.
+   - **Continue to summary → Create Token**. Copy the token; it's shown only once.
+   - If the first deploy fails with an authentication or permission error, edit the token and add **Account → Account Settings → Read** and **User → Memberships → Read**.
+2. Find your **Account ID**: Dashboard → **Workers & Pages** → right-hand sidebar.
+3. Add two secrets on GitHub under **Settings → Secrets and variables → Actions → New repository secret**:
+   - `CLOUDFLARE_API_TOKEN`
+   - `CLOUDFLARE_ACCOUNT_ID`
+
+   Or add them from your own terminal, so the values never appear in chat: `gh secret set CLOUDFLARE_API_TOKEN` and `gh secret set CLOUDFLARE_ACCOUNT_ID`.
+
 ## Day-to-day
 
 ```sh

@@ -1,0 +1,52 @@
+name: Deploy Worker
+
+# The Worker bundles shared site code (trip data, facts, and later weather/itinerary
+# logic), so changes there must redeploy it too.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker/**'
+      - 'src/data/**'
+      - 'src/lib/facts/types.ts'
+      - 'src/lib/weather/**'
+      - 'src/lib/itinerary/**'
+      - 'src/lib/currency/**'
+      - '.github/workflows/worker-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    env:
+      HAS_CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Explain skipped deploy
+        if: env.HAS_CLOUDFLARE_TOKEN != 'true'
+        run: echo "::warning::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID secrets are not set, so the Worker was not deployed. See worker/README.md."
+      - name: Deploy with Wrangler
+        if: env.HAS_CLOUDFLARE_TOKEN == 'true'
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
