@@ -15,6 +15,7 @@ export interface CharacterLook {
   jacketShade: string;
   lashes: boolean;
   freckles: boolean;
+  glasses: boolean;
   /** Short description for assistive tech. */
   description: string;
 }
@@ -23,7 +24,8 @@ const FAIR_SKIN = { skin: '#f7d9c4', skinShade: '#e5b597' };
 
 export const CHARACTERS: Record<TravelerId, CharacterLook> = {
   ofek: {
-    ...FAIR_SKIN,
+    skin: '#f0c8a6',
+    skinShade: '#d69f78',
     hair: '#e2c07a',
     hairShade: '#b8924a',
     hairStyle: 'short',
@@ -32,7 +34,8 @@ export const CHARACTERS: Record<TravelerId, CharacterLook> = {
     jacketShade: '#1f4fa8',
     lashes: false,
     freckles: false,
-    description: 'Fair skin, short light hair and light blue eyes',
+    glasses: false,
+    description: 'Light skin, short light hair and light blue eyes',
   },
   ron: {
     ...FAIR_SKIN,
@@ -44,6 +47,7 @@ export const CHARACTERS: Record<TravelerId, CharacterLook> = {
     jacketShade: '#7d1838',
     lashes: true,
     freckles: false,
+    glasses: false,
     description: 'Fair skin and long black hair',
   },
   roy: {
@@ -57,18 +61,20 @@ export const CHARACTERS: Record<TravelerId, CharacterLook> = {
     jacketShade: '#16664a',
     lashes: false,
     freckles: false,
-    description: 'Slightly darker skin and black hair tied in a bun',
+    glasses: false,
+    description: 'Slightly darker skin and black hair tied in a bun with shaved sides',
   },
   maya: {
     ...FAIR_SKIN,
     hair: '#d4622b',
     hairShade: '#a8461a',
     hairStyle: 'wavy',
-    eyes: '#5b8c3a',
+    eyes: '#6b4226',
     jacket: '#7b4fd6',
     jacketShade: '#5533a3',
     lashes: true,
     freckles: true,
-    description: 'Fair skin with freckles and long wavy ginger hair',
+    glasses: true,
+    description: 'Fair skin with freckles, long wavy ginger hair, brown eyes and glasses',
   },
 };
