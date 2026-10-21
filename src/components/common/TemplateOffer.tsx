@@ -1,22 +1,27 @@
 interface TemplateOfferProps {
-  itemCount: number;
-  name: string;
+  heading: string;
+  description: string;
+  emoji: string;
   onAccept: () => void;
   onSkip: () => void;
 }
 
-export function TemplateOffer({ itemCount, name, onAccept, onSkip }: TemplateOfferProps) {
+/** One-time offer to fill an empty list with starter items. */
+export function TemplateOffer({
+  heading,
+  description,
+  emoji,
+  onAccept,
+  onSkip,
+}: TemplateOfferProps) {
   return (
     <section class="card template-offer" aria-labelledby="template-offer-title">
       <p class="template-offer__emoji" aria-hidden="true">
-        🎒
+        {emoji}
       </p>
       <div>
-        <h2 id="template-offer-title">Want a head start, {name}?</h2>
-        <p>
-          Add {itemCount} common ski-trip items: layers, gloves, sunscreen, chargers and more. You
-          can edit or delete any of them.
-        </p>
+        <h2 id="template-offer-title">{heading}</h2>
+        <p>{description}</p>
         <div class="button-row">
           <button type="button" class="button button--primary" onClick={onAccept}>
             Add starter items

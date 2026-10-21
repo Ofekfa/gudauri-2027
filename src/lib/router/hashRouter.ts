@@ -10,8 +10,15 @@ export function parseHash(hash: string): string {
   return trimmed || HOME_PATH;
 }
 
-export function href(path: string): string {
-  return `#${path}`;
+/** Query parameters after the route: "#/packing?who=maya" → who=maya. */
+export function parseHashQuery(hash: string): URLSearchParams {
+  const index = hash.indexOf('?');
+  return new URLSearchParams(index === -1 ? '' : hash.slice(index + 1));
+}
+
+export function href(path: string, params?: Record<string, string>): string {
+  const query = params ? new URLSearchParams(params).toString() : '';
+  return query ? `#${path}?${query}` : `#${path}`;
 }
 
 export function useHashPath(): string {

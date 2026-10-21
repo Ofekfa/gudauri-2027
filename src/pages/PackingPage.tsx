@@ -5,7 +5,7 @@ import { ProgressSummary } from '../components/common/ProgressSummary';
 import { ProfileSwitcher, TRAVELER_PROFILES } from '../components/common/ProfileSwitcher';
 import { FilterBar } from '../components/packing/FilterBar';
 import { OWNERSHIP_HINT_ID, PackingItemRow } from '../components/packing/PackingItemRow';
-import { TemplateOffer } from '../components/packing/TemplateOffer';
+import { TemplateOffer } from '../components/common/TemplateOffer';
 import { PageHeader } from '../components/PageHeader';
 import { PACKING_TEMPLATE } from '../data/packingTemplate';
 import { trip, type TravelerId } from '../data/trip';
@@ -16,7 +16,15 @@ import {
   type Category,
   type PackingItem,
 } from '../lib/packing/model';
-import { filterItems, groupByCategory, progress, type Filters } from '../lib/packing/selectors';
+import {
+  filterItems,
+  groupByCategory,
+  progress,
+  STATUS_FILTERS,
+  type Filters,
+  type StatusFilter,
+} from '../lib/packing/selectors';
+import { parseHashQuery } from '../lib/router/hashRouter';
 import { usePacking } from '../lib/packing/usePacking';
 import { appStore } from '../lib/storage/safeStorage';
 import { parseImport, serializeExport } from '../lib/packing/importExport';
@@ -36,7 +44,22 @@ function parsePackingBackup(text: string): ParseResult<PackingState> {
   return result.ok ? { ok: true, value: result.state } : result;
 }
 
+/** `#/packing?who=maya&status=need-to-buy` (used by the to-do list's "missing gear" link). */
+function queryParams(): URLSearchParams {
+  return parseHashQuery(window.location.hash);
+}
+
+function initialFilters(): Filters {
+  const status = queryParams().get('status');
+  return STATUS_FILTERS.includes(status as StatusFilter)
+    ? { ...ALL_FILTERS, status: status as StatusFilter }
+    : ALL_FILTERS;
+}
+
 function initialProfile(): TravelerId {
+  const who = queryParams().get('who');
+  const linked = trip.travelers.find((t) => t.id === who)?.id;
+  if (linked) return linked;
   const stored = appStore.get(PROFILE_KEY);
   return trip.travelers.find((t) => t.id === stored)?.id ?? trip.travelers[0]!.id;
 }
@@ -44,7 +67,7 @@ function initialProfile(): TravelerId {
 export default function PackingPage() {
   const { state, dispatch, loaded } = usePacking();
   const [traveler, setTraveler] = useState<TravelerId>(initialProfile);
-  const [filters, setFilters] = useState<Filters>(ALL_FILTERS);
+  const [filters, setFilters] = useState<Filters>(initialFilters);
   const addInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -139,8 +162,9 @@ export default function PackingPage() {
 
           {!state.templateDecided[traveler] && (
             <TemplateOffer
-              name={name}
-              itemCount={PACKING_TEMPLATE.length}
+              heading={`Want a head start, ${name}?`}
+              description={`Add ${PACKING_TEMPLATE.length} common ski-trip items: layers, gloves, sunscreen, chargers and more. You can edit or delete any of them.`}
+              emoji="🎒"
               onAccept={() =>
                 dispatch({
                   type: 'applyTemplate',
