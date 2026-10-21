@@ -71,6 +71,9 @@ const TBS: Airport = {
   timeZone: 'Asia/Tbilisi',
 };
 
+/** Same allowance on both tickets. */
+const BAGGAGE_PER_TICKET: Baggage = { carryOnKg: 3, checkedKg: 23, trolleyKg: 8 };
+
 export const trip: Trip = {
   name: 'Gudauri 2027',
   resort: 'Gudauri',
@@ -91,7 +94,9 @@ export const trip: Trip = {
     from: TLV,
     to: TBS,
     departure: '2027-02-24T05:15:00+02:00',
-    arrival: TBC,
+    arrival: '2027-02-24T09:50:00+04:00',
+    baggage: BAGGAGE_PER_TICKET,
+    meal: false,
   },
   inbound: {
     flightNo: 'LY5110',
@@ -100,7 +105,7 @@ export const trip: Trip = {
     to: TLV,
     departure: '2027-02-28T23:55:00+04:00',
     arrival: '2027-03-01T00:35:00+02:00',
-    baggage: { carryOnKg: 3, checkedKg: 23, trolleyKg: 8 },
+    baggage: BAGGAGE_PER_TICKET,
     meal: false,
   },
 };

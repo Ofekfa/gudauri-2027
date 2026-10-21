@@ -24,7 +24,7 @@ Every push to `main` runs `.github/workflows/deploy.yml`, which lints, tests, bu
 
 ## Editing trip details
 
-All trip facts live in [`src/data/trip.ts`](src/data/trip.ts). For example, to fill in the outbound arrival time, replace `TBC` with an ISO time that includes Tbilisi's offset: `'2027-02-24T09:05:00+04:00'`.
+All trip facts live in [`src/data/trip.ts`](src/data/trip.ts). Times are ISO 8601 strings with the local airport's UTC offset, e.g. `'2027-02-24T09:50:00+04:00'` for 09:50 in Tbilisi. Use `TBC` for an unknown time.
 
 ## Project docs
 
