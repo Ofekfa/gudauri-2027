@@ -13,7 +13,6 @@ import { FactPopups } from './components/facts/FactPopups';
 import { findNavItem, HOME } from './navigation';
 import { ComingSoonPage } from './pages/ComingSoonPage';
 import { FlightsPage } from './pages/FlightsPage';
-import { GamePlaceholderPage } from './pages/GamePlaceholderPage';
 import { HomePage } from './pages/HomePage';
 import { MorePage } from './pages/MorePage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -21,7 +20,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 const PAGES: Record<string, ComponentType> = {
   '/': HomePage,
   '/flights': FlightsPage,
-  '/game': GamePlaceholderPage,
+  '/game': lazyPage(() => import('./pages/GamePage')),
   '/map': lazyPage(() => import('./pages/MapPage')),
   '/packing': lazyPage(() => import('./pages/PackingPage')),
   '/facts': lazyPage(() => import('./pages/FactsPage')),
