@@ -12,6 +12,15 @@ describe('formatInZone', () => {
     });
   });
 
+  it('shows the outbound arrival in Tbilisi time', () => {
+    const { outbound } = trip;
+    expect(formatInZone(outbound.arrival, outbound.to.timeZone)).toEqual({
+      time: '09:50',
+      date: 'Wed 24 Feb 2027',
+      offset: 'UTC+4',
+    });
+  });
+
   it('shows the return flight in each airport’s local time', () => {
     const { inbound } = trip;
     expect(formatInZone(inbound.departure, inbound.from.timeZone)).toMatchObject({
@@ -28,6 +37,7 @@ describe('formatInZone', () => {
 
 describe('formatDuration', () => {
   it('computes flight duration across zones', () => {
+    expect(formatDuration(trip.outbound.departure, trip.outbound.arrival)).toBe('2h 35m');
     expect(formatDuration(trip.inbound.departure, trip.inbound.arrival)).toBe('2h 40m');
   });
 });

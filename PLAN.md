@@ -12,7 +12,7 @@
 | 6     | Voice AI assistant + Worker proxy                                        | —       | v0.6.0 |
 | 7     | Polish: a11y, perf, mobile QA                                            | —       | v1.0.0 |
 
-**Live:** https://ofekfa.github.io/gudauri-2027/ · **Open item:** outbound arrival time is `TBC` in `src/data/trip.ts`.
+**Live:** https://ofekfa.github.io/gudauri-2027/
 
 ### Deviations from the original plan
 
@@ -105,7 +105,7 @@ type TripPhase = { kind:'before'; remainingMs } | { kind:'during'; day: 1..5; to
 ## 5. Feature notes
 
 - **Countdown phases:** `before` = now < outbound departure (`2027-02-24T05:15:00+02:00`). `during` = until return arrival (`2027-03-01T00:35:00+02:00`); "Day X of 5" uses the **Asia/Tbilisi calendar date** (24 Feb = Day 1 … 28 Feb = Day 5, clamped, so 00:00–00:35 on 1 Mar Israel time is still Day 5). `after` = "Welcome home" + trip recap links. Tick with `requestAnimationFrame`/1 s interval aligned to the second; `aria-live` only announces once a minute.
-- **Outbound arrival:** stays `TBC` per instructions. Trackers suggest ≈09:05 Tbilisi time but disagree, so it is not used until confirmed.
+- **Outbound arrival:** confirmed as 09:50 Tbilisi time (UTC+4), a 2h 35m flight. Both tickets have the same baggage allowance.
 - **Flights page:** cards per leg, local times formatted in each airport's zone with labels like "05:15 (Israel, UTC+2)", baggage icons, "times shown in local time of each airport" note. No PNR, seats or surnames.
 - **Packing:** reducer + selectors (pure, tested). Inline add row (Enter adds, Esc cancels), click/Enter to edit the name in place, Delete key/button with a 5 s undo toast. Filters as chip toggles; progress bar "18/30 packed". Starter template (~35 items across 4 categories) offered once per profile via a banner (Accept / Skip). Export downloads `gudauri-packing-<date>.json`; import validates the shape and version before replacing, after a confirm step. Storage: `safeStorage` wraps get/set in try/catch and falls back to in-memory.
 - **Facts:** `facts.ts` with 40+ facts, each written in my own words with a `source` URL. Already verified: altitude ≈1,990–3,279 m, heli-skiing heritage, above the tree line, Jvari Pass 2,379 m, Georgian Military Road, Friendship Monument (1983, neutral wording), 8,000-year wine evidence (PNAS 2017), qvevri UNESCO **intangible** heritage (2013), Georgian scripts UNESCO intangible (2016), khachapuri/khinkali/churchkhela/badrijani, supra/tamada, plus general skiing and beginner tips. Disputed numbers (piste km 35–76, lifts 15–18) are either left out or cited with "according to X". Marco Polo ski-in/out is described as "close to the Pirveli lift" (from booking sites only). Rotation: a shuffle bag (no repeats until all have shown), first toast after 20 s, at most one per 45 s, paused while the tab is hidden and on the Game page, auto-dismiss after 12 s, mute toggle persisted.
@@ -150,7 +150,7 @@ type TripPhase = { kind:'before'; remainingMs } | { kind:'during'; day: 1..5; to
 
 ## 9. Risks and open issues
 
-- **Outbound arrival time** unknown → `TBC` in the config (trackers say ≈09:05 but disagree).
+- ~~Outbound arrival time unknown~~ → resolved: 09:50 Tbilisi time.
 - **Disputed resort stats** (piste km, lift count) → cite a source or leave out.
 - **OSM coverage** of Gudauri may be incomplete or have unnamed runs → the map shows what exists and labels unnamed runs by difficulty only. The bbox gets checked in Overpass Turbo during Phase 2.
 - **Workers AI quota** (10k Neurons/day) is enough for 4 people; the UI handles the quota-exhausted case. Origin checks can be spoofed by non-browser clients → rate limits are the real protection.
