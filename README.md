@@ -26,6 +26,14 @@ Every push to `main` runs `.github/workflows/deploy.yml`, which lints, tests, bu
 
 All trip facts live in [`src/data/trip.ts`](src/data/trip.ts). Times are ISO 8601 strings with the local airport's UTC offset, e.g. `'2027-02-24T09:50:00+04:00'` for 09:50 in Tbilisi. Use `TBC` for an unknown time.
 
+## Trip assistant
+
+The voice/text assistant (`#/assistant`) calls a small Cloudflare Worker in [`worker/`](worker/README.md), which runs a free Workers AI model. It needs no API keys.
+
+- **Live Worker:** `https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev`
+- **How the site finds it:** the build reads the GitHub repo variable `VITE_ASSISTANT_URL`; for local dev, use `.env.local`.
+- **Redeploying the Worker:** `cd worker && npx wrangler deploy`
+
 ## Ski map data
 
 `src/data/pistes.json` is generated from OpenStreetMap by `npm run fetch:pistes` (Node 22.18+ runs the TypeScript script directly). It uses the public Overpass API, so run it rarely; it retries with backoff. The map artwork is original. We never use the resort's official piste map.
