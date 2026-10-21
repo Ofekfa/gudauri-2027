@@ -26,6 +26,10 @@ Every push to `main` runs `.github/workflows/deploy.yml`, which lints, tests, bu
 
 All trip facts live in [`src/data/trip.ts`](src/data/trip.ts). Times are ISO 8601 strings with the local airport's UTC offset, e.g. `'2027-02-24T09:50:00+04:00'` for 09:50 in Tbilisi. Use `TBC` for an unknown time.
 
+## Ski map data
+
+`src/data/pistes.json` is generated from OpenStreetMap by `npm run fetch:pistes` (Node 22.18+ runs the TypeScript script directly). It uses the public Overpass API, so run it rarely; it retries with backoff. The map artwork is original. We never use the resort's official piste map.
+
 ## Project docs
 
 - [`PLAN.md`](PLAN.md): the roadmap, phases and status
@@ -33,4 +37,4 @@ All trip facts live in [`src/data/trip.ts`](src/data/trip.ts). Times are ISO 860
 
 ## License
 
-Code: MIT. Map data (from Phase 2): © OpenStreetMap contributors, available under the ODbL.
+Code: MIT. Map data in `src/data/pistes.json`: © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), available under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/). Run and lift data can also be browsed on [OpenSkiMap.org](https://openskimap.org).
