@@ -1,6 +1,6 @@
 # Gudauri 2027 — Codebase Report
 
-_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.0 (`v1.1.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
+_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.1 (`v1.2.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
 
 ## Changelog since v1.0.0
 
@@ -52,6 +52,35 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **upda
 - Lesson: in-place `npm install` can drop optional platform bindings from a lockfile (npm/cli#4828). Regenerate it from scratch if CI reports "Cannot find native binding".
 
 **Tests:** 107 site + 22 Worker.
+
+### Phase 8.1 — Georgian words (`v1.2.0`)
+
+**Data**
+
+- `src/data/words.ts`: 27 `WordFact`s (word in Mkhedruli, national romanization, meaning, optional note and pronunciation tip, Wiktionary source).
+- `FACTS` = `GENERAL_FACTS` (55) + `WORDS` (27) = **82**.
+
+**Types**
+
+- `FACT_TOPICS` gains `'words'` ("Georgian words", 🗣️).
+- `Fact = GeneralFact | WordFact`, with `isWordFact`.
+
+**UI**
+
+- `components/facts/WordCard.tsx` renders the word body inside the FactsPage card.
+- `:lang(ka)` uses a system font stack in `global.css`.
+
+**Speech**
+
+- `lib/speech/voices.ts` (`findVoice`) and `useVoice.ts` (re-checks on `voiceschanged`).
+- `speakWithVoice` in `synthesis.ts`. The "Hear it" button only appears with a real `ka*` voice.
+
+**Worker**
+
+- Picked the words up automatically: the first CI-driven deploy, triggered by `src/data/**`.
+- Verified live: "How do I say thank you in Georgian?" → "მადლობა (madloba)".
+
+**Tests:** 114 site + 22 Worker.
 
 ## 1. Overview
 

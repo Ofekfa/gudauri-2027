@@ -12,8 +12,8 @@
 | 6     | Voice AI assistant + Worker proxy                                        | ✅ Done | v0.6.0 |
 | 7     | Polish: a11y, perf, mobile QA                                            | ✅ Done | v1.0.0 |
 | 8.0   | Round 2 foundations (nav, Worker router + CI deploy, list toolkit…)      | ✅ Done | v1.1.0 |
-| 8.1   | Georgian words                                                           | ⏳ Next | v1.2.0 |
-| 8.2   | Currency converter                                                       | —       | v1.3.0 |
+| 8.1   | Georgian words                                                           | ✅ Done | v1.2.0 |
+| 8.2   | Currency converter                                                       | ⏳ Next | v1.3.0 |
 | 8.3   | Pre-flight to-do list                                                    | —       | v1.4.0 |
 | 8.4   | Itinerary (Google Calendar)                                              | —       | v1.5.0 |
 | 8.5   | Weather, snow & webcams                                                  | —       | v1.6.0 |
@@ -37,6 +37,9 @@
 - Phase 7 results (live site, Lighthouse mobile): performance 98–100, accessibility/best practices/SEO 100 on all 7 pages. FCP ≈ 1 s and CLS 0, after self-hosting the font (render-blocking Google Fonts removed) and fixing lazy-page layout shift. A headless axe sweep (2 phone sizes × light/dark + interactive states) is at 0 violations after fixing two findings. No horizontal overflow at 375/412/1280 px. Game at 4× CPU throttle: 60 fps, p95 16.8 ms. Added a link-preview image and an iOS home-screen icon. **Still open:** a hands-on check on real phones (iOS Safari speech input/read-aloud, Android Chrome), which needs physical devices.
 
 - Phase 8.0: the CI and live checks showed `/health` and `/chat` unchanged after the Worker refactor. Worker CI deploys are wired up but **skip until Ofek adds the `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` secrets**. The `CACHE` KV namespace is created when the first data route lands (8.2).
+
+- Phase 8.0 follow-up: Ofek added the Cloudflare secrets, and a manual run of the Worker deploy workflow succeeded with the minimal token (Workers Scripts: Edit + Workers KV Storage: Edit). Worker deploys are now automatic.
+- Phase 8.1: 27 words (target 20+) in `src/data/words.ts`, each with its own Wiktionary page. ანგარიში is glossed "account" on Wiktionary, so it's presented as "the bill (literally 'account')". No Georgian TTS voice was found on the test machine, so the "Hear it" button stays hidden there, by design. Georgian text uses system fonts via `:lang(ka)`; real-device rendering is on Ofek's checklist.
 
 ### Content Security Policy decision (Round 2, Phase 8.0)
 
