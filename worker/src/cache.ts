@@ -20,9 +20,10 @@ const MS_PER_S = 1000;
 /** KV's minimum expirationTtl. */
 const KV_MIN_TTL_S = 60;
 
-export function memoryStore(): CacheStore {
+export function memoryStore(): CacheStore & { clear(): void } {
   const map = new Map<string, { entry: CacheEntry<unknown>; expiresAt: number }>();
   return {
+    clear: () => map.clear(),
     async get<T>(key: string) {
       const hit = map.get(key);
       if (!hit || hit.expiresAt < Date.now()) return null;
@@ -122,6 +123,11 @@ export async function getOrRefresh<T>(
 
 /** Per-isolate memory survives between requests on the same isolate. */
 const sharedMemory = memoryStore();
+
+/** Tests only: isolates are long-lived in production, but each test needs a cold cache. */
+export function clearMemoryCache(): void {
+  sharedMemory.clear();
+}
 
 export function cacheStoreFor(kv: KvLike | undefined): CacheStore {
   return kv ? layeredStore(sharedMemory, kvStore(kv)) : sharedMemory;

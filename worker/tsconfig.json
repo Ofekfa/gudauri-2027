@@ -16,6 +16,7 @@
     "test",
     "../src/data/trip.ts",
     "../src/data/facts.ts",
-    "../src/lib/facts/types.ts"
+    "../src/lib/facts/types.ts",
+    "../src/lib/currency/rates.ts"
   ]
 }
