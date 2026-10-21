@@ -15,6 +15,12 @@ const PATHS = {
   arrowLeft: 'M19 12H5m6-6-6 6 6 6',
   bag: 'M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2M4 7h16v13H4zm5 4v5m6-5v5',
   clock: 'M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+  pencil: 'M4 20h4L19 9l-4-4L4 16v4Zm9-13 4 4',
+  trash: 'M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v6m4-6v6',
+  download: 'M12 4v11m-5-5 5 5 5-5M5 20h14',
+  upload: 'M12 20V9m-5 5 5-5 5 5M5 4h14',
+  cart: 'M3 4h2l2.4 11h10.2L20 8H7M9 20h.01M17 20h.01',
+  plus: 'M12 5v14M5 12h14',
   snowflake:
     'M12 2v20M4.9 6l14.2 12M19.1 6 4.9 18M9 4l3 2 3-2M9 20l3-2 3 2M3 10l3 2-3 2m18-4-3 2 3 2',
 } as const;

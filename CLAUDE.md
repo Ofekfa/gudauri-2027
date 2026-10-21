@@ -31,7 +31,7 @@ Run lint, typecheck, test and build before every PR.
 - No magic numbers: name them as constants (module-level `const` or `constants.ts`).
 - **Time:** never use the viewer's local zone for trip times. Parse with `Date.parse(iso)`; display with `formatInZone(iso, airport.timeZone)`. Inject `now` into pure functions for testability.
 - **Storage:** only through `src/lib/storage/safeStorage.ts` (`appStore`). It never throws and falls back to memory. Feature state goes behind a repository interface so a backend can replace it.
-- **Accessibility:** semantic HTML, every page has one `<h1>` via `PageHeader`, `aria-current="page"` on active nav, visible `:focus-visible`, respect `prefers-reduced-motion`, labels on icon-only controls. Don't use `href="#..."` for in-page anchors (the hash is the router).
+- **Accessibility:** semantic HTML, every page has one `<h1>` via `PageHeader`, `aria-current="page"` on active nav, visible `:focus-visible`, respect `prefers-reduced-motion`, labels on icon-only controls. Don't use `href="#..."` for in-page anchors (the hash is the router). Write `<label htmlFor>` (not Preact's `for`) so jsx-a11y can verify label/control pairs. Never use `alert`/`confirm`/`prompt`: show inline confirmations or toasts (`src/lib/toast`).
 - Comments only where the "why" isn't obvious.
 - **Privacy:** first names and public flight info only. No surnames, booking refs, seats, passport or phone data.
 - **Secrets:** never in code or git. `.env*` is ignored; document variables in `.env.example`. The Worker uses `wrangler secret put`.

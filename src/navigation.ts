@@ -41,7 +41,6 @@ export const SECTIONS: NavItem[] = [
     icon: 'backpack',
     blurb: 'Everyone’s personal packing checklist.',
     inTabBar: true,
-    comingSoon: true,
   },
   {
     path: '/game',
