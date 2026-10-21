@@ -1,5 +1,5 @@
 import { href } from '../lib/router/hashRouter';
-import { HOME, SECTIONS } from '../navigation';
+import { activeTabPath, HOME, TAB_BAR_ITEMS } from '../navigation';
 import { Icon } from './Icon';
 import { trip } from '../data/trip';
 
@@ -8,6 +8,7 @@ interface HeaderProps {
 }
 
 export function Header({ activePath }: HeaderProps) {
+  const activeTab = activeTabPath(activePath);
   return (
     <header class="site-header">
       <a class="brand" href={href(HOME.path)} aria-label={`${trip.name} — Home`}>
@@ -20,12 +21,9 @@ export function Header({ activePath }: HeaderProps) {
       </a>
       <nav class="desktop-nav" aria-label="Main">
         <ul>
-          {[HOME, ...SECTIONS].map((item) => (
+          {TAB_BAR_ITEMS.map((item) => (
             <li key={item.path}>
-              <a
-                href={href(item.path)}
-                aria-current={activePath === item.path ? 'page' : undefined}
-              >
+              <a href={href(item.path)} aria-current={activeTab === item.path ? 'page' : undefined}>
                 <Icon name={item.icon} size={18} />
                 {item.navLabel}
               </a>
