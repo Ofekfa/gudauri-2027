@@ -22,6 +22,7 @@ const PAGES: Record<string, ComponentType> = {
   '/flights': FlightsPage,
   '/game': GamePlaceholderPage,
   '/map': lazyPage(() => import('./pages/MapPage')),
+  '/packing': lazyPage(() => import('./pages/PackingPage')),
   '/more': MorePage,
 };
 
