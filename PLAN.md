@@ -26,15 +26,25 @@
 - Phase 1: the router is in-house (`src/lib/router/hashRouter.ts`). Route metadata lives in `src/navigation.ts`, and the "More" tab is a page (`#/more`) rather than a pop-up sheet, which is simpler to navigate on phones.
 - Phase 1: ESLint is pinned to v9 because `eslint-plugin-jsx-a11y` doesn't support v10 yet.
 - Phase 2: map data comes straight from Overpass (OpenStreetMap). OpenSkiMap's worldwide GeoJSON is too large to clip for one resort, so it's credited and linked instead. 50 runs, 16 lifts, the hotel, the Friendship Monument and 6 peaks; regenerate with `npm run fetch:pistes`.
-- Phase 2: eye colors not given in the brief were chosen (Ron, Roy: brown; Maya: green) and can be edited in `src/data/characters.ts`. Skier pose uses a "pizza" wedge.
+- Phase 2: eye colors not given in the brief were chosen (Ron, Roy: brown) and can be edited in `src/data/characters.ts`. Maya was later changed to brown eyes and glasses (see below). Skier pose uses a "pizza" wedge.
+- Phase 2: the map page doesn't use pinch-zoom; zoom buttons (100–300%) plus native scrolling keep it simple and accessible. Phones open at 200%.
 - Between phases 2 and 3: avatar tweaks per feedback (Maya brown eyes + glasses, Roy undercut, Ofek warmer skin), tagged as part of v0.3.0.
 - Phase 3: a generic toast system (`src/lib/toast`) landed early because undo-delete needs it; Phase 4 fact pop-ups reuse it. Import confirmation is inline rather than a browser dialog. The starter template marks everything "Already have" by default.
 - Phase 4: 55 facts (target 40+). A fact-check pass corrected the Kobi gondola year (2019), Khachapuri Index start (2011), speed-skiing record (255.5 km/h, 2023) and Military Road details. Unsupported details were dropped. Pop-ups are also paused on the Facts page, and the fact data loads lazily.
 - Between phases 4 and 5: the Fun facts page became a one-at-a-time viewer (← → keys, swipe, Previous/Next) per feedback.
-- Phase 5: the flags are obstacles (no slalom gates). The game is 60 fps in Chrome, with < 0.1 ms of JS per frame at p99. A real CPU-throttled phone trace is still to do in the Phase 7 QA pass.
+- Phase 5: the flags are obstacles (no slalom gates). The game is 60 fps in Chrome, with < 0.1 ms of JS per frame at p99. A CPU-throttled check was done in Phase 7 with 4× CPU throttling (60 fps, p95 16.8 ms). Testing on real phones is still open.
 - Phase 6: the Worker is live at `https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev` (model `@cf/meta/llama-3.1-8b-instruct-fp8`). The site gets the URL from the repo variable `VITE_ASSISTANT_URL`. No per-IP daily cap: the free rate-limit binding only supports 10 s/60 s windows and is approximate (eventually consistent across Cloudflare locations; in testing a burst got 429s only after ~75 requests). The Workers AI free daily allowance is the hard cap.
 - Phase 7 results (live site, Lighthouse mobile): performance 98–100, accessibility/best practices/SEO 100 on all 7 pages. FCP ≈ 1 s and CLS 0, after self-hosting the font (render-blocking Google Fonts removed) and fixing lazy-page layout shift. A headless axe sweep (2 phone sizes × light/dark + interactive states) is at 0 violations after fixing two findings. No horizontal overflow at 375/412/1280 px. Game at 4× CPU throttle: 60 fps, p95 16.8 ms. Added a link-preview image and an iOS home-screen icon. **Still open:** a hands-on check on real phones (iOS Safari speech input/read-aloud, Android Chrome), which needs physical devices.
-- Phase 2: the map page doesn't use pinch-zoom; zoom buttons (100–300%) plus native scrolling keep it simple and accessible. Phones open at 200%.
+
+### Content Security Policy decision (Round 2, Phase 8.0)
+
+**No CSP for now.** Reasons:
+
+- GitHub Pages can't send response headers, so a CSP would have to be a `<meta>` tag, and `frame-ancestors`/`report-uri` don't work that way.
+- Round 2 adds new origins (the Worker and `youtube-nocookie.com` webcam embeds), which would have to be kept in sync in two places.
+- The site loads no third-party scripts or styles, and all user and calendar content is rendered as text, never HTML.
+
+Revisit once the webcam and API origins are stable (after Phase 8.5). The candidate policy would be `default-src 'self'; connect-src 'self' <worker>; frame-src https://www.youtube-nocookie.com; img-src 'self' data:`.
 
 ---
 
@@ -50,7 +60,7 @@ Env: Node 24.8, npm 11.6, git 2.39, gh authenticated.
 
 ## 1. Architecture
 
-- **Vite + Preact + TS** (`@preact/preset-vite`). Runtime deps: `preact` only (+ `preact-iso` or a ~60-line in-house hash router — choose in-house to keep deps minimal).
+- **Vite + Preact + TS** (`@preact/preset-vite`). Runtime deps: `preact` only, with an in-house hash router.
 - **Routing:** hash-based (`#/`, `#/flights`, `#/packing`, `#/facts`, `#/map`, `#/game`, `#/assistant`). Refresh/deep links never 404 on Pages. Router updates `document.title` and moves focus to the page `<h1>` on navigation (screen-reader friendly).
 - **Lazy loading:** `game` and `assistant` (and `map` page) are `lazy()` dynamic imports → separate chunks.
 - **Game:** framework-free Canvas module mounted by a thin Preact wrapper.
@@ -140,11 +150,11 @@ type TripPhase = { kind:'before'; remainingMs } | { kind:'during'; day: 1..5; to
 | Key handling | **No API key at all** (Worker `AI` binding)                                                                                    | Secret `GEMINI_API_KEY`                                                   | Secret `GROQ_API_KEY`                              |
 | Gotchas      | Large models use up quota fast                                                                                                 | Free-tier data may be used for training or human review; 18+ ToS          | Org-wide limits; models retired at short notice    |
 
-**Recommendation: Cloudflare Workers AI** via a Worker on `*.workers.dev` (free: 100k req/day). There's no third-party key to leak, no training on your data and one account. Default model `@cf/meta/llama-3.1-8b-instruct-fp8-fast` (snappy for voice), configurable via a `MODEL` var to switch to Llama 4 Scout or another model. Groq stays documented as an optional fallback provider behind the same `/chat` interface.
+**Recommendation: Cloudflare Workers AI** via a Worker on `*.workers.dev` (free: 100k req/day). There's no third-party key to leak, no training on your data and one account. Default model `@cf/meta/llama-3.1-8b-instruct-fp8-fast` (snappy for voice), configurable via a `MODEL` var to switch to Llama 4 Scout or another model. _(Superseded: the Groq fallback was never implemented, and the model in use is `@cf/meta/llama-3.1-8b-instruct-fp8`.)_
 
-**Proxy (`/worker`)**: `POST /chat {messages}` → Origin allowlist (`https://ofekfa.github.io`, `http://localhost:5173`); CORS preflight; Cloudflare **rate-limit binding** (e.g. 10 req/60 s per IP) + a per-IP daily cap; max 500 chars per user message, max 10 messages of history, `max_tokens` ≈ 300. The system prompt (built **server-side** from a copy of the public trip data, so clients can't rewrite it) tells the model: answer briefly and in a friendly way, use trip facts, say "I don't know" for live info (weather, lift status). Tested with Vitest + `@cloudflare/vitest-pool-workers` (or plain unit tests of pure handlers). The frontend reads the worker URL from `VITE_ASSISTANT_URL` (not secret, but kept out of code via `.env`; CI gets it from a repo **variable**).
+**Proxy (`/worker`)**: `POST /chat {messages}` → Origin allowlist (`https://ofekfa.github.io`, `http://localhost:5173`); CORS preflight; Cloudflare **rate-limit binding** (10 req/60 s per IP; the planned per-IP daily cap was dropped, see Deviations); max 500 chars per user message, max 10 messages of history, `max_tokens` ≈ 300. The system prompt (built **server-side** from a copy of the public trip data, so clients can't rewrite it) tells the model: answer briefly and in a friendly way, use trip facts, say "I don't know" for live info (weather, lift status). Tested with Vitest + `@cloudflare/vitest-pool-workers` (or plain unit tests of pure handlers). The frontend reads the worker URL from `VITE_ASSISTANT_URL` (not secret, but kept out of code via `.env`; CI gets it from a repo **variable**).
 
-**What you will do manually (Phase 6):** 1) Create a free Cloudflare account. 2) `cd worker && npx wrangler login` (browser OAuth). 3) `npx wrangler deploy` and note the `*.workers.dev` URL. 4) Add it on GitHub as a repo variable `VITE_ASSISTANT_URL` (Settings → Secrets and variables → Actions → Variables). No API key is needed with Workers AI. For the optional Groq fallback, you would run `npx wrangler secret put GROQ_API_KEY` locally and never paste the key into chat.
+**What you will do manually (Phase 6):** 1) Create a free Cloudflare account. 2) `cd worker && npx wrangler login` (browser OAuth). 3) `npx wrangler deploy` and note the `*.workers.dev` URL. 4) Add it on GitHub as a repo variable `VITE_ASSISTANT_URL` (Settings → Secrets and variables → Actions → Variables). No API key is needed with Workers AI.
 
 ## 7. Git, CI and deploy
 
