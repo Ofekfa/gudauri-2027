@@ -7,8 +7,8 @@
 | 1     | Scaffold, tooling, CI, Pages, nav shell, trip config, countdown, flights | ✅ Done | v0.1.0 |
 | 2     | Avatars, map background, visual identity                                 | ✅ Done | v0.2.0 |
 | 3     | Packing list                                                             | ✅ Done | v0.3.0 |
-| 4     | Fun facts + pop-ups                                                      | ⏳ Next | v0.4.0 |
-| 5     | Skiing game                                                              | —       | v0.5.0 |
+| 4     | Fun facts + pop-ups                                                      | ✅ Done | v0.4.0 |
+| 5     | Skiing game                                                              | ⏳ Next | v0.5.0 |
 | 6     | Voice AI assistant + Worker proxy                                        | —       | v0.6.0 |
 | 7     | Polish: a11y, perf, mobile QA                                            | —       | v1.0.0 |
 
@@ -22,6 +22,7 @@
 - Phase 2: eye colors not given in the brief were chosen (Ron, Roy: brown; Maya: green) and can be edited in `src/data/characters.ts`. Skier pose uses a "pizza" wedge.
 - Between phases 2 and 3: avatar tweaks per feedback (Maya brown eyes + glasses, Roy undercut, Ofek warmer skin), tagged as part of v0.3.0.
 - Phase 3: a generic toast system (`src/lib/toast`) landed early because undo-delete needs it; Phase 4 fact pop-ups reuse it. Import confirmation is inline rather than a browser dialog. The starter template marks everything "Already have" by default.
+- Phase 4: 55 facts (target 40+). A fact-check pass corrected the Kobi gondola year (2019), Khachapuri Index start (2011), speed-skiing record (255.5 km/h, 2023) and Military Road details. Unsupported details were dropped. Pop-ups are also paused on the Facts page, and the fact data loads lazily.
 - Phase 2: the map page doesn't use pinch-zoom; zoom buttons (100–300%) plus native scrolling keep it simple and accessible. Phones open at 200%.
 
 ---
