@@ -902,6 +902,104 @@ main:focus {
   color: var(--color-accent);
 }
 
+/* ---------- Fun facts ---------- */
+.facts-settings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+}
+.facts-settings p {
+  margin: 0;
+}
+.facts-settings__title {
+  font-weight: 700;
+}
+.facts-settings__hint {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+.switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  width: 4rem;
+  height: 2.25rem;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.switch[aria-checked='true'] {
+  justify-content: flex-start;
+  background: var(--color-primary);
+  color: var(--color-primary-ink);
+}
+.switch[aria-checked='false'] {
+  justify-content: flex-end;
+}
+.switch__thumb {
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+  transition: transform var(--transition-fast);
+}
+.switch[aria-checked='true'] .switch__thumb {
+  transform: translateX(1.75rem);
+}
+.facts-toolbar {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  margin-bottom: var(--space-4);
+}
+.facts-toolbar .filters__group {
+  max-width: 100%;
+}
+.fact-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fact-card {
+  padding: var(--space-4);
+}
+.fact-card__topic {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.fact-card__title {
+  margin: var(--space-1) 0;
+  font-size: var(--text-lg);
+}
+.fact-card__text {
+  margin: 0 0 var(--space-2);
+}
+.fact-card__source {
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
+}
+
 /* ---------- Toasts ---------- */
 .toasts {
   position: fixed;

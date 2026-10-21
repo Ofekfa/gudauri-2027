@@ -9,6 +9,7 @@ import { lazyPage } from './lib/router/lazyPage';
 import { MapBackground } from './components/map/MapBackground';
 import { Snowfall } from './components/Snowfall';
 import { ToastHost } from './components/ToastHost';
+import { FactPopups } from './components/facts/FactPopups';
 import { findNavItem, HOME } from './navigation';
 import { ComingSoonPage } from './pages/ComingSoonPage';
 import { FlightsPage } from './pages/FlightsPage';
@@ -23,6 +24,7 @@ const PAGES: Record<string, ComponentType> = {
   '/game': GamePlaceholderPage,
   '/map': lazyPage(() => import('./pages/MapPage')),
   '/packing': lazyPage(() => import('./pages/PackingPage')),
+  '/facts': lazyPage(() => import('./pages/FactsPage')),
   '/more': MorePage,
 };
 
@@ -68,6 +70,7 @@ export function App() {
       </main>
       <Footer />
       <ToastHost />
+      <FactPopups path={path} />
       <BottomTabBar activePath={path} />
     </>
   );
