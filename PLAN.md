@@ -18,6 +18,7 @@
 | 8.4   | Itinerary (Google Calendar)                                              | —       | v1.5.0 |
 | 8.5   | Weather, snow & webcams                                                  | —       | v1.6.0 |
 | 8.6   | Assistant live context + polish                                          | —       | v1.7.0 |
+| 8.7   | Offline mode (service worker) + baked fallback rate                      | —       | v1.8.0 |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/
 
@@ -636,6 +637,32 @@ Planned PRs:
   - GitHub Release `v1.7.0`.
 
 ---
+
+### Phase 8.7 — Offline mode + fallback rate → `v1.8.0` (added after Phase 8.2, on Ofek's request)
+
+Goal: the site opens and works on the mountain with **no signal at all**, not just when a single request fails.
+
+**1. Baked fallback rate**
+
+- At build time, fetch the latest NBG rate (via the Worker's `/rates`, or NBG directly in CI) and write it to a generated module, e.g. `src/data/fallbackRates.ts`.
+- `useRates` falls back to it when there's neither a saved rate nor a connection.
+- It's labelled "**Approximate**: official rate from {date}". It may be weeks old, so the label must stay visible.
+- Test: the label and the conversion with the baked rate; the build doesn't fail if the fetch fails (it keeps the previous file).
+
+**2. Service worker**
+
+- Use `vite-plugin-pwa` (Workbox, build-time only, no runtime dependency in our pages) or a small hand-written SW. Pick in the phase PR, with a size and complexity note.
+- **Precache everything:** the app shell, all lazy page chunks, the facts and pistes data, the font and the icons. Then every page works offline, not just the ones already visited.
+- **Runtime caching** for Worker routes (`/rates`, `/weather`, `/itinerary`): network-first with a timeout and cache fallback, so the last-seen itinerary and weather show offline with their timestamps and "stale" labels.
+- **Updates:** a "New version available — Refresh" toast, using the existing toast system; no silent stale versions after a deploy.
+- Never cache `/chat`. The assistant shows "You're offline" instead.
+- A web app manifest (name, icons incl. the existing 180 px touch icon, theme colors) for a reliable iPhone "Add to Home Screen". Document the iOS Safari storage caveats in the README.
+
+**Acceptance criteria**
+
+- With the network cut after one visit, Home, Flights, Packing, To-do, Facts/Words, Currency (saved or baked rate), Map, Game, and the last-seen Itinerary and Weather all open.
+- After a deploy, the update toast appears and refreshing loads the new version.
+- Lighthouse performance and accessibility stay at the bar, with CLS 0.
 
 ### Cross-cutting
 
