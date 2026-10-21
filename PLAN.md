@@ -10,7 +10,7 @@
 | 4     | Fun facts + pop-ups                                                      | ✅ Done | v0.4.0 |
 | 5     | Skiing game                                                              | ✅ Done | v0.5.0 |
 | 6     | Voice AI assistant + Worker proxy                                        | ✅ Done | v0.6.0 |
-| 7     | Polish: a11y, perf, mobile QA                                            | ⏳ Next | v1.0.0 |
+| 7     | Polish: a11y, perf, mobile QA                                            | ✅ Done | v1.0.0 |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/
 
@@ -26,6 +26,7 @@
 - Between phases 4 and 5: the Fun facts page became a one-at-a-time viewer (← → keys, swipe, Previous/Next) per feedback.
 - Phase 5: the flags are obstacles (no slalom gates). The game is 60 fps in Chrome, with < 0.1 ms of JS per frame at p99. A real CPU-throttled phone trace is still to do in the Phase 7 QA pass.
 - Phase 6: the Worker is live at `https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev` (model `@cf/meta/llama-3.1-8b-instruct-fp8`). The site gets the URL from the repo variable `VITE_ASSISTANT_URL`. No per-IP daily cap: the free rate-limit binding only supports 10 s/60 s windows and is approximate (eventually consistent across Cloudflare locations; in testing a burst got 429s only after ~75 requests). The Workers AI free daily allowance is the hard cap.
+- Phase 7 results (live site, Lighthouse mobile): performance 98–100, accessibility/best practices/SEO 100 on all 7 pages. FCP ≈ 1 s and CLS 0, after self-hosting the font (render-blocking Google Fonts removed) and fixing lazy-page layout shift. A headless axe sweep (2 phone sizes × light/dark + interactive states) is at 0 violations after fixing two findings. No horizontal overflow at 375/412/1280 px. Game at 4× CPU throttle: 60 fps, p95 16.8 ms. Added a link-preview image and an iOS home-screen icon. **Still open:** a hands-on check on real phones (iOS Safari speech input/read-aloud, Android Chrome), which needs physical devices.
 - Phase 2: the map page doesn't use pinch-zoom; zoom buttons (100–300%) plus native scrolling keep it simple and accessible. Phones open at 200%.
 
 ---

@@ -44,3 +44,11 @@ Run lint, typecheck, test and build before every PR.
 - `gh pr create` with a description + checklist → CI green → `gh pr merge --squash --delete-branch`.
 - Push to `main` deploys to Pages via `.github/workflows/deploy.yml`.
 - Tag `v0.N.0` at the end of each phase and update `PLAN.md` status.
+
+## Quality bar (checked in Phase 7)
+
+- Lighthouse mobile on every route: performance ≥ 90 and accessibility = 100 (currently 98–100 / 100). Run `npx lighthouse "<url>/#/route"`.
+- axe-core: 0 violations on all routes, in light and dark mode and in interactive states.
+- No horizontal overflow at 375 px. The game holds 60 fps at 4× CPU throttle.
+- Layout shift = 0: lazy pages must not move existing content (the main area reserves viewport height).
+- Don't add render-blocking third-party CSS/fonts; self-host assets in `public/`.
