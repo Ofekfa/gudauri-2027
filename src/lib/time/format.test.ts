@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { trip } from '../../data/trip';
-import { formatAgo, formatDay, formatDayRange, formatDuration, formatInZone } from './format';
+import {
+  formatAgo,
+  formatDay,
+  formatDayRange,
+  formatDuration,
+  formatInZone,
+  zonedTimeToIso,
+  zoneOffsetMinutes,
+} from './format';
 
 describe('formatInZone', () => {
   it('shows the outbound departure in Israel time', () => {
@@ -63,5 +71,23 @@ describe('formatDay / formatAgo', () => {
     expect(formatAgo(now - 3 * 3_600_000, now)).toBe('3 h ago');
     expect(formatAgo(now - 26 * 3_600_000, now)).toBe('1 day ago');
     expect(formatAgo(now + 5_000, now)).toBe('just now');
+  });
+});
+
+describe('zone helpers', () => {
+  it('reports UTC offsets in minutes', () => {
+    expect(zoneOffsetMinutes(Date.parse('2027-02-10T12:00:00Z'), 'Asia/Jerusalem')).toBe(120);
+    expect(zoneOffsetMinutes(Date.parse('2027-07-10T12:00:00Z'), 'Asia/Jerusalem')).toBe(180);
+    expect(zoneOffsetMinutes(Date.parse('2027-02-10T12:00:00Z'), 'Asia/Tbilisi')).toBe(240);
+  });
+
+  it('turns a wall-clock time in a zone into an instant, regardless of the host zone', () => {
+    expect(zonedTimeToIso('2027-02-10', '23:59', 'Asia/Jerusalem')).toBe(
+      '2027-02-10T21:59:00.000Z',
+    );
+    expect(zonedTimeToIso('2027-07-10', '09:00', 'Asia/Jerusalem')).toBe(
+      '2027-07-10T06:00:00.000Z',
+    );
+    expect(zonedTimeToIso('2027-02-24', '09:50', 'Asia/Tbilisi')).toBe('2027-02-24T05:50:00.000Z');
   });
 });
