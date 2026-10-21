@@ -33,7 +33,6 @@ export const SECTIONS: NavItem[] = [
     icon: 'plane',
     blurb: 'Flight times, airports and baggage.',
     inTabBar: true,
-    comingSoon: true,
   },
   {
     path: '/packing',

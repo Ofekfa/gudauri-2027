@@ -7,12 +7,14 @@ import { trip } from './data/trip';
 import { useHashPath } from './lib/router/hashRouter';
 import { findNavItem, HOME } from './navigation';
 import { ComingSoonPage } from './pages/ComingSoonPage';
+import { FlightsPage } from './pages/FlightsPage';
 import { HomePage } from './pages/HomePage';
 import { MorePage } from './pages/MorePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 const PAGES: Record<string, ComponentType> = {
   '/': HomePage,
+  '/flights': FlightsPage,
   '/more': MorePage,
 };
 
