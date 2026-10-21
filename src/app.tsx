@@ -8,6 +8,7 @@ import { useHashPath } from './lib/router/hashRouter';
 import { lazyPage } from './lib/router/lazyPage';
 import { MapBackground } from './components/map/MapBackground';
 import { Snowfall } from './components/Snowfall';
+import { ToastHost } from './components/ToastHost';
 import { findNavItem, HOME } from './navigation';
 import { ComingSoonPage } from './pages/ComingSoonPage';
 import { FlightsPage } from './pages/FlightsPage';
@@ -65,6 +66,7 @@ export function App() {
         {content}
       </main>
       <Footer />
+      <ToastHost />
       <BottomTabBar activePath={path} />
     </>
   );
