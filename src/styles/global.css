@@ -1055,6 +1055,152 @@ main:focus {
   color: var(--color-ink-muted);
 }
 
+/* ---------- Ski game ---------- */
+.skier-picker {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+}
+.skier-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-3) var(--space-1);
+  border: 2px solid var(--color-border);
+  border-bottom: 4px solid var(--member-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+.skier-option:hover {
+  transform: translateY(-3px);
+  border-color: var(--member-color);
+}
+.skier-option svg {
+  max-width: 100%;
+  height: auto;
+}
+.skier-option__name {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+.skier-option__best {
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
+}
+.how-to-play {
+  margin-top: var(--space-4);
+}
+.how-to-play h2 {
+  font-size: var(--text-lg);
+}
+.how-to-play ul {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+}
+.how-to-play li + li {
+  margin-top: var(--space-1);
+}
+.game__field {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  /* Matches MAX_FIELD_WIDTH in src/game/constants.ts. */
+  max-width: 30rem;
+  margin: 0 auto;
+  /* Fill the screen between the page header and the tab bar. */
+  height: calc(100dvh - var(--header-height) - var(--tab-bar-height) - 10rem);
+  min-height: 22rem;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #f7fbff;
+  box-shadow: var(--shadow-card);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media (min-width: 56rem) {
+  .game__field {
+    height: calc(100dvh - var(--header-height) - 12rem);
+  }
+}
+.game__canvas {
+  display: block;
+}
+.game__pause {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(14 42 71 / 75%);
+  color: #ffffff;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.game__overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: rgb(14 42 71 / 35%);
+}
+.game__panel {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  max-width: 22rem;
+  text-align: center;
+}
+.game__panel h2 {
+  font-size: var(--text-xl);
+}
+.game__panel p {
+  margin: 0;
+}
+.game__hint {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+.game__score {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-primary);
+}
+.game__panel .button-row {
+  justify-content: center;
+}
+.game__scores {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+.game__scores li {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+}
+.game__scores li.is-new {
+  background: var(--color-primary);
+  color: var(--color-primary-ink);
+}
+
 /* ---------- Toasts ---------- */
 .toasts {
   position: fixed;

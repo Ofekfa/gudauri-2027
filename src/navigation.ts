@@ -49,7 +49,6 @@ export const SECTIONS: NavItem[] = [
     icon: 'game',
     blurb: 'Dodge trees, grab khachapuri.',
     inTabBar: true,
-    comingSoon: true,
   },
   {
     path: '/facts',
