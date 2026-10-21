@@ -69,54 +69,27 @@ main:focus {
   top: var(--space-2);
 }
 
-/* ---------- Backdrop (Phase 2 replaces with the illustrated ski map) ---------- */
+/* ---------- Backdrop: blurred illustrated ski map behind every page ---------- */
 .backdrop {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background:
-    radial-gradient(circle at 85% 8%, var(--color-sun) 0 2.5rem, transparent 2.6rem),
-    linear-gradient(to bottom, var(--color-bg-sky), var(--color-bg) 55%);
-  opacity: 0.9;
+  overflow: hidden;
+  background: linear-gradient(to bottom, var(--color-bg-sky), var(--color-bg) 60%);
 }
-.backdrop::before,
-.backdrop::after {
-  content: '';
+.backdrop__map {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: -2%;
+  width: 104%;
+  height: 104%;
+  filter: blur(1.5px);
+  opacity: 0.55;
 }
-.backdrop::before {
-  height: 45vh;
-  background: var(--color-mountain-far);
-  clip-path: polygon(
-    0 60%,
-    15% 30%,
-    28% 50%,
-    45% 10%,
-    60% 45%,
-    75% 20%,
-    90% 40%,
-    100% 25%,
-    100% 100%,
-    0 100%
-  );
-}
-.backdrop::after {
-  height: 30vh;
-  background: var(--color-mountain-near);
-  clip-path: polygon(
-    0 50%,
-    20% 20%,
-    35% 45%,
-    55% 15%,
-    70% 40%,
-    85% 25%,
-    100% 50%,
-    100% 100%,
-    0 100%
-  );
+/* Keeps text over the map at AA contrast. */
+.backdrop__veil {
+  position: absolute;
+  inset: 0;
+  background: var(--backdrop-veil);
 }
 
 /* ---------- Header ---------- */
@@ -617,4 +590,316 @@ main:focus {
 .crew__name {
   font-family: var(--font-display);
   font-weight: 600;
+}
+
+/* ---------- Piste map ---------- */
+.piste-map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.map-snow {
+  fill: var(--map-snow);
+}
+.map-ridge-stop {
+  stop-color: var(--map-ridge);
+}
+.map-pines path {
+  fill: var(--map-pine);
+  opacity: 0.6;
+}
+.map-run__casing {
+  fill: none;
+  stroke: var(--map-casing);
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.map-run__line {
+  fill: none;
+  stroke: var(--run-color);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.map-run-area {
+  fill: var(--run-color);
+  fill-opacity: 0.18;
+  stroke: var(--run-color);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+.map-run--novice {
+  --run-color: var(--run-novice);
+}
+.map-run--easy {
+  --run-color: var(--run-easy);
+}
+.map-run--intermediate {
+  --run-color: var(--run-intermediate);
+}
+.map-run--advanced {
+  --run-color: var(--run-advanced);
+}
+.map-run--unknown {
+  --run-color: var(--run-unknown);
+}
+.map-lift__line {
+  fill: none;
+  stroke: var(--map-lift);
+  stroke-width: 2.5;
+  stroke-dasharray: 10 5;
+}
+.map-lift__station {
+  fill: var(--map-casing);
+  stroke: var(--map-lift);
+  stroke-width: 2.5;
+}
+/* Wide invisible stroke makes thin lines easy to tap. */
+.map-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 28;
+  stroke-linecap: round;
+  pointer-events: stroke;
+}
+.backdrop .map-hit,
+.backdrop .map-pois {
+  display: none;
+}
+.map-poi--peak path {
+  fill: var(--map-lift);
+  opacity: 0.55;
+}
+.map-poi--hotel circle {
+  fill: var(--map-hotel);
+  stroke: var(--map-casing);
+  stroke-width: 3;
+}
+.map-poi--monument circle {
+  fill: var(--map-lift);
+  stroke: var(--map-casing);
+  stroke-width: 3;
+}
+.map-poi__icon {
+  fill: var(--map-casing);
+}
+.map-label {
+  fill: var(--map-label);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--map-label-halo);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+.map-label--lift {
+  text-anchor: start;
+  font-size: 17px;
+}
+.map-label__sub {
+  font-weight: 500;
+  font-size: 15px;
+}
+.piste-map.has-selection .map-run,
+.piste-map.has-selection .map-run-area,
+.piste-map.has-selection .map-lift {
+  opacity: 0.25;
+  transition: opacity var(--transition-fast);
+}
+.piste-map.has-selection .is-selected {
+  opacity: 1;
+}
+.piste-map .map-run.is-selected .map-run__line {
+  stroke-width: 9;
+}
+.piste-map .map-run.is-selected .map-run__casing {
+  stroke-width: 15;
+}
+.piste-map .map-lift.is-selected .map-lift__line {
+  stroke-width: 5;
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.map-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.legend-swatch {
+  display: inline-block;
+  width: 1.25rem;
+  height: 0.4rem;
+  border-radius: var(--radius-pill);
+  background: var(--swatch);
+  box-shadow: 0 0 0 2px var(--map-casing);
+}
+.legend-swatch--novice {
+  --swatch: var(--run-novice);
+}
+.legend-swatch--easy {
+  --swatch: var(--run-easy);
+}
+.legend-swatch--intermediate {
+  --swatch: var(--run-intermediate);
+}
+.legend-swatch--advanced {
+  --swatch: var(--run-advanced);
+}
+.legend-swatch--unknown {
+  --swatch: var(--run-unknown);
+}
+.legend-swatch--lift {
+  height: 0;
+  border-top: 3px dashed var(--map-lift);
+  border-radius: 0;
+  box-shadow: none;
+  background: none;
+}
+.legend-swatch--hotel {
+  width: 0.9rem;
+  height: 0.9rem;
+  --swatch: var(--map-hotel);
+}
+
+.map-viewer {
+  position: relative;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+.map-frame {
+  height: min(70vh, 40rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.map-toolbar {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+.map-toolbar button {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-primary-ink);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.map-toolbar button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.map-toolbar span {
+  min-width: 3rem;
+  text-align: center;
+}
+.map-selection {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  min-height: 4.5rem;
+}
+.map-selection p {
+  margin: 0;
+}
+.map-selection__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-lg);
+}
+.map-selection__detail {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.map-list h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: var(--text-md);
+}
+.map-list ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.map-list button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.map-list button[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-ink);
+}
+.map-list__meta {
+  font-size: 0.75rem;
+  font-weight: 500;
+  opacity: 0.8;
+}
+.map-attribution {
+  margin-top: var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.page-loading {
+  padding: var(--space-6) 0;
+  text-align: center;
+  color: var(--color-ink-muted);
+}
+.site-footer__credit {
+  margin: 0;
+  font-size: 0.75rem;
 }

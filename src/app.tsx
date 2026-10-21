@@ -5,6 +5,8 @@ import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { trip } from './data/trip';
 import { useHashPath } from './lib/router/hashRouter';
+import { lazyPage } from './lib/router/lazyPage';
+import { MapBackground } from './components/map/MapBackground';
 import { findNavItem, HOME } from './navigation';
 import { ComingSoonPage } from './pages/ComingSoonPage';
 import { FlightsPage } from './pages/FlightsPage';
@@ -17,6 +19,7 @@ const PAGES: Record<string, ComponentType> = {
   '/': HomePage,
   '/flights': FlightsPage,
   '/game': GamePlaceholderPage,
+  '/map': lazyPage(() => import('./pages/MapPage')),
   '/more': MorePage,
 };
 
@@ -54,7 +57,7 @@ export function App() {
       <button type="button" class="skip-link" onClick={focusMain}>
         Skip to content
       </button>
-      <div class="backdrop" aria-hidden="true" />
+      <MapBackground />
       <Header activePath={path} />
       <main id="main" class="page" key={path} tabIndex={-1}>
         {content}
