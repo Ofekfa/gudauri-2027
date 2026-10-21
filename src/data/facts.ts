@@ -1,10 +1,11 @@
-import type { Fact } from '../lib/facts/types';
+import type { Fact, GeneralFact } from '../lib/facts/types';
+import { WORDS } from './words';
 
 /**
  * Fun facts, written in our own words and checked against the linked source
  * (October 2026). Where sources disagree we use rounded, safe figures.
  */
-export const FACTS: Fact[] = [
+const GENERAL_FACTS: GeneralFact[] = [
   // ── Gudauri ──────────────────────────────────────────────
   {
     id: 'gudauri-plateau',
@@ -403,3 +404,5 @@ export const FACTS: Fact[] = [
     source: 'https://www.who.int/news-room/questions-and-answers/item/radiation-ultraviolet-(uv)',
   },
 ];
+
+export const FACTS: Fact[] = [...GENERAL_FACTS, ...WORDS];
