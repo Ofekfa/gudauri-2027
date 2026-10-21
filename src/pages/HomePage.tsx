@@ -1,5 +1,7 @@
 import { Countdown } from '../components/Countdown';
 import { Crew } from '../components/Crew';
+import { NextTodos } from '../components/todo/NextTodos';
+import { getTripPhase } from '../lib/time/countdown';
 import { PageHeader } from '../components/PageHeader';
 import { SectionCards } from '../components/SectionCards';
 import { trip } from '../data/trip';
@@ -20,6 +22,7 @@ export function HomePage() {
         subtitle={`${formatDayRange(trip.firstDay, trip.lastDay)} · ${travelerNames}`}
       />
       <Countdown />
+      {getTripPhase(Date.now(), trip).kind === 'before' && <NextTodos />}
       <section aria-labelledby="crew-title">
         <h2 id="crew-title" class="section-title">
           The crew

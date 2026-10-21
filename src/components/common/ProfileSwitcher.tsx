@@ -38,7 +38,12 @@ export function ProfileSwitcher<Id extends string>({
   ariaLabel = 'Whose list',
 }: ProfileSwitcherProps<Id>) {
   return (
-    <div class="profiles" role="group" aria-label={ariaLabel}>
+    <div
+      class="profiles"
+      role="group"
+      aria-label={ariaLabel}
+      style={{ '--profile-count': profiles.length }}
+    >
       {profiles.map(({ id, label, color, avatar }) => (
         <button
           key={id}
