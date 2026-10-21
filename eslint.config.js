@@ -13,6 +13,8 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.browser } },
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      // Scrollable regions must be keyboard-focusable (axe: scrollable-region-focusable).
+      'jsx-a11y/no-noninteractive-tabindex': ['error', { roles: ['tabpanel', 'region'] }],
     },
   },
   {

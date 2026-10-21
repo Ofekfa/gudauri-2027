@@ -164,7 +164,14 @@ export default function MapPage() {
             +
           </button>
         </div>
-        <div class="map-frame" ref={frameRef}>
+        {/* Focusable so keyboard users can pan it with the arrow keys. */}
+        <div
+          class="map-frame"
+          ref={frameRef}
+          tabIndex={0}
+          role="region"
+          aria-label="Scrollable ski map. Use the arrow keys to pan."
+        >
           <div style={{ width: `${zoom * 100}%` }}>
             <PisteMapSvg
               data={data}

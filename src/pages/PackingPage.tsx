@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'preact/hooks';
 import { AddItemForm } from '../components/packing/AddItemForm';
 import { BackupPanel } from '../components/packing/BackupPanel';
 import { FilterBar } from '../components/packing/FilterBar';
-import { PackingItemRow } from '../components/packing/PackingItemRow';
+import { OWNERSHIP_HINT_ID, PackingItemRow } from '../components/packing/PackingItemRow';
 import { ProfileSwitcher } from '../components/packing/ProfileSwitcher';
 import { TemplateOffer } from '../components/packing/TemplateOffer';
 import { PageHeader } from '../components/PageHeader';
@@ -159,6 +159,9 @@ export default function PackingPage() {
 
           {items.length > 0 && <FilterBar filters={filters} onChange={setFilters} />}
 
+          <p id={OWNERSHIP_HINT_ID} class="visually-hidden">
+            Switches the item between Have and To buy.
+          </p>
           <div ref={listRef} class="pack-lists">
             {items.length === 0 ? (
               <p class="empty-note">Nothing here yet. Add the first item above.</p>

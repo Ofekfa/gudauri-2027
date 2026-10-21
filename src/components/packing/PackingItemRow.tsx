@@ -8,6 +8,9 @@ import {
 } from '../../lib/packing/model';
 import { Icon } from '../Icon';
 
+/** Id of the shared, visually hidden explanation of the Have/To buy toggle (rendered by the page). */
+export const OWNERSHIP_HINT_ID = 'ownership-toggle-hint';
+
 interface PackingItemRowProps {
   item: PackingItem;
   onTogglePacked: () => void;
@@ -114,8 +117,9 @@ export function PackingItemRow({
       <button
         type="button"
         class={`ownership-chip${needToBuy ? ' ownership-chip--buy' : ''}`}
-        aria-pressed={needToBuy}
-        aria-label={`Need to buy ${item.name}`}
+        // The accessible name starts with the visible text so voice control ("click Have") works.
+        aria-label={`${needToBuy ? 'To buy' : 'Have'}: ${item.name}`}
+        aria-describedby={OWNERSHIP_HINT_ID}
         onClick={onToggleOwnership}
       >
         {needToBuy ? (
