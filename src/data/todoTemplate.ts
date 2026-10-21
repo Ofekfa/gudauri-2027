@@ -1,3 +1,6 @@
+import { localDateIn } from '../lib/time/countdown';
+import { zonedTimeToIso } from '../lib/time/format';
+import { END_OF_DAY, TODO_TIME_ZONE } from '../lib/todo/due';
 import type { NewTodo } from '../lib/todo/reducer';
 import type { Trip } from './trip';
 
@@ -13,7 +16,16 @@ const CHECK_IN_LEAD_MS = 3 * HOUR_MS;
 
 export const MISSING_GEAR_KEY = 'missing-gear';
 
+/** An exact deadline, e.g. 3 h before a departure. */
 const before = (iso: string, ms: number) => new Date(Date.parse(iso) - ms).toISOString();
+
+/** End of the day (Israel time) `days` calendar days before `iso`. */
+const daysBefore = (iso: string, days: number) =>
+  zonedTimeToIso(
+    localDateIn(Date.parse(iso) - days * DAY_MS, TODO_TIME_ZONE),
+    END_OF_DAY,
+    TODO_TIME_ZONE,
+  );
 
 const CHECK_IN_NOTE =
   'Online check-in usually opens about 24 hours before departure; confirm the exact window in the El Al app.';
@@ -26,31 +38,31 @@ export function personalTemplate(trip: Trip): NewTodo[] {
       title: 'Check your passport is valid for the trip',
       category: 'documents',
       note: 'Also check Georgia’s current entry rules for Israeli passport holders.',
-      dueBy: before(takeoff, 30 * DAY_MS),
+      dueBy: daysBefore(takeoff, 30),
     },
     {
       title: 'Buy travel insurance with winter-sports cover',
       category: 'documents',
       note: 'Make sure skiing/snowboarding is explicitly covered, including rescue.',
-      dueBy: before(takeoff, 14 * DAY_MS),
+      dueBy: daysBefore(takeoff, 14),
     },
     {
       title: 'Order missing gear',
       category: 'gear',
       note: 'Everything marked “need to buy” on your packing list.',
-      dueBy: before(takeoff, 10 * DAY_MS),
+      dueBy: daysBefore(takeoff, 10),
       templateKey: MISSING_GEAR_KEY,
     },
     {
       title: 'Get an eSIM or roaming package for Georgia',
       category: 'connectivity',
-      dueBy: before(takeoff, 3 * DAY_MS),
+      dueBy: daysBefore(takeoff, 3),
     },
     {
       title: 'Get some Georgian lari (GEL) in cash',
       category: 'documents',
       note: 'Handy for taxis, small cafés and tips.',
-      dueBy: before(takeoff, 1 * DAY_MS),
+      dueBy: daysBefore(takeoff, 1),
     },
     {
       title: `Online check-in for ${trip.outbound.flightNo} (outbound)`,
@@ -75,18 +87,18 @@ export function sharedTemplate(trip: Trip): NewTodo[] {
       title: 'Research and book ski instructors',
       category: 'ski',
       note: 'Worth booking early for beginners; lessons fill up in high season.',
-      dueBy: before(takeoff, 10 * DAY_MS),
+      dueBy: daysBefore(takeoff, 10),
     },
     {
       title: `Book the transfer from ${trip.outbound.to.city} airport to ${trip.resort}`,
       category: 'flight',
       note: 'We land at 09:50 local time; the drive is roughly 2–2.5 hours.',
-      dueBy: before(takeoff, 7 * DAY_MS),
+      dueBy: daysBefore(takeoff, 7),
     },
     {
       title: 'Book ski/snowboard rental',
       category: 'ski',
-      dueBy: before(takeoff, 7 * DAY_MS),
+      dueBy: daysBefore(takeoff, 7),
     },
   ];
 }

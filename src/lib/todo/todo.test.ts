@@ -109,7 +109,10 @@ describe('starter templates', () => {
     expect(outboundCheckIn.dueBy).toBe('2027-02-24T00:15:00.000Z');
     // LY5110 departs 23:55 Tbilisi → due 20:55 Tbilisi (16:55 UTC).
     expect(returnCheckIn.dueBy).toBe('2027-02-28T16:55:00.000Z');
-    expect(personal.find((i) => i.templateKey === MISSING_GEAR_KEY)).toBeDefined();
+    // Day-based deadlines are the end of that day in Israel time (D-10 from 24 Feb = 14 Feb).
+    expect(personal.find((i) => i.templateKey === MISSING_GEAR_KEY)?.dueBy).toBe(
+      '2027-02-14T21:59:00.000Z',
+    );
   });
 
   it('puts group tasks on the shared list and dates every starter item', () => {

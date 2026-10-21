@@ -18,10 +18,15 @@ const spec: VersionedSpec<TodoState> = {
   empty: () => createEmptyTodoState(),
 };
 
+/** Synchronous read for first-paint UI (e.g. the Home card) so nothing shifts in later. */
+export function loadTodoStateSync(store: KeyValueStore = appStore): TodoState {
+  return loadVersioned(store, spec).value;
+}
+
 export function createLocalTodoRepository(store: KeyValueStore): TodoRepository {
   return {
     async load() {
-      return loadVersioned(store, spec).value;
+      return loadTodoStateSync(store);
     },
     async save(state) {
       saveVersioned(store, spec, state);
