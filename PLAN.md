@@ -5,8 +5,8 @@
 | Phase | Scope                                                                    | Status  | Tag    |
 | ----- | ------------------------------------------------------------------------ | ------- | ------ |
 | 1     | Scaffold, tooling, CI, Pages, nav shell, trip config, countdown, flights | ✅ Done | v0.1.0 |
-| 2     | Avatars, map background, visual identity                                 | ⏳ Next | v0.2.0 |
-| 3     | Packing list                                                             | —       | v0.3.0 |
+| 2     | Avatars, map background, visual identity                                 | ✅ Done | v0.2.0 |
+| 3     | Packing list                                                             | ⏳ Next | v0.3.0 |
 | 4     | Fun facts + pop-ups                                                      | —       | v0.4.0 |
 | 5     | Skiing game                                                              | —       | v0.5.0 |
 | 6     | Voice AI assistant + Worker proxy                                        | —       | v0.6.0 |
@@ -18,6 +18,9 @@
 
 - Phase 1: the router is in-house (`src/lib/router/hashRouter.ts`). Route metadata lives in `src/navigation.ts`, and the "More" tab is a page (`#/more`) rather than a pop-up sheet, which is simpler to navigate on phones.
 - Phase 1: ESLint is pinned to v9 because `eslint-plugin-jsx-a11y` doesn't support v10 yet.
+- Phase 2: map data comes straight from Overpass (OpenStreetMap). OpenSkiMap's worldwide GeoJSON is too large to clip for one resort, so it's credited and linked instead. 50 runs, 16 lifts, the hotel, the Friendship Monument and 6 peaks; regenerate with `npm run fetch:pistes`.
+- Phase 2: eye colors not given in the brief were chosen (Ron, Roy: brown; Maya: green) and can be edited in `src/data/characters.ts`. Skier pose uses a "pizza" wedge.
+- Phase 2: the map page doesn't use pinch-zoom; zoom buttons (100–300%) plus native scrolling keep it simple and accessible. Phones open at 200%.
 
 ---
 
