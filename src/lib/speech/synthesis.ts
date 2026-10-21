@@ -29,3 +29,13 @@ export function speak(text: string): void {
 export function stopSpeaking(): void {
   if (isSynthesisSupported()) speechSynthesis.cancel();
 }
+
+/** Speaks with a specific voice (e.g. a Georgian one found via findVoice). */
+export function speakWithVoice(text: string, voice: SpeechSynthesisVoice): void {
+  if (!isSynthesisSupported()) return;
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.voice = voice;
+  utterance.lang = voice.lang;
+  speechSynthesis.speak(utterance);
+}
