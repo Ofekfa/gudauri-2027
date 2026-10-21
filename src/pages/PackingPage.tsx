@@ -105,102 +105,109 @@ export default function PackingPage() {
       />
       <ProfileSwitcher selected={traveler} onSelect={selectTraveler} summaries={summaries} />
 
-      <section class="pack-summary" aria-labelledby="pack-summary-title">
-        <h2 id="pack-summary-title">{name}’s list</h2>
-        <p class="pack-summary__numbers">
-          <strong>
-            {stats.packed}/{stats.total}
-          </strong>{' '}
-          packed
-          {stats.needToBuy > 0 && <span class="pack-summary__buy">{stats.needToBuy} to buy</span>}
+      {/* Everything below depends on the saved lists; render it in one go to avoid layout shift. */}
+      {!loaded ? (
+        <p class="page-loading" role="status">
+          Loading…
         </p>
-        <progress
-          class="pack-progress"
-          max={100}
-          value={percent}
-          aria-label={`${name}: ${stats.packed} of ${stats.total} items packed`}
-        />
-      </section>
+      ) : (
+        <>
+          <section class="pack-summary" aria-labelledby="pack-summary-title">
+            <h2 id="pack-summary-title">{name}’s list</h2>
+            <p class="pack-summary__numbers">
+              <strong>
+                {stats.packed}/{stats.total}
+              </strong>{' '}
+              packed
+              {stats.needToBuy > 0 && (
+                <span class="pack-summary__buy">{stats.needToBuy} to buy</span>
+              )}
+            </p>
+            <progress
+              class="pack-progress"
+              max={100}
+              value={percent}
+              aria-label={`${name}: ${stats.packed} of ${stats.total} items packed`}
+            />
+          </section>
 
-      {loaded && !state.templateDecided[traveler] && (
-        <TemplateOffer
-          name={name}
-          itemCount={PACKING_TEMPLATE.length}
-          onAccept={() =>
-            dispatch({
-              type: 'applyTemplate',
-              traveler,
-              items: PACKING_TEMPLATE,
-              ids: PACKING_TEMPLATE.map(() => defaultIdGenerator()),
-              now: Date.now(),
-            })
-          }
-          onSkip={() => dispatch({ type: 'skipTemplate', traveler })}
-        />
+          {!state.templateDecided[traveler] && (
+            <TemplateOffer
+              name={name}
+              itemCount={PACKING_TEMPLATE.length}
+              onAccept={() =>
+                dispatch({
+                  type: 'applyTemplate',
+                  traveler,
+                  items: PACKING_TEMPLATE,
+                  ids: PACKING_TEMPLATE.map(() => defaultIdGenerator()),
+                  now: Date.now(),
+                })
+              }
+              onSkip={() => dispatch({ type: 'skipTemplate', traveler })}
+            />
+          )}
+
+          <AddItemForm
+            key={traveler}
+            inputRef={addInputRef}
+            defaultCategory={filters.category === 'all' ? DEFAULT_CATEGORY : filters.category}
+            onAdd={(item) =>
+              dispatch({ type: 'add', traveler, item, id: defaultIdGenerator(), now: Date.now() })
+            }
+          />
+
+          {items.length > 0 && <FilterBar filters={filters} onChange={setFilters} />}
+
+          <div ref={listRef} class="pack-lists">
+            {items.length === 0 ? (
+              <p class="empty-note">Nothing here yet. Add the first item above.</p>
+            ) : visible.length === 0 ? (
+              <p class="empty-note">
+                No items match these filters.{' '}
+                <button type="button" class="link-button" onClick={() => setFilters(ALL_FILTERS)}>
+                  Show everything
+                </button>
+              </p>
+            ) : filters.category === 'all' ? (
+              groupByCategory(visible).map((group) => {
+                const all = items.filter((i) => i.category === group.category);
+                return (
+                  <section
+                    key={group.category}
+                    class="pack-group"
+                    aria-labelledby={`group-${group.category}`}
+                  >
+                    <h3 id={`group-${group.category}`}>
+                      <span aria-hidden="true">{CATEGORY_EMOJI[group.category]}</span>{' '}
+                      {CATEGORY_LABEL[group.category]}
+                      <span class="pack-group__count">
+                        {all.filter((i) => i.packed).length}/{all.length}
+                      </span>
+                    </h3>
+                    {renderRows(group.items)}
+                  </section>
+                );
+              })
+            ) : (
+              renderRows(visible)
+            )}
+            {filtersActive && visible.length > 0 && (
+              <p class="empty-note">
+                Showing {visible.length} of {items.length}.{' '}
+                <button type="button" class="link-button" onClick={() => setFilters(ALL_FILTERS)}>
+                  Clear filters
+                </button>
+              </p>
+            )}
+          </div>
+
+          <BackupPanel
+            state={state}
+            onImport={(imported) => dispatch({ type: 'replaceAll', state: imported })}
+          />
+        </>
       )}
-
-      <AddItemForm
-        key={traveler}
-        inputRef={addInputRef}
-        defaultCategory={filters.category === 'all' ? DEFAULT_CATEGORY : filters.category}
-        onAdd={(item) =>
-          dispatch({ type: 'add', traveler, item, id: defaultIdGenerator(), now: Date.now() })
-        }
-      />
-
-      {items.length > 0 && <FilterBar filters={filters} onChange={setFilters} />}
-
-      <div ref={listRef} class="pack-lists">
-        {!loaded ? (
-          <p class="page-loading" role="status">
-            Loading…
-          </p>
-        ) : items.length === 0 ? (
-          <p class="empty-note">Nothing here yet. Add the first item above.</p>
-        ) : visible.length === 0 ? (
-          <p class="empty-note">
-            No items match these filters.{' '}
-            <button type="button" class="link-button" onClick={() => setFilters(ALL_FILTERS)}>
-              Show everything
-            </button>
-          </p>
-        ) : filters.category === 'all' ? (
-          groupByCategory(visible).map((group) => {
-            const all = items.filter((i) => i.category === group.category);
-            return (
-              <section
-                key={group.category}
-                class="pack-group"
-                aria-labelledby={`group-${group.category}`}
-              >
-                <h3 id={`group-${group.category}`}>
-                  <span aria-hidden="true">{CATEGORY_EMOJI[group.category]}</span>{' '}
-                  {CATEGORY_LABEL[group.category]}
-                  <span class="pack-group__count">
-                    {all.filter((i) => i.packed).length}/{all.length}
-                  </span>
-                </h3>
-                {renderRows(group.items)}
-              </section>
-            );
-          })
-        ) : (
-          renderRows(visible)
-        )}
-        {filtersActive && visible.length > 0 && (
-          <p class="empty-note">
-            Showing {visible.length} of {items.length}.{' '}
-            <button type="button" class="link-button" onClick={() => setFilters(ALL_FILTERS)}>
-              Clear filters
-            </button>
-          </p>
-        )}
-      </div>
-
-      <BackupPanel
-        state={state}
-        onImport={(imported) => dispatch({ type: 'replaceAll', state: imported })}
-      />
     </>
   );
 }
