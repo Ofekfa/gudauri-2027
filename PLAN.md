@@ -9,8 +9,8 @@
 | 3     | Packing list                                                             | ✅ Done | v0.3.0 |
 | 4     | Fun facts + pop-ups                                                      | ✅ Done | v0.4.0 |
 | 5     | Skiing game                                                              | ✅ Done | v0.5.0 |
-| 6     | Voice AI assistant + Worker proxy                                        | ⏳ Next | v0.6.0 |
-| 7     | Polish: a11y, perf, mobile QA                                            | —       | v1.0.0 |
+| 6     | Voice AI assistant + Worker proxy                                        | ✅ Done | v0.6.0 |
+| 7     | Polish: a11y, perf, mobile QA                                            | ⏳ Next | v1.0.0 |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/
 
@@ -25,6 +25,7 @@
 - Phase 4: 55 facts (target 40+). A fact-check pass corrected the Kobi gondola year (2019), Khachapuri Index start (2011), speed-skiing record (255.5 km/h, 2023) and Military Road details. Unsupported details were dropped. Pop-ups are also paused on the Facts page, and the fact data loads lazily.
 - Between phases 4 and 5: the Fun facts page became a one-at-a-time viewer (← → keys, swipe, Previous/Next) per feedback.
 - Phase 5: the flags are obstacles (no slalom gates). The game is 60 fps in Chrome, with < 0.1 ms of JS per frame at p99. A real CPU-throttled phone trace is still to do in the Phase 7 QA pass.
+- Phase 6: the Worker is live at `https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev` (model `@cf/meta/llama-3.1-8b-instruct-fp8`). The site gets the URL from the repo variable `VITE_ASSISTANT_URL`. No per-IP daily cap: the free rate-limit binding only supports 10 s/60 s windows and is approximate (eventually consistent across Cloudflare locations; in testing a burst got 429s only after ~75 requests). The Workers AI free daily allowance is the hard cap.
 - Phase 2: the map page doesn't use pinch-zoom; zoom buttons (100–300%) plus native scrolling keep it simple and accessible. Phones open at 200%.
 
 ---
