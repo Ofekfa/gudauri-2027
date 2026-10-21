@@ -653,7 +653,7 @@ main:focus {
 /* ---------- Packing ---------- */
 .profiles {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(var(--profile-count, 4), minmax(0, 1fr));
   gap: var(--space-2);
   margin-bottom: var(--space-4);
 }
@@ -1547,6 +1547,136 @@ main:focus {
   margin: var(--space-4) 0 0;
   font-size: var(--text-sm);
   color: var(--color-ink-muted);
+}
+
+/* ---------- To-do ---------- */
+.profile__group-avatar {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 0 0 3px rgb(14 42 71 / 18%);
+}
+.todo-item {
+  align-items: flex-start;
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+.todo-item .pack-item__check {
+  margin-top: 0.6rem;
+}
+.todo-item__body {
+  flex: 1;
+  min-width: 0;
+}
+.todo-item__title {
+  display: block;
+  padding-bottom: 0;
+}
+.todo-item__meta,
+.todo-item__note,
+.todo-item__link {
+  margin: 0;
+  padding: 0 var(--space-2);
+  font-size: 0.8125rem;
+  color: var(--color-ink-muted);
+}
+.todo-item__note {
+  margin-top: 2px;
+  color: var(--color-ink);
+}
+.todo-item__link {
+  margin-top: var(--space-1);
+  font-weight: 600;
+}
+.todo-due {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+.todo-due--urgent {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+.todo-item.is-packed .todo-item__note,
+.todo-item.is-packed .todo-item__meta {
+  opacity: 0.7;
+}
+.todo-editor {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+}
+.todo-editor__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+.todo-editor__field {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-ink-muted);
+}
+.todo-editor input,
+.todo-editor select,
+.add-item input[type='date'] {
+  min-height: 2.75rem;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  font-weight: 400;
+}
+.next-todos {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+}
+.next-todos__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-lg);
+}
+.next-todos__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+  padding: 0;
+  list-style: none;
+}
+.next-todos__list li {
+  display: grid;
+}
+.next-todos__item {
+  font-weight: 600;
+}
+.next-todos__meta,
+.next-todos__empty {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+.next-todos__empty {
+  margin-top: var(--space-2);
+}
+.next-todos__more {
+  font-weight: 700;
+  font-size: var(--text-sm);
 }
 
 /* ---------- Toasts ---------- */

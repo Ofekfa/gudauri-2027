@@ -50,6 +50,15 @@ export const SECTIONS: SectionItem[] = [
     inTabBar: true,
   },
   {
+    path: '/todo',
+    group: 'plan',
+    title: 'To-do',
+    navLabel: 'To-do',
+    icon: 'checklist',
+    blurb: 'Insurance, eSIM, check-in and other pre-flight tasks.',
+    inTabBar: false,
+  },
+  {
     path: '/packing',
     group: 'plan',
     title: 'Packing lists',
