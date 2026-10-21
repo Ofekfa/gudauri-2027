@@ -223,6 +223,8 @@ main:focus {
 /* ---------- Page ---------- */
 .page {
   max-width: var(--content-max);
+  /* Reserve the viewport so lazy-loaded pages don't push the footer around (CLS). */
+  min-height: calc(100dvh - var(--header-height));
   margin: 0 auto;
   padding: var(--space-5) var(--gutter) var(--space-7);
 }
