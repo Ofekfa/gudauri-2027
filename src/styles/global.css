@@ -1372,6 +1372,55 @@ main:focus {
   font-size: 0.75rem;
 }
 
+/* ---------- Georgian text ---------- */
+/* No web font: every major OS ships a Georgian-capable system font
+   (Apple: Helvetica/Helvetica Neue; Windows: Segoe UI, Calibri, Sylfaen; Android: Noto Sans Georgian). */
+:lang(ka) {
+  font-family:
+    'Noto Sans Georgian', 'Helvetica Neue', Helvetica, 'Segoe UI', Calibri, Sylfaen, sans-serif;
+}
+
+/* ---------- Word cards ---------- */
+.word-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--space-1);
+}
+.word-card__word {
+  margin: var(--space-2) 0 0;
+  font-size: clamp(2.25rem, 10vw, 3.25rem);
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--color-primary);
+  overflow-wrap: anywhere;
+}
+.word-card__translit {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-style: italic;
+  color: var(--color-ink-muted);
+}
+.fact-viewer__stage .word-card__meaning {
+  margin-top: var(--space-2);
+  font-size: var(--text-xl);
+}
+.word-card__meaning::first-letter {
+  text-transform: uppercase;
+}
+.word-card__note,
+.word-card__tip {
+  margin: 0;
+  font-size: var(--text-md);
+}
+.word-card__tip {
+  color: var(--color-ink-muted);
+}
+.word-card__speak {
+  align-self: flex-start;
+  margin-top: var(--space-2);
+}
+
 /* ---------- Toasts ---------- */
 .toasts {
   position: fixed;

@@ -3,7 +3,14 @@ import { PageHeader } from '../components/PageHeader';
 import { FACTS } from '../data/facts';
 import { detectSwipe, keyToDirection, wrapIndex, type SwipeDirection } from '../lib/facts/carousel';
 import { factSettings } from '../lib/facts/settings';
-import { FACT_TOPICS, TOPIC_EMOJI, TOPIC_LABEL, type FactTopic } from '../lib/facts/types';
+import {
+  FACT_TOPICS,
+  isWordFact,
+  TOPIC_EMOJI,
+  TOPIC_LABEL,
+  type FactTopic,
+} from '../lib/facts/types';
+import { WordCardBody } from '../components/facts/WordCard';
 
 type TopicFilter = FactTopic | 'all';
 
@@ -70,7 +77,7 @@ export default function FactsPage() {
     <>
       <PageHeader
         title="Fun facts"
-        subtitle={`${FACTS.length} things worth knowing about Gudauri, Georgia, its food and skiing.`}
+        subtitle={`${FACTS.length} things worth knowing about Gudauri, Georgia, its food, skiing and a few Georgian words.`}
       />
 
       <div class="facts-toolbar">
@@ -124,8 +131,14 @@ export default function FactsPage() {
             <p class="fact-card__topic">
               <span aria-hidden="true">{TOPIC_EMOJI[fact.topic]}</span> {TOPIC_LABEL[fact.topic]}
             </p>
-            <h2 class="fact-card__title">{fact.title}</h2>
-            <p class="fact-card__text">{fact.text}</p>
+            {isWordFact(fact) ? (
+              <WordCardBody fact={fact} />
+            ) : (
+              <>
+                <h2 class="fact-card__title">{fact.title}</h2>
+                <p class="fact-card__text">{fact.text}</p>
+              </>
+            )}
             <a
               class="fact-card__source"
               href={fact.source}
