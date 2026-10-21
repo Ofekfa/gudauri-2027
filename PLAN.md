@@ -6,8 +6,8 @@
 | ----- | ------------------------------------------------------------------------ | ------- | ------ |
 | 1     | Scaffold, tooling, CI, Pages, nav shell, trip config, countdown, flights | ✅ Done | v0.1.0 |
 | 2     | Avatars, map background, visual identity                                 | ✅ Done | v0.2.0 |
-| 3     | Packing list                                                             | ⏳ Next | v0.3.0 |
-| 4     | Fun facts + pop-ups                                                      | —       | v0.4.0 |
+| 3     | Packing list                                                             | ✅ Done | v0.3.0 |
+| 4     | Fun facts + pop-ups                                                      | ⏳ Next | v0.4.0 |
 | 5     | Skiing game                                                              | —       | v0.5.0 |
 | 6     | Voice AI assistant + Worker proxy                                        | —       | v0.6.0 |
 | 7     | Polish: a11y, perf, mobile QA                                            | —       | v1.0.0 |
@@ -20,6 +20,8 @@
 - Phase 1: ESLint is pinned to v9 because `eslint-plugin-jsx-a11y` doesn't support v10 yet.
 - Phase 2: map data comes straight from Overpass (OpenStreetMap). OpenSkiMap's worldwide GeoJSON is too large to clip for one resort, so it's credited and linked instead. 50 runs, 16 lifts, the hotel, the Friendship Monument and 6 peaks; regenerate with `npm run fetch:pistes`.
 - Phase 2: eye colors not given in the brief were chosen (Ron, Roy: brown; Maya: green) and can be edited in `src/data/characters.ts`. Skier pose uses a "pizza" wedge.
+- Between phases 2 and 3: avatar tweaks per feedback (Maya brown eyes + glasses, Roy undercut, Ofek warmer skin), tagged as part of v0.3.0.
+- Phase 3: a generic toast system (`src/lib/toast`) landed early because undo-delete needs it; Phase 4 fact pop-ups reuse it. Import confirmation is inline rather than a browser dialog. The starter template marks everything "Already have" by default.
 - Phase 2: the map page doesn't use pinch-zoom; zoom buttons (100–300%) plus native scrolling keep it simple and accessible. Phones open at 200%.
 
 ---
