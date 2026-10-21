@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { trip } from '../../data/trip';
-import { formatDayRange, formatDuration, formatInZone } from './format';
+import { formatAgo, formatDay, formatDayRange, formatDuration, formatInZone } from './format';
 
 describe('formatInZone', () => {
   it('shows the outbound departure in Israel time', () => {
@@ -48,5 +48,20 @@ describe('formatDayRange', () => {
   });
   it('handles ranges across months', () => {
     expect(formatDayRange('2027-02-27', '2027-03-02')).toBe('27 Feb–2 Mar 2027');
+  });
+});
+
+describe('formatDay / formatAgo', () => {
+  it('formats calendar days without zone drift', () => {
+    expect(formatDay('2026-10-22')).toBe('22 Oct 2026');
+  });
+
+  it('describes elapsed time', () => {
+    const now = Date.parse('2026-10-22T12:00:00Z');
+    expect(formatAgo(now - 10_000, now)).toBe('just now');
+    expect(formatAgo(now - 5 * 60_000, now)).toBe('5 min ago');
+    expect(formatAgo(now - 3 * 3_600_000, now)).toBe('3 h ago');
+    expect(formatAgo(now - 26 * 3_600_000, now)).toBe('1 day ago');
+    expect(formatAgo(now + 5_000, now)).toBe('just now');
   });
 });
