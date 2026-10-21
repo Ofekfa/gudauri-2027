@@ -1,6 +1,18 @@
 # Gudauri 2027 ⛷️
 
-A small companion website for our ski trip to Gudauri, Georgia (24–28 Feb 2027): a live countdown, flight details, personal packing lists, fun facts, a skiing game and a voice trip assistant.
+A small companion website for our ski trip to Gudauri, Georgia (24–28 Feb 2027).
+
+| Section                       | What it does                                                                                         |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Countdown** (`#/`)          | Live countdown to takeoff; "Day X of 5" during the trip; meet the crew                               |
+| **Flights** (`#/flights`)     | Both legs in each airport's local time, flight duration, baggage                                     |
+| **Packing** (`#/packing`)     | Per-person lists with categories, need-to-buy/have, filters, progress, starter template, JSON backup |
+| **Fun facts** (`#/facts`)     | 55 checked facts, one at a time (swipe / ← →), plus occasional pop-ups (mutable)                     |
+| **Ski map** (`#/map`)         | Original illustrated map of Gudauri's runs and lifts from OpenStreetMap                              |
+| **Ski game** (`#/game`)       | Canvas downhill game with all four characters and per-skier high scores                              |
+| **Assistant** (`#/assistant`) | Voice/text AI trip assistant on a free Cloudflare Workers AI model                                   |
+
+Mobile-first, with light and dark mode, and keyboard and screen-reader friendly. Lighthouse (mobile) scores 98–100 on every page.
 
 **Live site:** https://ofekfa.github.io/gudauri-2027/
 
