@@ -1,28 +1,55 @@
+import type { ComponentChild } from 'preact';
 import { AvatarFace } from '../../avatars/Avatar';
 import { CHARACTERS } from '../../data/characters';
 import { trip, type TravelerId } from '../../data/trip';
 
-interface ProfileSwitcherProps {
-  selected: TravelerId;
-  onSelect: (id: TravelerId) => void;
-  /** e.g. "12/30" under each name. */
-  summaries: Record<TravelerId, string>;
+export interface Profile<Id extends string> {
+  id: Id;
+  label: string;
+  /** Accent color for the selected outline. */
+  color: string;
+  avatar: ComponentChild;
 }
 
-export function ProfileSwitcher({ selected, onSelect, summaries }: ProfileSwitcherProps) {
+const AVATAR_SIZE = 48;
+
+/** The four travelers as switcher profiles (lists can append extra ones, e.g. "Shared"). */
+export const TRAVELER_PROFILES: Profile<TravelerId>[] = trip.travelers.map(({ id, name }) => ({
+  id,
+  label: name,
+  color: CHARACTERS[id].jacket,
+  avatar: <AvatarFace id={id} size={AVATAR_SIZE} decorative />,
+}));
+
+interface ProfileSwitcherProps<Id extends string> {
+  profiles: Profile<Id>[];
+  selected: Id;
+  onSelect: (id: Id) => void;
+  /** e.g. "12/30" under each name. */
+  summaries: Partial<Record<Id, string>>;
+  ariaLabel?: string;
+}
+
+export function ProfileSwitcher<Id extends string>({
+  profiles,
+  selected,
+  onSelect,
+  summaries,
+  ariaLabel = 'Whose list',
+}: ProfileSwitcherProps<Id>) {
   return (
-    <div class="profiles" role="group" aria-label="Whose list">
-      {trip.travelers.map(({ id, name }) => (
+    <div class="profiles" role="group" aria-label={ariaLabel}>
+      {profiles.map(({ id, label, color, avatar }) => (
         <button
           key={id}
           type="button"
           class="profile"
           aria-pressed={selected === id}
-          style={{ '--member-color': CHARACTERS[id].jacket }}
+          style={{ '--member-color': color }}
           onClick={() => onSelect(id)}
         >
-          <AvatarFace id={id} size={48} decorative />
-          <span class="profile__name">{name}</span>
+          {avatar}
+          <span class="profile__name">{label}</span>
           <span class="profile__summary">{summaries[id]}</span>
         </button>
       ))}

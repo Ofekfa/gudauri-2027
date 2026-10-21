@@ -1,9 +1,10 @@
 import { useMemo, useRef, useState } from 'preact/hooks';
 import { AddItemForm } from '../components/packing/AddItemForm';
-import { BackupPanel } from '../components/packing/BackupPanel';
+import { BackupPanel } from '../components/common/BackupPanel';
+import { ProgressSummary } from '../components/common/ProgressSummary';
+import { ProfileSwitcher, TRAVELER_PROFILES } from '../components/common/ProfileSwitcher';
 import { FilterBar } from '../components/packing/FilterBar';
 import { OWNERSHIP_HINT_ID, PackingItemRow } from '../components/packing/PackingItemRow';
-import { ProfileSwitcher } from '../components/packing/ProfileSwitcher';
 import { TemplateOffer } from '../components/packing/TemplateOffer';
 import { PageHeader } from '../components/PageHeader';
 import { PACKING_TEMPLATE } from '../data/packingTemplate';
@@ -18,12 +19,22 @@ import {
 import { filterItems, groupByCategory, progress, type Filters } from '../lib/packing/selectors';
 import { usePacking } from '../lib/packing/usePacking';
 import { appStore } from '../lib/storage/safeStorage';
+import { parseImport, serializeExport } from '../lib/packing/importExport';
+import type { ParseResult } from '../lib/list/backup';
+import type { PackingState } from '../lib/packing/model';
 import { toasts } from '../lib/toast/toastStore';
 
 const PROFILE_KEY = 'packing:profile';
 const UNDO_TOAST_MS = 6_000;
 const ALL_FILTERS: Filters = { category: 'all', status: 'all' };
 const DEFAULT_CATEGORY: Category = 'clothing';
+
+const TRAVELER_IDS = trip.travelers.map((t) => t.id);
+
+function parsePackingBackup(text: string): ParseResult<PackingState> {
+  const result = parseImport(text, TRAVELER_IDS);
+  return result.ok ? { ok: true, value: result.state } : result;
+}
 
 function initialProfile(): TravelerId {
   const stored = appStore.get(PROFILE_KEY);
@@ -95,7 +106,6 @@ export default function PackingPage() {
   );
 
   const filtersActive = filters.category !== 'all' || filters.status !== 'all';
-  const percent = stats.total ? Math.round((stats.packed / stats.total) * 100) : 0;
 
   return (
     <>
@@ -103,7 +113,12 @@ export default function PackingPage() {
         title="Packing lists"
         subtitle="Everyone has their own list. Tick things off as you pack."
       />
-      <ProfileSwitcher selected={traveler} onSelect={selectTraveler} summaries={summaries} />
+      <ProfileSwitcher
+        profiles={TRAVELER_PROFILES}
+        selected={traveler}
+        onSelect={selectTraveler}
+        summaries={summaries}
+      />
 
       {/* Everything below depends on the saved lists; render it in one go to avoid layout shift. */}
       {!loaded ? (
@@ -112,24 +127,15 @@ export default function PackingPage() {
         </p>
       ) : (
         <>
-          <section class="pack-summary" aria-labelledby="pack-summary-title">
-            <h2 id="pack-summary-title">{name}’s list</h2>
-            <p class="pack-summary__numbers">
-              <strong>
-                {stats.packed}/{stats.total}
-              </strong>{' '}
-              packed
-              {stats.needToBuy > 0 && (
-                <span class="pack-summary__buy">{stats.needToBuy} to buy</span>
-              )}
-            </p>
-            <progress
-              class="pack-progress"
-              max={100}
-              value={percent}
-              aria-label={`${name}: ${stats.packed} of ${stats.total} items packed`}
-            />
-          </section>
+          <ProgressSummary
+            id="pack-summary-title"
+            title={`${name}’s list`}
+            done={stats.packed}
+            total={stats.total}
+            doneLabel="packed"
+            badge={stats.needToBuy > 0 ? `${stats.needToBuy} to buy` : undefined}
+            ariaLabel={`${name}: ${stats.packed} of ${stats.total} items packed`}
+          />
 
           {!state.templateDecided[traveler] && (
             <TemplateOffer
@@ -206,7 +212,11 @@ export default function PackingPage() {
           </div>
 
           <BackupPanel
-            state={state}
+            fileStem="gudauri-packing"
+            scope="all four lists"
+            fileKind="a packing list"
+            serialize={(now) => serializeExport(state, now)}
+            parse={parsePackingBackup}
             onImport={(imported) => dispatch({ type: 'replaceAll', state: imported })}
           />
         </>

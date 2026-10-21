@@ -1,15 +1,17 @@
 import { useRef, useState } from 'preact/hooks';
-import { trip } from '../../data/trip';
-import { parseImport, serializeExport } from '../../lib/packing/importExport';
-import type { PackingState } from '../../lib/packing/model';
+import { backupFileName, MAX_IMPORT_BYTES, type ParseResult } from '../../lib/list/backup';
 import { Icon } from '../Icon';
 
-const TRAVELER_IDS = trip.travelers.map((t) => t.id);
-const MAX_IMPORT_BYTES = 1_000_000;
-
-interface BackupPanelProps {
-  state: PackingState;
-  onImport: (state: PackingState) => void;
+interface BackupPanelProps<T> {
+  /** File name stem, e.g. "gudauri-packing". */
+  fileStem: string;
+  /** What gets exported/replaced, e.g. "all four lists". */
+  scope: string;
+  /** What a valid file is, e.g. "a packing list". */
+  fileKind: string;
+  serialize: (now: Date) => string;
+  parse: (text: string) => ParseResult<T>;
+  onImport: (value: T) => void;
 }
 
 function download(filename: string, text: string) {
@@ -21,28 +23,36 @@ function download(filename: string, text: string) {
   URL.revokeObjectURL(url);
 }
 
-export function BackupPanel({ state, onImport }: BackupPanelProps) {
-  const [pending, setPending] = useState<{ fileName: string; state: PackingState } | null>(null);
+/** Export/import a whole store as JSON, with an inline (non-dialog) replace confirmation. */
+export function BackupPanel<T>({
+  fileStem,
+  scope,
+  fileKind,
+  serialize,
+  parse,
+  onImport,
+}: BackupPanelProps<T>) {
+  const [pending, setPending] = useState<{ fileName: string; value: T } | null>(null);
   const [message, setMessage] = useState<{ kind: 'error' | 'ok'; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const exportLists = () => {
     const now = new Date();
-    download(`gudauri-packing-${now.toISOString().slice(0, 10)}.json`, serializeExport(state, now));
-    setMessage({ kind: 'ok', text: 'Exported all four lists.' });
+    download(backupFileName(fileStem, now), serialize(now));
+    setMessage({ kind: 'ok', text: `Exported ${scope}.` });
   };
 
   const readFile = async (file: File | undefined) => {
     setPending(null);
     if (!file) return;
     if (file.size > MAX_IMPORT_BYTES) {
-      setMessage({ kind: 'error', text: 'That file is too large to be a packing list.' });
+      setMessage({ kind: 'error', text: `That file is too large to be ${fileKind}.` });
       return;
     }
-    const result = parseImport(await file.text(), TRAVELER_IDS);
+    const result = parse(await file.text());
     if (result.ok) {
       setMessage(null);
-      setPending({ fileName: file.name, state: result.state });
+      setPending({ fileName: file.name, value: result.value });
     } else {
       setMessage({ kind: 'error', text: result.error });
     }
@@ -77,15 +87,15 @@ export function BackupPanel({ state, onImport }: BackupPanelProps) {
       {pending && (
         <div class="confirm" role="alert">
           <p>
-            Replace <strong>all four lists</strong> on this device with “{pending.fileName}”? This
-            can’t be undone.
+            Replace <strong>{scope}</strong> on this device with “{pending.fileName}”? This can’t be
+            undone.
           </p>
           <div class="button-row">
             <button
               type="button"
               class="button button--danger"
               onClick={() => {
-                onImport(pending.state);
+                onImport(pending.value);
                 setPending(null);
                 setMessage({ kind: 'ok', text: 'Lists imported.' });
               }}
