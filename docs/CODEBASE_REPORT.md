@@ -1,6 +1,57 @@
 # Gudauri 2027 — Codebase Report
 
-_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`). Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
+_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.0 (`v1.1.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
+
+## Changelog since v1.0.0
+
+### Phase 8.0 — Foundations (`v1.1.0`)
+
+**Navigation**
+
+- Sections carry `group: 'plan' | 'tools' | 'fun'` (`GROUP_LABEL`, `MORE_GROUPS` in `src/navigation.ts`).
+- The **desktop header shows the same 5 items as the mobile tab bar** (`TAB_BAR_ITEMS`), with More highlighted for sections under it.
+- The More page is grouped by heading.
+- The tab bar is still Home · Flights · Packing · Game · More. Itinerary and Weather replace Flights and Game in 8.4/8.5.
+
+**Worker**
+
+- `worker/src/router.ts` is a route table with a shared pipeline: path → origin → preflight → method → per-route per-IP rate limit → handler. Routes live in `worker/src/routes/`, with helpers in `cors.ts` and `http.ts`; types are in `env.ts` (`RATE_LIMITER`, `RL_DATA?`, `CACHE?`).
+- `worker/src/cache.ts`: `getOrRefresh` (TTL + stale-on-error + validation), backed by KV when `CACHE` is bound, plus an isolate memory layer. The Cache API isn't used, since it's only documented for custom domains.
+- `/health` and `/chat` behaviour is unchanged; verified live.
+
+**Worker CI deploy**
+
+- `.github/workflows/worker-deploy.yml` deploys on pushes to `main` touching `worker/**`, `src/data/**`, `src/lib/facts/types.ts` or `src/lib/{weather,itinerary,currency}/**`.
+- It uses `cloudflare/wrangler-action@v4` with the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets.
+- Without the secrets it tests and skips the deploy with a warning. **The secrets are pending Ofek's manual step**; until then, deploys are still manual.
+
+**List toolkit**
+
+- `src/lib/list/`: `ids`, `text` (`normalizeText`), `backup` (`ParseResult<T>`, `backupFileName`).
+- `src/components/common/`:
+  - `ProfileSwitcher<Id>`, with `profiles` and `TRAVELER_PROFILES`;
+  - `ProgressSummary`;
+  - `BackupPanel<T>`, with injected `serialize`/`parse`.
+- Packing uses all of them; behaviour and stored data are unchanged (regression-tested).
+
+**Storage**
+
+- `src/lib/storage/versioned.ts`: `loadVersioned`/`saveVersioned`, with an inline `version`, migrations and statuses `empty | ok | migrated | corrupt | future`.
+- The packing repository adopts it, with the same format.
+
+**Facts**
+
+- `BaseFact` / `GeneralFact` / `Fact` union in `src/lib/facts/types.ts`; `WordFact` joins in 8.1.
+
+**Housekeeping**
+
+- Stale `PLAN.md` and `CLAUDE.md` lines fixed.
+- The Worker is on TypeScript **6.0.3**, the same as the site.
+- `jsdom` removed.
+- The CSP decision is recorded in `PLAN.md`: none for now.
+- Lesson: in-place `npm install` can drop optional platform bindings from a lockfile (npm/cli#4828). Regenerate it from scratch if CI reports "Cannot find native binding".
+
+**Tests:** 107 site + 22 Worker.
 
 ## 1. Overview
 
