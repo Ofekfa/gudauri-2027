@@ -58,7 +58,6 @@ export const SECTIONS: NavItem[] = [
     icon: 'bulb',
     blurb: 'Skiing, Gudauri, Georgia and food.',
     inTabBar: false,
-    comingSoon: true,
   },
   {
     path: '/map',
