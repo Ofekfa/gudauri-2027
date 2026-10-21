@@ -1,3 +1,5 @@
+import { WORKER_URL } from '../lib/worker/config';
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -33,8 +35,7 @@ export function errorKindForStatus(status: number): AssistantErrorKind {
   return 'server';
 }
 
-const baseUrl = (import.meta.env.VITE_ASSISTANT_URL ?? '').trim().replace(/\/+$/, '');
-export const ASSISTANT_URL: string | null = baseUrl || null;
+export const ASSISTANT_URL = WORKER_URL;
 
 export async function askAssistant(
   history: readonly ChatMessage[],

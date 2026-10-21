@@ -57,3 +57,27 @@ export function formatDayRange(firstDay: string, lastDay: string): string {
   const end = fmt(lastDay, { day: 'numeric', month: 'short', year: 'numeric' });
   return `${start}–${end}`;
 }
+
+/** "22 Oct 2026" for a calendar day (YYYY-MM-DD), independent of the viewer's zone. */
+export function formatDay(day: string): string {
+  return new Intl.DateTimeFormat(LOCALE, {
+    timeZone: 'UTC',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(Date.parse(`${day}T00:00:00Z`));
+}
+
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+/** "just now", "5 min ago", "3 h ago", "2 days ago". */
+export function formatAgo(thenMs: number, nowMs: number): string {
+  const diff = Math.max(0, nowMs - thenMs);
+  if (diff < MINUTE_MS) return 'just now';
+  if (diff < HOUR_MS) return `${Math.floor(diff / MINUTE_MS)} min ago`;
+  if (diff < DAY_MS) return `${Math.floor(diff / HOUR_MS)} h ago`;
+  const days = Math.floor(diff / DAY_MS);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}

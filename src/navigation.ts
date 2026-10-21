@@ -77,6 +77,15 @@ export const SECTIONS: SectionItem[] = [
     inTabBar: false,
   },
   {
+    path: '/currency',
+    group: 'tools',
+    title: 'Currency',
+    navLabel: 'Currency',
+    icon: 'coins',
+    blurb: 'Shekels ⇄ lari ⇄ euros, plus a cheat sheet.',
+    inTabBar: false,
+  },
+  {
     path: '/map',
     group: 'tools',
     title: 'Ski map',

@@ -12,8 +12,8 @@ import { toasts } from '../../lib/toast/toastStore';
 
 /** How often to check whether a fact is due (cheap; the gate does the real limiting). */
 const CHECK_INTERVAL_MS = 5_000;
-/** Pages where a pop-up would get in the way. */
-const BLOCKED_PATHS = new Set(['/game', '/facts']);
+/** Pages where a pop-up would get in the way (games, the facts page itself, input-heavy tools). */
+const BLOCKED_PATHS = new Set(['/game', '/facts', '/currency']);
 
 /** Invisible: occasionally shows a fun fact as a toast. */
 export function FactPopups({ path }: { path: string }) {
