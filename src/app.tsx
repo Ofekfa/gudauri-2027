@@ -8,6 +8,7 @@ import { useHashPath } from './lib/router/hashRouter';
 import { findNavItem, HOME } from './navigation';
 import { ComingSoonPage } from './pages/ComingSoonPage';
 import { FlightsPage } from './pages/FlightsPage';
+import { GamePlaceholderPage } from './pages/GamePlaceholderPage';
 import { HomePage } from './pages/HomePage';
 import { MorePage } from './pages/MorePage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -15,6 +16,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 const PAGES: Record<string, ComponentType> = {
   '/': HomePage,
   '/flights': FlightsPage,
+  '/game': GamePlaceholderPage,
   '/more': MorePage,
 };
 
