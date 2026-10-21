@@ -21,7 +21,7 @@ export interface MapLift {
   kind: LiftKind;
   path: string;
   /** Bottom and top station positions in map units. */
-  stations: [number, number][];
+  stations: [bottom: [number, number], top: [number, number]];
   lengthM: number;
 }
 
