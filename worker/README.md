@@ -10,6 +10,19 @@ A tiny serverless proxy between the static site and a **free** AI model on [Clou
   - Max 500 characters per message, last 10 messages only, 16 kB body cap, 320-token answers.
 - **Free-tier friendly:** Workers AI includes a daily allowance (10,000 "neurons"). With the default 8B model that's several hundred questions a day. Once it's used up, the API returns 503 and the site says to try tomorrow; nothing is ever billed on the free plan.
 
+## Code layout
+
+| File                             | Role                                                                                                                                                                                                                                         |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/index.ts`                   | Wires the route table; default export for Workers                                                                                                                                                                                            |
+| `src/router.ts`                  | Shared pipeline: path → origin allowlist → CORS preflight → method → per-IP rate limit → handler                                                                                                                                             |
+| `src/cors.ts`, `src/http.ts`     | CORS headers and JSON helpers                                                                                                                                                                                                                |
+| `src/cache.ts`                   | `getOrRefresh`: read-through cache with TTL + stale-on-error. KV (`CACHE` binding) when configured, plus a per-isolate memory layer. The Cache API isn't used, because it's only documented as working on custom domains, not `workers.dev`. |
+| `src/routes/*.ts`                | One file per route                                                                                                                                                                                                                           |
+| `src/prompt.ts`, `src/limits.ts` | System prompt (from the site's `src/data`) and limits                                                                                                                                                                                        |
+
+To add a route, create `src/routes/<name>.ts` exporting a `Route` (method, path, `rateLimit` binding, handler) and add it to the list in `src/index.ts`.
+
 ## API
 
 `POST /chat` with `{"messages":[{"role":"user","content":"When do we land back home?"}]}`
