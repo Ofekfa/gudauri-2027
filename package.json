@@ -16,7 +16,8 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "fetch:pistes": "node scripts/fetch-pistes.ts"
+    "fetch:pistes": "node scripts/fetch-pistes.ts",
+    "fetch:rates": "node scripts/fetch-rates.ts"
   },
   "dependencies": {
     "preact": "^11.0.1"

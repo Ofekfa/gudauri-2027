@@ -26,6 +26,8 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      # Bakes the latest official rate in for offline use; keeps the committed one if NBG is down.
+      - run: npm run fetch:rates
       - run: npm run build
         env:
           VITE_ASSISTANT_URL: ${{ vars.VITE_ASSISTANT_URL }}

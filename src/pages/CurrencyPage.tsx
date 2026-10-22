@@ -182,12 +182,19 @@ export default function CurrencyPage() {
         )
       ) : (
         <>
-          {(status === 'offline' || rates.stale) && (
+          {status === 'approximate' ? (
             <p class="note note--warning" role="status">
-              {status === 'offline'
-                ? `You’re offline: showing the last rates saved on this phone (${formatDay(rates.validFrom)}).`
-                : 'The rate service is having trouble; these are the most recent rates we have.'}
+              <strong>Approximate:</strong> official rate from {formatDay(rates.validFrom)}, built
+              into the app. Connect once to get today’s rate.
             </p>
+          ) : (
+            (status === 'offline' || rates.stale) && (
+              <p class="note note--warning" role="status">
+                {status === 'offline'
+                  ? `You’re offline: showing the last rates saved on this phone (${formatDay(rates.validFrom)}).`
+                  : 'The rate service is having trouble; these are the most recent rates we have.'}
+              </p>
+            )
           )}
           <Converter gelPer={rates.gelPer} />
 
