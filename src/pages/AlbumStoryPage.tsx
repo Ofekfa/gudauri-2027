@@ -1,14 +1,14 @@
 import { useState } from 'preact/hooks';
 import { PageHeader } from '../components/PageHeader';
 import { storySlides } from '../lib/album/selectors';
-import { imageUrl } from '../lib/album/service';
+import { imageUrl, momentsOf } from '../lib/album/service';
 import { useAlbum } from '../lib/album/useAlbum';
 import { useCarousel } from '../components/album/useCarousel';
 import { wrapIndex, type SwipeDirection } from '../lib/facts/carousel';
 
 export default function AlbumStoryPage() {
   const album = useAlbum();
-  const slides = storySlides(album.listing.photos);
+  const slides = storySlides(album.listing.photos, momentsOf(album));
   const [index, setIndex] = useState(0);
   const position = Math.min(index, Math.max(0, slides.length - 1));
   const slide = slides[position];

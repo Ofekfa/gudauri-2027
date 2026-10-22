@@ -16,6 +16,8 @@ export interface AlbumFrame {
   dateHint?: string;
   /** Extra frames after the story; not counted in progress. */
   bonus?: boolean;
+  /** Added by us on the site (stored by the Worker), not predefined here. */
+  custom?: true;
 }
 
 export const MAX_PHOTOS_PER_FRAME = 30;

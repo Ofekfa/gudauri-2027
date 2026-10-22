@@ -5,11 +5,14 @@
 import { WORKER_URL } from '../worker/config';
 import {
   parseListing,
+  parseMomentResponse,
   parsePhotoResponse,
   type AlbumFrameState,
   type AlbumListing,
   type AlbumPhoto,
+  type CustomMoment,
   type ImageSize,
+  type MomentInput,
   type UploadMeta,
 } from './protocol';
 
@@ -37,7 +40,14 @@ export interface AlbumRepository {
     version: number,
   ): Promise<EditOutcome<AlbumFrameState>>;
   remove(token: string, photoId: string): Promise<boolean>;
+  createMoment(token: string, input: MomentInput): Promise<MomentOutcome>;
+  editMoment(token: string, id: string, patch: Partial<MomentInput>): Promise<MomentOutcome>;
+  /** True if it's gone (deleted now, or already). */
+  deleteMoment(token: string, id: string): Promise<boolean>;
 }
+
+export type MomentOutcome =
+  { ok: true; moment: CustomMoment } | { ok: false; status: number; error: string };
 
 /** What happened to an upload: done, worth retrying later, or a definite failure. */
 export type UploadOutcome =
@@ -45,10 +55,14 @@ export type UploadOutcome =
   | { kind: 'retry'; status: number; reason?: string }
   | { kind: 'failed'; status: number; reason: string };
 
+/** Upload refused because the moment was deleted (also used when the listing drops it). */
+export const MOMENT_GONE = 'This moment was deleted.';
+
 const FAILURE_REASON: Record<number, string> = {
   400: 'This photo couldn’t be added.',
   409: 'This frame is full (30 photos).',
   413: 'This photo is too large.',
+  410: MOMENT_GONE,
   415: 'Only photos can be added.',
 };
 
@@ -90,7 +104,35 @@ export function createRemoteAlbumRepository(base: string | null = WORKER_URL): A
     return { ok: false, status: res.status };
   }
 
+  async function moment(path: string, method: string, token: string, body: unknown) {
+    const res = await fetch(url(path), {
+      method,
+      headers: json(token),
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    const raw: unknown = await res.json().catch(() => null);
+    if (res.ok) return { ok: true as const, moment: parseMomentResponse(raw) };
+    const error = (raw as { error?: unknown } | null)?.error;
+    return {
+      ok: false as const,
+      status: res.status,
+      error: typeof error === 'string' ? error : `The server had a problem (${res.status}).`,
+    };
+  }
+
   return {
+    createMoment: (token, input) => moment('/album/moments', 'POST', token, input),
+    editMoment: (token, id, patch) =>
+      moment(`/album/moments/${encodeURIComponent(id)}`, 'PATCH', token, patch),
+    async deleteMoment(token, id) {
+      const res = await fetch(url(`/album/moments/${encodeURIComponent(id)}`), {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      return res.ok || res.status === 404;
+    },
     async list() {
       const res = await fetch(url('/album'), { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
       if (!res.ok) throw new Error(`Album unavailable (${res.status})`);

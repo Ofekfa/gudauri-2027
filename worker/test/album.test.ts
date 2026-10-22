@@ -1,16 +1,24 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MAX_PHOTOS_PER_FRAME } from '../../src/data/album';
 import { hasExif } from '../../src/lib/album/jpeg';
-import { MAX_FULL_BYTES, MAX_UPLOAD_BYTES, type AlbumPhoto } from '../../src/lib/album/protocol';
+import {
+  MAX_CUSTOM_MOMENTS,
+  MAX_FULL_BYTES,
+  MAX_UPLOAD_BYTES,
+  type AlbumPhoto,
+} from '../../src/lib/album/protocol';
 import { MAX_BODY_BYTES } from '../src/limits';
 import {
   addPhoto,
+  createMoment,
+  deleteMoment,
   listing,
   memoryImageDb,
   memoryIndexDb,
   removePhoto,
   setCaption,
   setCover,
+  updateMoment,
   type ImageDb,
 } from '../src/album/logic';
 import { signToken, verifyToken } from '../src/album/token';
@@ -71,6 +79,11 @@ function fakeAlbum() {
     },
     getImage: async (id, size) => images(name).get(id, size),
     deleteImages: async (id) => images(name).delete(id),
+    deleteAllImages: async () => images(name).deleteAll(),
+    getMoment: async (id) => idx.getMoment(id),
+    createMoment: async (input, meta) => createMoment(idx, input, meta),
+    updateMoment: async (id, patch) => updateMoment(idx, id, patch),
+    deleteMoment: async (id) => deleteMoment(idx, id),
   });
   return { ns: { idFromName: (n: string) => n, get: (n: unknown) => stub(n as string) }, images };
 }
@@ -355,5 +368,162 @@ describe('album photos', () => {
     };
     expect(after.frames.skiing?.coverPhotoId).toBeUndefined();
     expect((await call('/album/photos/photo-bbbb/image', { origin: null })).status).toBe(404);
+  });
+});
+
+describe('custom moments', () => {
+  const breakfast = {
+    title: 'Breakfast',
+    emoji: '🥐',
+    prompt: 'Khachapuri for breakfast?',
+    after: 'bar',
+  };
+  type Call = ReturnType<typeof setup>['call'];
+  const post = (call: Call, token: string, body: unknown) =>
+    call('/album/moments', { method: 'POST', token, body: JSON.stringify(body) });
+  const patch = (call: Call, token: string, id: string, body: unknown) =>
+    call(`/album/moments/${id}`, { method: 'PATCH', token, body: JSON.stringify(body) });
+  const listed = async (call: Call) =>
+    (await (await call('/album')).json()) as {
+      moments: { id: string; title: string; orderKey: string; prompt?: string }[];
+      photos: AlbumPhoto[];
+      frames: Record<string, unknown>;
+    };
+  type Created = { id: string; orderKey: string; title: string; createdBy: string };
+
+  it('needs a token, and the album to be set up', async () => {
+    const { call } = setup();
+    expect((await post(call, '', breakfast)).status).toBe(401);
+    const off = setup({ ALBUM_SIGNING_KEY: undefined });
+    expect((await post(off.call, 'whatever', breakfast)).status).toBe(501);
+  });
+
+  it('adds a moment after the chosen one, with a server id, and lists it', async () => {
+    const { call, session } = setup();
+    const token = await session('roy');
+    const res = await post(call, token, breakfast);
+    expect(res.status).toBe(201);
+    const moment = (await res.json()) as Created;
+    expect(moment).toMatchObject({
+      title: 'Breakfast',
+      emoji: '🥐',
+      createdBy: 'roy',
+      custom: true,
+    });
+    expect(moment.id).toMatch(/^m-[0-9a-z]{10}$/);
+    expect((await listed(call)).moments.map((m) => m.id)).toEqual([moment.id]);
+  });
+
+  it('validates title, emoji, prompt and place, and cleans text', async () => {
+    const { call, session } = setup();
+    const token = await session();
+    for (const bad of [
+      { ...breakfast, title: '' },
+      { ...breakfast, title: 'x'.repeat(41) },
+      { ...breakfast, emoji: '💩' },
+      { ...breakfast, prompt: 'p'.repeat(81) },
+      { ...breakfast, after: 'nowhere' },
+      { ...breakfast, after: undefined },
+    ])
+      expect((await post(call, token, bad)).status).toBe(400);
+    expect((await call('/album/moments', { method: 'POST', token, body: '{' })).status).toBe(400);
+    const res = await post(call, token, { ...breakfast, title: '  Late‮  breakfast\n' });
+    expect(((await res.json()) as Created).title).toBe('Late breakfast');
+  });
+
+  it('caps the number of our own moments', async () => {
+    const { call, session } = setup();
+    const token = await session();
+    for (let i = 0; i < MAX_CUSTOM_MOMENTS; i++)
+      expect((await post(call, token, { ...breakfast, title: `M${i}` })).status).toBe(201);
+    expect((await post(call, token, breakfast)).status).toBe(409);
+  });
+
+  it('refuses to change or delete predefined moments (403)', async () => {
+    const { call, session } = setup();
+    const token = await session();
+    expect((await patch(call, token, 'snowman', { title: 'Snow dude' })).status).toBe(403);
+    expect((await call('/album/moments/snowman', { method: 'DELETE', token })).status).toBe(403);
+    expect((await call('/album/moments/m-0000000000', { method: 'DELETE', token })).status).toBe(
+      404,
+    );
+  });
+
+  it('edits only the given fields, and moves without renumbering others', async () => {
+    const { call, session } = setup();
+    const token = await session();
+    const a = (await (await post(call, token, breakfast)).json()) as Created;
+    const b = (await (
+      await post(call, token, { ...breakfast, title: 'Sauna', after: 'gondola' })
+    ).json()) as Created;
+    // Two of us at once: one renames, the other moves. Both changes stay.
+    const [rename, move] = await Promise.all([
+      patch(call, token, a.id, { title: 'Brunch' }),
+      patch(call, token, a.id, { after: 'snowman' }),
+    ]);
+    expect([rename.status, move.status]).toEqual([200, 200]);
+    const list = await listed(call);
+    const moved = list.moments.find((m) => m.id === a.id)!;
+    expect(moved.title).toBe('Brunch');
+    expect(moved.orderKey).not.toBe(a.orderKey);
+    expect(list.moments.find((m) => m.id === b.id)!.orderKey).toBe(b.orderKey);
+    const cleared = await patch(call, token, a.id, { prompt: '' });
+    expect(((await cleared.json()) as { prompt?: string }).prompt).toBeUndefined();
+    expect((await patch(call, token, a.id, { after: a.id })).status).toBe(400);
+    expect((await patch(call, token, a.id, { emoji: '💩' })).status).toBe(400);
+  });
+
+  it('takes photos and covers like any moment, and deleting removes them all', async () => {
+    const { call, session, upload, album } = setup();
+    const token = await session();
+    const m = (await (await post(call, token, breakfast)).json()) as Created;
+    expect((await upload(token, m.id, 'photo-b001')).status).toBe(201);
+    expect((await upload(token, m.id, 'photo-b002')).status).toBe(201);
+    expect((await upload(token, 'snowman', 'photo-s001')).status).toBe(201);
+    const cover = await call(`/album/${m.id}/cover`, {
+      method: 'PUT',
+      token,
+      body: JSON.stringify({ photoId: 'photo-b002' }),
+    });
+    expect(cover.status).toBe(200);
+
+    expect((await call(`/album/moments/${m.id}`, { method: 'DELETE', token })).status).toBe(204);
+    const list = await listed(call);
+    expect(list.moments).toEqual([]);
+    expect(list.photos.map((p) => p.id)).toEqual(['photo-s001']);
+    expect(list.frames[m.id]).toBeUndefined();
+    expect(album.images(`frame:${m.id}`).get('photo-b001', 'full')).toBeNull();
+    expect(album.images('frame:snowman').get('photo-s001', 'full')).not.toBeNull();
+    const img = await call('/album/photos/photo-b001/image?size=thumb', { origin: null });
+    expect(img.status).toBe(404);
+
+    // A photo still queued on someone's phone for the deleted moment.
+    const late = await upload(token, m.id, 'photo-b003');
+    expect(late.status).toBe(410);
+    expect(((await late.json()) as { error: string }).error).toBe('This moment was deleted');
+    expect((await upload(token, 'not-a-moment', 'photo-x001')).status).toBe(400);
+  });
+
+  it('keeps both moments when two of us add at the same spot', async () => {
+    const { call, session } = setup();
+    const token = await session();
+    const [one, two] = await Promise.all([
+      post(call, token, { ...breakfast, title: 'One' }),
+      post(call, token, { ...breakfast, title: 'Two' }),
+    ]);
+    expect([one.status, two.status]).toEqual([201, 201]);
+    const keys = (await listed(call)).moments.map((m) => m.orderKey);
+    expect(new Set(keys).size).toBe(2);
+  });
+
+  it('allows PATCH and DELETE on moments in the CORS preflight', async () => {
+    const { call } = setup();
+    const res = await call('/album/moments/m-0000000000', {
+      method: 'OPTIONS',
+      headers: { 'Access-Control-Request-Method': 'PATCH' },
+    });
+    expect(res.status).toBe(204);
+    expect(res.headers.get('Access-Control-Allow-Methods')).toContain('PATCH');
+    expect(res.headers.get('Access-Control-Allow-Methods')).toContain('DELETE');
   });
 });

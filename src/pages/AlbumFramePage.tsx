@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { ParamPageProps } from '../app';
 import { AddPhotoButtons } from '../components/album/AddPhotoButtons';
 import { AlbumJoin } from '../components/album/AlbumJoin';
+import { MomentForm } from '../components/album/MomentForm';
 import { PageHeader } from '../components/PageHeader';
 import { AvatarFace } from '../avatars/Avatar';
-import { findFrame, MAX_CAPTION_CHARS } from '../data/album';
+import { MAX_CAPTION_CHARS } from '../data/album';
 import { trip } from '../data/trip';
 import {
   coverFor,
@@ -14,10 +15,13 @@ import {
   viewerIndex,
 } from '../lib/album/selectors';
 import {
+  deleteMoment,
   deletePhoto,
   editCaption,
+  editMoment,
   imageUrl,
   makeCover,
+  momentsOf,
   retryUpload,
   visiblePhotos,
 } from '../lib/album/service';
@@ -31,13 +35,21 @@ import { formatInZone } from '../lib/time/format';
 
 const ALBUM_BACK = { path: '/album', label: 'Album' };
 
+/** The moment just before this one in story order ("Place after" when editing). */
+function momentBefore(moments: readonly { id: string }[], id: string): string {
+  const i = moments.findIndex((m) => m.id === id);
+  return moments[Math.max(0, i - 1)]!.id;
+}
+
 export default function AlbumFramePage({ params }: ParamPageProps) {
   const [frameId, photoId] = params;
-  const frame = findFrame(frameId ?? '');
   const album = useAlbum();
+  const moments = momentsOf(album);
+  const frame = moments.find((m) => m.id === frameId);
   const settings = useSyncSettings();
   const joined = isJoined(settings);
-  const photos = frame ? (photosByFrame(visiblePhotos(album)).get(frame.id) ?? []) : [];
+  const photos = frame ? (photosByFrame(visiblePhotos(album), moments).get(frame.id) ?? []) : [];
+  const [momentMode, setMomentMode] = useState<'view' | 'edit' | 'delete'>('view');
   const [index, setIndex] = useState(() => viewerIndex(photos, photoId));
   const [confirming, setConfirming] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -73,6 +85,15 @@ export default function AlbumFramePage({ params }: ParamPageProps) {
     setIndex((i) => wrapIndex(i + (dir === 'next' ? 1 : -1), photos.length));
   const swipe = useCarousel(go, photos.length > 1);
 
+  if (!frame && album.status !== 'ready' && album.status !== 'error') {
+    // One of our own moments: it's known once the album has loaded.
+    return (
+      <>
+        <PageHeader title="Album" back={ALBUM_BACK} />
+        <p class="card">Loading…</p>
+      </>
+    );
+  }
   if (!frame) {
     return (
       <>
@@ -93,9 +114,68 @@ export default function AlbumFramePage({ params }: ParamPageProps) {
     <article class="album-viewer">
       <PageHeader
         title={`${frame.emoji} ${frame.title}`}
-        subtitle={frame.prompt}
+        subtitle={frame.prompt || undefined}
         back={ALBUM_BACK}
       />
+
+      {frame.custom && joined && (
+        <section class="moment-manage" aria-label="Our moment">
+          {momentMode === 'edit' ? (
+            <MomentForm
+              idPrefix="edit-moment"
+              moments={moments}
+              editingId={frame.id}
+              initial={{
+                title: frame.title,
+                emoji: frame.emoji,
+                prompt: frame.prompt,
+                after: momentBefore(moments, frame.id),
+              }}
+              submitLabel="Save"
+              onSubmit={async (input) => {
+                const before = momentBefore(moments, frame.id);
+                void editMoment(frame.id, {
+                  ...(input.title !== frame.title ? { title: input.title } : {}),
+                  ...(input.emoji !== frame.emoji ? { emoji: input.emoji } : {}),
+                  ...(input.prompt !== frame.prompt ? { prompt: input.prompt } : {}),
+                  ...(input.after !== before ? { after: input.after } : {}),
+                });
+                return true;
+              }}
+              onCancel={() => setMomentMode('view')}
+            />
+          ) : momentMode === 'delete' ? (
+            <p class="album-viewer__confirm" role="group" aria-label="Delete this moment?">
+              {photos.length
+                ? `Delete “${frame.title}” and its ${photos.length} photo${photos.length > 1 ? 's' : ''} for everyone?`
+                : `Delete “${frame.title}” for everyone?`}
+              <button
+                type="button"
+                class="button button--danger"
+                onClick={async () => {
+                  setMomentMode('view');
+                  location.hash = href('/album');
+                  await deleteMoment(frame.id);
+                }}
+              >
+                Delete
+              </button>
+              <button type="button" class="button" onClick={() => setMomentMode('view')}>
+                Keep
+              </button>
+            </p>
+          ) : (
+            <div class="button-row">
+              <button type="button" class="button" onClick={() => setMomentMode('edit')}>
+                Edit moment
+              </button>
+              <button type="button" class="button" onClick={() => setMomentMode('delete')}>
+                Delete moment
+              </button>
+            </div>
+          )}
+        </section>
+      )}
 
       {photos.length === 0 ? (
         <p class="card album-viewer__empty">

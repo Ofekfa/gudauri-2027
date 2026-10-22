@@ -366,4 +366,30 @@ describe('upload queue', () => {
     expect(q.calls).toHaveLength(1);
     expect(q.queue.getView().items[0]!.state).toBe('waiting-offline');
   });
+
+  it('fails photos queued for a moment that was deleted elsewhere, leaving others', async () => {
+    let release: (o: UploadOutcome) => void = () => {};
+    const q = setup((id) =>
+      id === 'photo-running' ? new Promise((r) => (release = r)) : { kind: 'retry', status: 503 },
+    );
+    await q.queue.start();
+    void q.queue.enqueue([{ ...item('photo-running'), frameId: 'm-gone000001' }]);
+    await vi.advanceTimersByTimeAsync(0);
+    await q.queue.enqueue([{ ...item('photo-gone'), frameId: 'm-gone000001' }, item('photo-kept')]);
+    await q.queue.failMissing((id) => id !== 'm-gone000001', 'This moment was deleted.');
+    const byId = Object.fromEntries(q.queue.getView().items.map((i) => [i.id, i]));
+    expect(byId['photo-gone']).toMatchObject({
+      state: 'failed',
+      error: 'This moment was deleted.',
+    });
+    expect(byId['photo-kept']!.state).not.toBe('failed');
+    // The one already uploading gets the server's 410 instead.
+    expect(byId['photo-running']!.state).toBe('uploading');
+    release({ kind: 'failed', status: 410, reason: 'This moment was deleted.' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(q.queue.getView().items.find((i) => i.id === 'photo-running')).toMatchObject({
+      state: 'failed',
+      error: 'This moment was deleted.',
+    });
+  });
 });

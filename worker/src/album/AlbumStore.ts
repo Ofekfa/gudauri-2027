@@ -8,20 +8,50 @@ import type {
   AlbumFrameState,
   AlbumListing,
   AlbumPhoto,
+  CustomMoment,
   ImageSize,
+  MomentInput,
 } from '../../../src/lib/album/protocol';
 import type { Env } from '../env';
+import type { TravelerId } from '../../../src/data/trip';
 import {
   addPhoto,
+  createMoment,
+  deleteMoment,
   listing,
   removePhoto,
   setCaption,
   setCover,
+  updateMoment,
   type AddResult,
   type EditResult,
   type ImageDb,
   type IndexDb,
+  type MomentResult,
 } from './logic';
+
+interface MomentRow extends Record<string, SqlStorageValue> {
+  id: string;
+  title: string;
+  emoji: string;
+  prompt: string | null;
+  order_key: string;
+  created_by: string;
+  created_at: string;
+  version: number;
+}
+
+const toMoment = (r: MomentRow): CustomMoment => ({
+  id: r.id,
+  title: r.title,
+  emoji: r.emoji,
+  ...(r.prompt ? { prompt: r.prompt } : {}),
+  orderKey: r.order_key,
+  createdBy: r.created_by as TravelerId,
+  createdAt: r.created_at,
+  custom: true,
+  version: r.version,
+});
 
 interface PhotoRow extends Record<string, SqlStorageValue> {
   id: string;
@@ -57,6 +87,8 @@ function sqlIndexDb(sql: SqlStorage): IndexDb {
   sql.exec(
     'CREATE TABLE IF NOT EXISTS frames (frame_id TEXT PRIMARY KEY, cover_photo_id TEXT, version INTEGER NOT NULL)',
   );
+  sql.exec(`CREATE TABLE IF NOT EXISTS moments (id TEXT PRIMARY KEY, title TEXT NOT NULL, emoji TEXT NOT NULL,
+    prompt TEXT, order_key TEXT NOT NULL, created_by TEXT NOT NULL, created_at TEXT NOT NULL, version INTEGER NOT NULL)`);
   const frameRow = (r: {
     frame_id: string;
     cover_photo_id: string | null;
@@ -117,6 +149,30 @@ function sqlIndexDb(sql: SqlStorage): IndexDb {
           .toArray()
           .map(frameRow),
       ),
+    deleteFrame: (id) => void sql.exec('DELETE FROM frames WHERE frame_id = ?', id),
+    photosInFrame: (frameId) =>
+      sql.exec<PhotoRow>('SELECT * FROM photos WHERE frame_id = ?', frameId).toArray().map(toPhoto),
+    getMoment: (id) => {
+      const row = sql.exec<MomentRow>('SELECT * FROM moments WHERE id = ?', id).toArray()[0];
+      return row ? toMoment(row) : null;
+    },
+    putMoment: (m) => {
+      sql.exec(
+        `INSERT INTO moments (id, title, emoji, prompt, order_key, created_by, created_at, version)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO UPDATE SET title = excluded.title,
+         emoji = excluded.emoji, prompt = excluded.prompt, order_key = excluded.order_key, version = excluded.version`,
+        m.id,
+        m.title,
+        m.emoji,
+        m.prompt ?? null,
+        m.orderKey,
+        m.createdBy,
+        m.createdAt,
+        m.version,
+      );
+    },
+    deleteMoment: (id) => void sql.exec('DELETE FROM moments WHERE id = ?', id),
+    listMoments: () => sql.exec<MomentRow>('SELECT * FROM moments').toArray().map(toMoment),
   };
 }
 
@@ -145,6 +201,7 @@ function sqlImageDb(sql: SqlStorage): ImageDb {
       return row ? new Uint8Array(row.bytes) : null;
     },
     delete: (id) => void sql.exec('DELETE FROM images WHERE photo_id = ?', id),
+    deleteAll: () => void sql.exec('DELETE FROM images'),
   };
 }
 
@@ -182,6 +239,21 @@ export class AlbumStore extends DurableObject<Env> {
   removePhoto(id: string): AlbumPhoto | null {
     return this.ctx.storage.transactionSync(() => removePhoto(this.index, id));
   }
+  getMoment(id: string): CustomMoment | null {
+    return this.index.getMoment(id);
+  }
+  createMoment(
+    input: MomentInput,
+    meta: { id: string; createdBy: TravelerId; createdAt: string },
+  ): MomentResult {
+    return this.ctx.storage.transactionSync(() => createMoment(this.index, input, meta));
+  }
+  updateMoment(id: string, patch: Partial<MomentInput>): MomentResult {
+    return this.ctx.storage.transactionSync(() => updateMoment(this.index, id, patch));
+  }
+  deleteMoment(id: string): string[] | null {
+    return this.ctx.storage.transactionSync(() => deleteMoment(this.index, id));
+  }
 
   // Frame instances ----------------------------------------------------
   putImages(photoId: string, full: Uint8Array, thumb: Uint8Array): void {
@@ -195,5 +267,9 @@ export class AlbumStore extends DurableObject<Env> {
   }
   deleteImages(photoId: string): void {
     this.images.delete(photoId);
+  }
+  /** A deleted custom moment: drop every image it held. */
+  deleteAllImages(): void {
+    this.images.deleteAll();
   }
 }

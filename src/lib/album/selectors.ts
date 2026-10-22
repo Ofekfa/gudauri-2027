@@ -1,12 +1,21 @@
-import { ALBUM_FRAMES, PLANNED_FRAMES, type AlbumFrame } from '../../data/album';
+import { ALBUM_FRAMES, type AlbumFrame } from '../../data/album';
 import { trip } from '../../data/trip';
 import { localDateIn } from '../time/countdown';
 import type { AlbumFrameState, AlbumPhoto } from './protocol';
 import type { QueueItem, QueueState } from './queue';
 
+/**
+ * Every selector takes the moments in story order (predefined + our own, see
+ * `mergeMoments`); the default is the predefined ones only.
+ */
+type Moments = readonly AlbumFrame[];
+
 /** Photos per frame, oldest first (ties by id), for every frame. */
-export function photosByFrame(photos: readonly AlbumPhoto[]): Map<string, AlbumPhoto[]> {
-  const map = new Map(ALBUM_FRAMES.map((f) => [f.id, [] as AlbumPhoto[]]));
+export function photosByFrame(
+  photos: readonly AlbumPhoto[],
+  moments: Moments = ALBUM_FRAMES,
+): Map<string, AlbumPhoto[]> {
+  const map = new Map(moments.map((f) => [f.id, [] as AlbumPhoto[]]));
   for (const p of photos) map.get(p.frameId)?.push(p);
   for (const list of map.values()) {
     list.sort((a, b) =>
@@ -24,16 +33,20 @@ export function coverFor(
   return photos.find((p) => p.id === state?.coverPhotoId) ?? photos[0];
 }
 
-export function albumProgress(byFrame: Map<string, AlbumPhoto[]>): {
+export function albumProgress(
+  byFrame: Map<string, AlbumPhoto[]>,
+  moments: Moments = ALBUM_FRAMES,
+): {
   captured: number;
   total: number;
   bonus: number;
 } {
   const has = (id: string) => (byFrame.get(id)?.length ?? 0) > 0;
+  const planned = moments.filter((f) => !f.bonus);
   return {
-    captured: PLANNED_FRAMES.filter((f) => has(f.id)).length,
-    total: PLANNED_FRAMES.length,
-    bonus: ALBUM_FRAMES.filter((f) => f.bonus && has(f.id)).length,
+    captured: planned.filter((f) => has(f.id)).length,
+    total: planned.length,
+    bonus: moments.filter((f) => f.bonus && has(f.id)).length,
   };
 }
 
@@ -42,7 +55,11 @@ export const DINNER_FROM_HOUR = 17;
 const FALLBACK_FRAME = 'the-four-of-us';
 
 /** The frame Quick add offers first. */
-export function suggestFrame(nowMs: number, byFrame: Map<string, AlbumPhoto[]>): string {
+export function suggestFrame(
+  nowMs: number,
+  byFrame: Map<string, AlbumPhoto[]>,
+  moments: Moments = ALBUM_FRAMES,
+): string {
   const tz = trip.destinationTimeZone;
   const today = localDateIn(nowMs, tz);
   const hour = Number(
@@ -51,9 +68,9 @@ export function suggestFrame(nowMs: number, byFrame: Map<string, AlbumPhoto[]>):
     ),
   );
   const dinner = `dinner-${today}`;
-  if (hour >= DINNER_FROM_HOUR && ALBUM_FRAMES.some((f) => f.id === dinner)) return dinner;
-  const empty = PLANNED_FRAMES.find(
-    (f) => !f.id.startsWith('dinner-') && (byFrame.get(f.id)?.length ?? 0) === 0,
+  if (hour >= DINNER_FROM_HOUR && moments.some((f) => f.id === dinner)) return dinner;
+  const empty = moments.find(
+    (f) => !f.bonus && !f.id.startsWith('dinner-') && (byFrame.get(f.id)?.length ?? 0) === 0,
   );
   return empty?.id ?? FALLBACK_FRAME;
 }
@@ -70,9 +87,12 @@ export type StorySlide =
   | { kind: 'photo'; frame: AlbumFrame; photo: AlbumPhoto };
 
 /** Story order: a title card for each moment with photos, then its photos. */
-export function storySlides(photos: readonly AlbumPhoto[]): StorySlide[] {
-  const byFrame = photosByFrame(photos);
-  return ALBUM_FRAMES.flatMap((frame): StorySlide[] => {
+export function storySlides(
+  photos: readonly AlbumPhoto[],
+  moments: Moments = ALBUM_FRAMES,
+): StorySlide[] {
+  const byFrame = photosByFrame(photos, moments);
+  return moments.flatMap((frame): StorySlide[] => {
     const list = byFrame.get(frame.id) ?? [];
     if (list.length === 0) return [];
     return [

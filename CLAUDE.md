@@ -34,12 +34,26 @@ Run lint, typecheck, test and build (and the Worker's tests if you touched it or
 - Routing is **hash-based** (`#/flights`) so refresh and deep links never 404 on GitHub Pages.
 - Every page except Home, Flights and More is lazy-loaded with dynamic `import()` (`lazyPage`, which forwards props).
 - **Shared lists:** `src/lib/sync/` (protocol shared with the Worker; adapters turn packing/to-do state into `item/<list>/<id>` records; `syncClient` sends the diff since the last agreed base and merges the server's changes without losing in-flight edits; `useListSync` drives it). The Worker's `/sync` route uses the `ListsStore` Durable Object (SQLite) behind the `GROUP_CODE` secret. New list features sync by adding an adapter; never send unvalidated server data into a reducer.
-- **Album:** frames in `src/data/album.ts` (story order; dinners derived from the trip dates). `src/lib/album/` holds:
-  - `protocol.ts` and `jpeg.ts`, shared with the Worker;
+- **Album:** predefined moments ("frames") in `src/data/album.ts` (story order; dinners derived from the trip dates), plus **our own moments** added on the site and stored by the Worker. `src/lib/album/` holds:
+  - `protocol.ts`, `jpeg.ts` and `moments.ts`, shared with the Worker;
   - `pipeline.ts` (canvas → JPEG, metadata stripped), `queue.ts` (IndexedDB upload queue), `repository.ts`, `token.ts`, `selectors.ts`, `zip.ts`;
   - `service.ts` (module singleton; `AlbumQueueHost` resumes it after reloads).
 
   On the Worker, `routes/album.ts` and the `AlbumStore` Durable Object (SQLite) hold the photos: an `index` instance for metadata, plus one `frame:<id>` instance per frame for image BLOBs. **Photos never go in git.** Viewing is public (images are `noindex`, immutable). Changes need a token from `POST /album/session`, which takes the group code and returns a token signed with `ALBUM_SIGNING_KEY`.
+
+  **Custom moments.**
+  - **Model:** `CustomMoment` is `{ id: "m-" + 10 base-36, title ≤ 40, emoji from MOMENT_EMOJIS, prompt? ≤ 80, orderKey, createdBy, createdAt, custom: true, version }`.
+  - **Storage and listing:** stored in the `index` instance (`moments` table) and listed by `GET /album` as `moments`.
+  - **Routes:**
+    - `POST /album/moments` (`{title, emoji, prompt?, after}`);
+    - `PATCH /album/moments/:id` (any of those fields; partial, so concurrent edits of different fields both stay);
+    - `DELETE /album/moments/:id` (cascades to its photos, cover and the whole `frame:<id>` image store).
+    - Predefined ids get 403. There's a cap of 30 (`MAX_CUSTOM_MOMENTS`). Uploading to a deleted moment returns 410.
+  - **Order:** `orderKey` is a base-36 fractional index compared as strings (`keyBetween`). Predefined moments get `"01"`, `"02"`… from their position, and inserting or moving never renumbers anything.
+  - **Client:**
+    - always use `momentsOf(snapshot)` (merged story order including this phone's unconfirmed changes), never `ALBUM_FRAMES` directly;
+    - selectors and `downloadAlbum` take the moment list;
+    - optimistic ids start with `tmp-` and can't take photos until saved.
 
 - **Background music:** `src/lib/music/` — `machine.ts` (pure reducer; playback is derived, so nothing plays once muted), `shuffleBag.ts`, `settings.ts`, `player.ts` (lazy chunk; owns playback, Media Session) and `musicStore.ts` (always loaded, tiny: creates the single audio element and unlocks it synchronously inside the first gesture, then lazy-loads the player). `src/lib/speech/activity.ts` lets voice features pause/duck music. `MusicControl` sits in the header.
 - **Detail routes:** a section takes detail segments via `PARAM_PAGES` in `app.tsx` and `matchRoute` in `hashRouter.ts`. The default is 1 (`#/food/khinkali`); `PARAM_SEGMENTS` raises it (`/album` allows 2: `#/album/<frame>/<photo>`). Exact routes win (`#/album/story`). Navigation, titles and fact pop-ups follow the section (`basePath`). No router library.

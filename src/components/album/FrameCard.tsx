@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import type { AlbumFrame } from '../../data/album';
 import { coverFor } from '../../lib/album/selectors';
-import { addPhotos } from '../../lib/album/service';
+import { addPhotos, isPendingMoment } from '../../lib/album/service';
 import type { AlbumFrameState, AlbumPhoto } from '../../lib/album/protocol';
 import { href } from '../../lib/router/hashRouter';
 import { AddPhotoButtons } from './AddPhotoButtons';
@@ -25,6 +25,24 @@ export function FrameCard({ frame, number, photos, state, pendingLabel, canAdd }
   const [dragging, setDragging] = useState(false);
   const titleId = `frame-${frame.id}`;
   const count = photos.length;
+  // Just added here, not saved yet: no page or photos until the server has it.
+  const pending = isPendingMoment(frame.id);
+
+  const text = (
+    <span class="album-frame__text">
+      <span class="album-frame__number" aria-hidden="true">
+        {String(number).padStart(2, '0')}
+      </span>
+      <span id={titleId} class="album-frame__title">
+        {frame.title}
+      </span>
+      <span class="visually-hidden">
+        {count ? `, ${count} photo${count > 1 ? 's' : ''}` : ', no photos yet'}
+      </span>
+      {!count && <span class="album-frame__prompt">{frame.prompt}</span>}
+      {pendingLabel && <span class="album-frame__status">{pendingLabel}</span>}
+    </span>
+  );
 
   return (
     <li
@@ -43,7 +61,11 @@ export function FrameCard({ frame, number, photos, state, pendingLabel, canAdd }
         void addPhotos(frame.id, imageFiles(e.dataTransfer?.files));
       }}
     >
-      {count > 0 ? (
+      {pending ? (
+        <span class="album-frame__media" aria-hidden="true">
+          <span class="album-frame__emoji">{frame.emoji}</span>
+        </span>
+      ) : count > 0 ? (
         <CardCarousel frame={frame} photos={photos} coverId={coverFor(photos, state)?.id} />
       ) : (
         <a
@@ -55,22 +77,14 @@ export function FrameCard({ frame, number, photos, state, pendingLabel, canAdd }
           <span class="album-frame__emoji">{frame.emoji}</span>
         </a>
       )}
-      <a class="album-frame__link" href={href(`/album/${frame.id}`)}>
-        <span class="album-frame__text">
-          <span class="album-frame__number" aria-hidden="true">
-            {String(number).padStart(2, '0')}
-          </span>
-          <span id={titleId} class="album-frame__title">
-            {frame.title}
-          </span>
-          <span class="visually-hidden">
-            {count ? `, ${count} photo${count > 1 ? 's' : ''}` : ', no photos yet'}
-          </span>
-          {!count && <span class="album-frame__prompt">{frame.prompt}</span>}
-          {pendingLabel && <span class="album-frame__status">{pendingLabel}</span>}
-        </span>
-      </a>
-      {canAdd && <AddPhotoButtons frameId={frame.id} frameTitle={frame.title} />}
+      {pending ? (
+        <span class="album-frame__link">{text}</span>
+      ) : (
+        <a class="album-frame__link" href={href(`/album/${frame.id}`)}>
+          {text}
+        </a>
+      )}
+      {canAdd && !pending && <AddPhotoButtons frameId={frame.id} frameTitle={frame.title} />}
     </li>
   );
 }
