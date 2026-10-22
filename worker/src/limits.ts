@@ -18,3 +18,10 @@ export const RATES_TTL_MS = 12 * HOUR_MS;
 export const RATES_MAX_STALE_MS = 7 * DAY_MS;
 /** Browsers may reuse a /rates response this long. */
 export const RATES_BROWSER_MAX_AGE_S = 600;
+
+/** Calendar edits show up within this long. */
+export const ITINERARY_TTL_MS = 20 * MINUTE_MS;
+export const ITINERARY_MAX_STALE_MS = 7 * DAY_MS;
+export const ITINERARY_BROWSER_MAX_AGE_S = 60;
+/** Refuse absurdly large feeds (a busy multi-year calendar is a few hundred kB). */
+export const MAX_ICS_BYTES = 3_000_000;
