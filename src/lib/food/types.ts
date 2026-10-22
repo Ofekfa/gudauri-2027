@@ -49,6 +49,9 @@ export interface Dish {
   nameKa: string;
   /** National system romanization, as in the Georgian words. */
   transliteration: string;
+  /** The name as it appears on English menus, e.g. "Khinkali". */
+  name: string;
+  /** What it is, in English, e.g. "Soup dumplings". */
   nameEn: string;
   category: DishCategory;
   /** Our own words. */
@@ -62,6 +65,8 @@ export interface Dish {
   /** How to eat or order it. */
   howToEat?: string;
   sources: string[];
+  /** Drawn on the illustration when there's no photo; defaults to the category emoji. */
+  emoji?: string;
   /** Existing fun facts (src/data/facts.ts) to show on the dish page. */
   relatedFactIds?: string[];
 }
