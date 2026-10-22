@@ -2122,6 +2122,69 @@ main:focus {
   color: var(--color-ink-muted);
 }
 
+/* ---------- Shared lists (sync) ---------- */
+.sync-panel {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+.sync-panel__summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+.sync-panel__intro {
+  margin: var(--space-2) 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+.sync-panel__status {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+.sync-panel__status--wrong-code,
+.sync-panel__status--not-set-up {
+  color: var(--color-accent);
+}
+.sync-panel__form {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.sync-panel__field {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+.sync-panel__field input {
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  font-weight: 400;
+}
+.sync-panel__who {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.sync-panel__who legend {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+.sync-panel__form .button {
+  justify-self: start;
+}
+.changed-by {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
 /* ---------- Food ---------- */
 .food-tools {
   display: grid;

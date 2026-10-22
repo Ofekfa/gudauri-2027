@@ -1,6 +1,9 @@
 import { useMemo, useRef, useState } from 'preact/hooks';
 import { AddItemForm } from '../components/packing/AddItemForm';
 import { BackupPanel } from '../components/common/BackupPanel';
+import { SyncPanel } from '../components/common/SyncPanel';
+import { itemKey, packingAdapter } from '../lib/sync/adapters';
+import { useListSync } from '../lib/sync/useListSync';
 import { ProgressSummary } from '../components/common/ProgressSummary';
 import { ProfileSwitcher, TRAVELER_PROFILES } from '../components/common/ProfileSwitcher';
 import { FilterBar } from '../components/packing/FilterBar';
@@ -66,6 +69,17 @@ function initialProfile(): TravelerId {
 
 export default function PackingPage() {
   const { state, dispatch, loaded } = usePacking();
+  const sync = useListSync(
+    packingAdapter,
+    state,
+    (next) => dispatch({ type: 'replaceAll', state: next }),
+    loaded,
+  );
+  /** Who else changed an item last (nobody, or this phone's owner: no tag). */
+  const changedBy = (id: string) => {
+    const by = sync.changedBy[itemKey(traveler, id)];
+    return by && by !== sync.settings.me ? by : null;
+  };
   const [traveler, setTraveler] = useState<TravelerId>(initialProfile);
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const addInputRef = useRef<HTMLInputElement>(null);
@@ -114,6 +128,7 @@ export default function PackingPage() {
     <ul class="pack-list">
       {rows.map((item) => (
         <PackingItemRow
+          changedBy={changedBy(item.id)}
           key={item.id}
           item={item}
           onTogglePacked={() => dispatch({ type: 'togglePacked', traveler, id: item.id })}
@@ -136,6 +151,7 @@ export default function PackingPage() {
         title="Packing lists"
         subtitle="Everyone has their own list. Tick things off as you pack."
       />
+      <SyncPanel view={sync} what={'packing lists'} />
       <ProfileSwitcher
         profiles={TRAVELER_PROFILES}
         selected={traveler}

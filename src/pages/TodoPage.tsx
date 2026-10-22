@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { BackupPanel } from '../components/common/BackupPanel';
+import { SyncPanel } from '../components/common/SyncPanel';
+import { itemKey, todoAdapter } from '../lib/sync/adapters';
+import { useListSync } from '../lib/sync/useListSync';
 import { ProfileSwitcher } from '../components/common/ProfileSwitcher';
 import { ProgressSummary } from '../components/common/ProgressSummary';
 import { TemplateOffer } from '../components/common/TemplateOffer';
@@ -61,6 +64,17 @@ function useNeedToBuyCounts(): Partial<Record<TravelerId, number>> {
 
 export default function TodoPage() {
   const { state, dispatch, loaded } = useTodo();
+  const sync = useListSync(
+    todoAdapter,
+    state,
+    (next) => dispatch({ type: 'replaceAll', state: next }),
+    loaded,
+  );
+  /** Who else changed an item last (nobody, or this phone's owner: no tag). */
+  const changedBy = (id: string) => {
+    const by = sync.changedBy[itemKey(list, id)];
+    return by && by !== sync.settings.me ? by : null;
+  };
   const [list, setList] = useState<TodoListId>(initialList);
   const [filters, setFilters] = useState<TodoFilters>(ALL_FILTERS);
   const addInputRef = useRef<HTMLInputElement>(null);
@@ -136,6 +150,7 @@ export default function TodoPage() {
         title="To-do"
         subtitle="Everything to sort out before we fly. Dates are in Israel time."
       />
+      <SyncPanel view={sync} what={'to-do lists'} />
       <ProfileSwitcher
         profiles={TODO_PROFILES}
         selected={list}
@@ -244,6 +259,7 @@ export default function TodoPage() {
             <ul class="pack-list" ref={listRef}>
               {visible.map((item) => (
                 <TodoRow
+                  changedBy={changedBy(item.id)}
                   key={item.id}
                   item={item}
                   now={now}
