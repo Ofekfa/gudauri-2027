@@ -1,14 +1,14 @@
 import type { ComponentType } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 
-type Loader = () => Promise<{ default: ComponentType }>;
+type Loader<P> = () => Promise<{ default: ComponentType<P> }>;
 
 /** Code-splits a page: its chunk downloads only when the route is first visited. */
-export function lazyPage(load: Loader): ComponentType {
-  let cached: ComponentType | null = null;
+export function lazyPage<P extends object = object>(load: Loader<P>): ComponentType<P> {
+  let cached: ComponentType<P> | null = null;
 
-  return function LazyPage() {
-    const [Page, setPage] = useState<ComponentType | null>(() => cached);
+  return function LazyPage(props: P) {
+    const [Page, setPage] = useState<ComponentType<P> | null>(() => cached);
     const [failed, setFailed] = useState(false);
 
     useEffect(() => {
@@ -21,7 +21,7 @@ export function lazyPage(load: Loader): ComponentType {
         .catch(() => setFailed(true));
     }, [Page]);
 
-    if (Page) return <Page />;
+    if (Page) return <Page {...props} />;
     if (failed) {
       return (
         <p class="card" role="alert">

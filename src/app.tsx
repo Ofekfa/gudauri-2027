@@ -4,7 +4,7 @@ import { BottomTabBar } from './components/BottomTabBar';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { trip } from './data/trip';
-import { useHashPath } from './lib/router/hashRouter';
+import { matchRoute, useHashPath } from './lib/router/hashRouter';
 import { lazyPage } from './lib/router/lazyPage';
 import { MapBackground } from './components/map/MapBackground';
 import { Snowfall } from './components/Snowfall';
@@ -32,13 +32,22 @@ const PAGES: Record<string, ComponentType> = {
   '/more': MorePage,
 };
 
+/** Pages that take one detail segment, e.g. "/food/:id"; they receive it as `param`. */
+export interface ParamPageProps {
+  param: string;
+}
+const PARAM_PAGES: Record<string, ComponentType<ParamPageProps>> = {};
+
 function focusMain() {
   document.getElementById('main')?.focus();
 }
 
 export function App() {
   const path = useHashPath();
-  const item = findNavItem(path);
+  const route = matchRoute(path, PAGES, PARAM_PAGES);
+  // Detail pages ("/food/khinkali") belong to their section for titles and navigation.
+  const sectionPath = route?.base ?? path;
+  const item = findNavItem(sectionPath);
 
   useEffect(() => {
     document.title = item && item !== HOME ? `${item.title} · ${trip.name}` : trip.name;
@@ -54,10 +63,14 @@ export function App() {
     return () => window.removeEventListener('hashchange', onNav);
   }, []);
 
-  const Page = PAGES[path];
   let content;
-  if (Page) content = <Page />;
-  else if (item?.comingSoon) content = <ComingSoonPage item={item} />;
+  if (route?.param !== undefined) {
+    const DetailPage = route.page as ComponentType<ParamPageProps>;
+    content = <DetailPage param={route.param} />;
+  } else if (route) {
+    const Page = route.page as ComponentType;
+    content = <Page />;
+  } else if (item?.comingSoon) content = <ComingSoonPage item={item} />;
   else content = <NotFoundPage />;
 
   return (
@@ -68,14 +81,14 @@ export function App() {
       </button>
       <MapBackground />
       <Snowfall />
-      <Header activePath={path} />
+      <Header activePath={sectionPath} />
       <main id="main" class="page" key={path} tabIndex={-1}>
         {content}
       </main>
       <Footer />
       <ToastHost />
-      <FactPopups path={path} />
-      <BottomTabBar activePath={path} />
+      <FactPopups path={sectionPath} />
+      <BottomTabBar activePath={sectionPath} />
     </>
   );
 }
