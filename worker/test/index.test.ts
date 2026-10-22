@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { clearMemoryCache } from '../src/cache';
 import { handleRequest, parseMessages, type Env } from '../src/index';
 import { MAX_MESSAGE_CHARS, MAX_MESSAGES } from '../src/limits';
 import { buildSystemPrompt } from '../src/prompt';
@@ -29,6 +30,13 @@ function chat(body: unknown, init: { origin?: string | null; method?: string } =
 }
 
 const ask = (content: string) => ({ messages: [{ role: 'user', content }] });
+
+// Chat builds a live-data block from upstream sources; keep tests offline (every source fails).
+beforeEach(() => {
+  clearMemoryCache();
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline in tests')));
+});
+afterEach(() => vi.unstubAllGlobals());
 
 describe('worker /chat', () => {
   it('answers allowed origins with CORS headers', async () => {
@@ -134,5 +142,7 @@ describe('system prompt', () => {
     expect(prompt).toContain('09:50');
     expect(prompt).toContain('Marco Polo');
     expect(prompt).toContain('2026-10-22');
+    expect(prompt).toContain('You have no live data');
+    expect(prompt).not.toContain('Live data (');
   });
 });

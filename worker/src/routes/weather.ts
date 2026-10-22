@@ -1,7 +1,8 @@
 import { ZONES } from '../../../src/data/zones';
 import { forecastUrl, summarizeZone, validateOpenMeteo } from '../../../src/lib/weather/openMeteo';
 import type { WeatherPayload, ZoneWeather } from '../../../src/lib/weather/types';
-import { cacheStoreFor, getOrRefresh, UpstreamUnavailableError } from '../cache';
+import { cacheStoreFor, getOrRefresh, UpstreamUnavailableError, type CachedResult } from '../cache';
+import type { Env } from '../env';
 import { errorJson, json } from '../http';
 import { WEATHER_BROWSER_MAX_AGE_S, WEATHER_MAX_STALE_MS, WEATHER_TTL_MS } from '../limits';
 import type { Route } from '../router';
@@ -20,19 +21,24 @@ function validateCached(raw: unknown): ZoneWeather[] {
   return raw as ZoneWeather[];
 }
 
+/** Cached per-zone weather (shared by /weather and the assistant's live context). */
+export function loadWeather(env: Env): Promise<CachedResult<ZoneWeather[]>> {
+  return getOrRefresh(
+    cacheStoreFor(env.CACHE),
+    WEATHER_CACHE_KEY,
+    { ttlMs: WEATHER_TTL_MS, maxStaleMs: WEATHER_MAX_STALE_MS },
+    () => fetchZoneWeather(),
+    validateCached,
+  );
+}
+
 export const weatherRoute: Route = {
   method: 'GET',
   path: '/weather',
   rateLimit: 'RL_DATA',
   async handler({ env, cors }) {
     try {
-      const result = await getOrRefresh(
-        cacheStoreFor(env.CACHE),
-        WEATHER_CACHE_KEY,
-        { ttlMs: WEATHER_TTL_MS, maxStaleMs: WEATHER_MAX_STALE_MS },
-        () => fetchZoneWeather(),
-        validateCached,
-      );
+      const result = await loadWeather(env);
       const payload: WeatherPayload = {
         source: 'open-meteo',
         fetchedAt: new Date(result.fetchedAt).toISOString(),

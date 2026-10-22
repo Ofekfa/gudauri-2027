@@ -1,6 +1,7 @@
 import { trip } from '../../../src/data/trip';
 import type { ItineraryEvent, ItineraryPayload } from '../../../src/lib/itinerary/types';
-import { cacheStoreFor, getOrRefresh, UpstreamUnavailableError } from '../cache';
+import { cacheStoreFor, getOrRefresh, UpstreamUnavailableError, type CachedResult } from '../cache';
+import type { Env } from '../env';
 import { errorJson, json } from '../http';
 import { parseItinerary, type DayRange } from '../itinerary/ics';
 import {
@@ -48,6 +49,17 @@ function validateEvents(raw: unknown): ItineraryEvent[] {
   return raw as ItineraryEvent[];
 }
 
+/** Cached calendar events (shared by /itinerary and the assistant). Needs CALENDAR_ICS_URL. */
+export function loadItinerary(env: Env): Promise<CachedResult<ItineraryEvent[]>> {
+  return getOrRefresh(
+    cacheStoreFor(env.CACHE),
+    ITINERARY_CACHE_KEY,
+    { ttlMs: ITINERARY_TTL_MS, maxStaleMs: ITINERARY_MAX_STALE_MS },
+    () => fetchCalendarEvents(env.CALENDAR_ICS_URL),
+    validateEvents,
+  );
+}
+
 export const itineraryRoute: Route = {
   method: 'GET',
   path: '/itinerary',
@@ -55,13 +67,7 @@ export const itineraryRoute: Route = {
   async handler({ env, cors }) {
     if (!env.CALENDAR_ICS_URL) return errorJson(501, 'Calendar not configured', cors);
     try {
-      const result = await getOrRefresh(
-        cacheStoreFor(env.CACHE),
-        ITINERARY_CACHE_KEY,
-        { ttlMs: ITINERARY_TTL_MS, maxStaleMs: ITINERARY_MAX_STALE_MS },
-        () => fetchCalendarEvents(env.CALENDAR_ICS_URL),
-        validateEvents,
-      );
+      const result = await loadItinerary(env);
       const payload: ItineraryPayload = {
         timeZone: trip.destinationTimeZone,
         range: TRIP_RANGE,

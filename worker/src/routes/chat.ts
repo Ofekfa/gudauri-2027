@@ -6,6 +6,7 @@ import {
   TEMPERATURE,
 } from '../limits';
 import { errorJson, json } from '../http';
+import { buildLiveContext, sourcesFor } from '../liveContext';
 import { buildSystemPrompt } from '../prompt';
 import type { Route } from '../router';
 
@@ -75,9 +76,10 @@ export const chatRoute: Route = {
     const parsed = parseMessages(body);
     if ('error' in parsed) return errorJson(parsed.status, parsed.error, cors);
 
+    const live = await buildLiveContext(sourcesFor(env), now);
     try {
       const result = await env.AI.run(env.MODEL, {
-        messages: [{ role: 'system', content: buildSystemPrompt(now) }, ...parsed.messages],
+        messages: [{ role: 'system', content: buildSystemPrompt(now, live) }, ...parsed.messages],
         max_tokens: MAX_OUTPUT_TOKENS,
         temperature: TEMPERATURE,
       });
