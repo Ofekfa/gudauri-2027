@@ -53,6 +53,32 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **upda
 
 **Tests:** 107 site + 22 Worker.
 
+### Phase 10.3 — Album: our trip in photos (`v1.12.0`)
+
+**Routing:**
+
+- **Client:** `matchRoute` takes up to `PARAM_SEGMENTS[base]` detail segments (`/album` allows 2) and passes `params`.
+- **Worker:** routes take `:name` path params and several methods per path; 405 and preflight list them all.
+
+**Worker:**
+
+- `worker/src/album/`:
+  - `token.ts`: HMAC-SHA256, constant-time verify, expiry max(15 Mar 2027, now + 30 days);
+  - `logic.ts`: rules over a storage interface; in memory for tests;
+  - `AlbumStore.ts`: Durable Object (SQLite, migration `v2`, binding `ALBUM`); the `index` instance holds photos and frames, `frame:<id>` instances hold image BLOBs.
+- `worker/src/routes/album.ts`: session (`RL_AUTH` 5/min), list, add (multipart, idempotent, JPEG-only, EXIF re-stripped, 30 per frame), caption and cover (`If-Match` → 409 with `current`), delete, and the public image route.
+- CORS allows `If-Match`.
+
+**Site:**
+
+- `src/data/album.ts`: 22 frames.
+- `src/lib/album/`: `protocol`, `jpeg`, `pipeline`, `queue`, `repository`, `token`, `selectors`, `zip`, `download`, `service`, `useAlbum`.
+- Pages: `AlbumPage`, `AlbumFramePage`, `AlbumStoryPage`.
+- Components in `components/album/`: `FrameCard`, `AddPhotoButtons`, `AlbumJoin`, `QuickAdd` (Home, lazy, during the trip), `AlbumQueueHost`, `useCarousel`.
+- `components/common/JoinGroupForm.tsx` is shared with `SyncPanel`. Fact pop-ups are off on `/album`.
+
+**Tests:** 404 site + 75 Worker, plus a local end-to-end script (privacy, offline resume, Undo, viewer, story, Quick add).
+
 ### Phase 10.1 — Shared lists across our phones (`v1.11.0`)
 
 **Worker**
