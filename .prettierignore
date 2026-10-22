@@ -6,3 +6,4 @@ src/data/pistes.json
 worker/node_modules
 worker/package-lock.json
 worker/.wrangler
+worker/test/fixtures

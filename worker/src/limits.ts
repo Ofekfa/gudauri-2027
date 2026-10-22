@@ -25,3 +25,8 @@ export const ITINERARY_MAX_STALE_MS = 7 * DAY_MS;
 export const ITINERARY_BROWSER_MAX_AGE_S = 60;
 /** Refuse absurdly large feeds (a busy multi-year calendar is a few hundred kB). */
 export const MAX_ICS_BYTES = 3_000_000;
+
+/** Forecast models update a few times a day; 30 min keeps us well under Open-Meteo's free limits. */
+export const WEATHER_TTL_MS = 30 * MINUTE_MS;
+export const WEATHER_MAX_STALE_MS = DAY_MS;
+export const WEATHER_BROWSER_MAX_AGE_S = 300;

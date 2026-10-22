@@ -5,6 +5,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
+    "resolveJsonModule": true,
     "noUncheckedIndexedAccess": true,
     "isolatedModules": true,
     "skipLibCheck": true,
@@ -18,6 +19,8 @@
     "../src/data/facts.ts",
     "../src/lib/facts/types.ts",
     "../src/lib/currency/rates.ts",
-    "../src/lib/itinerary/types.ts"
+    "../src/lib/itinerary/types.ts",
+    "../src/lib/weather/openMeteo.ts",
+    "../src/data/zones.ts"
   ]
 }
