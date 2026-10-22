@@ -7,7 +7,11 @@ import { PageHeader } from '../components/PageHeader';
 import { SectionCards } from '../components/SectionCards';
 import { trip } from '../data/trip';
 import { formatDayRange } from '../lib/time/format';
+import { lazyPage } from '../lib/router/lazyPage';
 import { SECTIONS } from '../navigation';
+
+/** Loaded only during the trip, so Home stays light. */
+const QuickAdd = lazyPage(() => import('../components/album/QuickAdd'));
 
 const travelerNames = (() => {
   const names = trip.travelers.map((t) => t.name);
@@ -24,6 +28,7 @@ export function HomePage() {
       />
       <Countdown />
       {getTripPhase(Date.now(), trip).kind === 'before' && <NextTodos />}
+      {getTripPhase(Date.now(), trip).kind === 'during' && <QuickAdd />}
       {getTripPhase(Date.now(), trip).kind === 'during' && <TodayPlan />}
       <section aria-labelledby="crew-title">
         <h2 id="crew-title" class="section-title">

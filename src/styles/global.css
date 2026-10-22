@@ -3160,3 +3160,29 @@ main:focus {
 .album-story__emoji {
   font-size: 4rem;
 }
+.quick-add {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.quick-add__title {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.quick-add__field {
+  display: grid;
+  gap: var(--space-1);
+  font-weight: 600;
+}
+.quick-add__field select {
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+}
+.quick-add__join {
+  margin: 0;
+}
