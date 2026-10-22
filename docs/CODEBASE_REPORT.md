@@ -1,6 +1,6 @@
 # Gudauri 2027 — Codebase Report
 
-_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.4 (`v1.5.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
+_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.5 (`v1.6.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
 
 ## Changelog since v1.0.0
 
@@ -52,6 +52,26 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **upda
 - Lesson: in-place `npm install` can drop optional platform bindings from a lockfile (npm/cli#4828). Regenerate it from scratch if CI reports "Cannot find native binding".
 
 **Tests:** 107 site + 22 Worker.
+
+### Phase 8.5 — Weather, snow & webcams (`v1.6.0`)
+
+**Data:** `src/data/zones.ts`: Village 2,000 m, Mid-mountain 2,700 m, Top 2,950 m, with YouTube cam ids and `checkedOn` dates.
+
+**Worker**
+
+- `GET /weather` (`worker/src/routes/weather.ts`): one Open-Meteo call for all zones; cache key `weather:v1`, TTL 30 min, max stale 24 h; `RL_DATA`; browser `max-age=300`; 503 when nothing usable.
+- Tests use a real captured response (`worker/test/fixtures/open-meteo-2026-10-22.json`, excluded from Prettier).
+
+**Shared:** `src/lib/weather/` (`openMeteo.ts` URL/validation/summary, `types.ts`, `codes.ts` WMO table, `validate.ts`), imported by the Worker via its tsconfig.
+
+**Site**
+
+- `src/lib/weather/{weatherClient,useWeather,graphic}.ts`: `weather:last` offline copy; graphic geometry.
+- `components/weather/MountainZones.tsx` (original SVG with `<title>`/`<desc>`) and `WebcamCard.tsx` (tap-to-load youtube-nocookie, unmounts when off-screen or hidden).
+- `#/weather` is **in the tab bar** (Home · Itinerary · Packing · Weather · More); Game moved to More → Fun.
+- Icons: `cloudSnow`, `video`.
+
+**Tests:** 186 site + 43 Worker.
 
 ### Phase 8.4 — Itinerary (`v1.5.0`)
 
