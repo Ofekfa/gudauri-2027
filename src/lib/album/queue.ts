@@ -1,11 +1,13 @@
 /**
  * Upload queue for album photos: processed images wait in IndexedDB until
  * they're uploaded, two at a time, retrying with exponential backoff and
- * resuming after reloads or when the phone is back online.
+ * resuming after reloads or when the phone is back online. After
+ * MAX_ATTEMPTS online tries a photo is marked failed (with the reason), so it
+ * can be retried by hand instead of spinning forever.
  */
 import type { TravelerId } from '../../data/trip';
 import type { AlbumPhoto, UploadMeta } from './protocol';
-import type { UploadOutcome } from './repository';
+import { retryReason, type UploadOutcome } from './repository';
 
 export type QueueState = 'queued' | 'uploading' | 'waiting-offline' | 'failed';
 
@@ -37,6 +39,10 @@ export interface QueueStore {
 export const MAX_PARALLEL_UPLOADS = 2;
 export const BASE_BACKOFF_MS = 2_000;
 export const MAX_BACKOFF_MS = 5 * 60_000;
+/** Online tries before a photo is marked failed (2+4+8+16 s of backoff in between). */
+export const MAX_ATTEMPTS = 5;
+/** Longest one attempt (token + upload) may take; above the upload's own timeout. */
+export const ATTEMPT_TIMEOUT_MS = 3 * 60_000;
 const JITTER = 0.25;
 
 /** Delay before retry number `attempts` (1, 2, 3…), with ±25% jitter from `random`. */
@@ -47,7 +53,7 @@ export function backoffMs(attempts: number, random: () => number = Math.random):
 
 export interface QueueDeps {
   store: QueueStore;
-  /** Gets a token and uploads; `undefined` token means "not joined": the item waits. */
+  /** Gets a token and uploads. */
   upload(item: QueueItem, onProgress: (fraction: number) => void): Promise<UploadOutcome>;
   isOnline(): boolean;
   now(): number;
@@ -96,13 +102,35 @@ export function createUploadQueue(deps: QueueDeps) {
     timer = deps.setTimer(() => void pump(), Math.max(0, next - deps.now()));
   }
 
+  /** One attempt that always settles: a throw or a hang counts as "retry". */
+  function attempt(item: QueueItem): Promise<UploadOutcome> {
+    let settled = false;
+    let deadline: unknown = null;
+    const timedOut = new Promise<UploadOutcome>((resolve) => {
+      deadline = deps.setTimer(
+        () => resolve({ kind: 'retry', status: 0, reason: 'The upload took too long.' }),
+        ATTEMPT_TIMEOUT_MS,
+      );
+    });
+    const upload = Promise.resolve()
+      .then(() =>
+        deps.upload(item, (fraction) => {
+          if (settled) return;
+          progress[item.id] = fraction;
+          emit();
+        }),
+      )
+      .catch((): UploadOutcome => ({ kind: 'retry', status: 0 }));
+    return Promise.race([upload, timedOut]).finally(() => {
+      settled = true;
+      deps.clearTimer(deadline);
+    });
+  }
+
   async function runOne(item: QueueItem) {
     running.add(item.id);
     await save({ ...item, state: 'uploading' });
-    const outcome = await deps.upload(item, (fraction) => {
-      progress[item.id] = fraction;
-      emit();
-    });
+    const outcome = await attempt(item);
     running.delete(item.id);
     delete progress[item.id];
     if (cancelled.has(item.id)) {
@@ -118,19 +146,29 @@ export function createUploadQueue(deps: QueueDeps) {
       emit();
       eventListeners.forEach((l) => l({ type: 'uploaded', item, photo: outcome.photo }));
     } else if (outcome.kind === 'failed') {
-      const failed = { ...item, state: 'failed' as const, error: outcome.reason };
-      await save(failed);
-      eventListeners.forEach((l) => l({ type: 'failed', item: failed }));
+      await fail(item, outcome.reason);
+    } else if (!deps.isOnline()) {
+      // Lost the connection mid-try: wait for it without using up an attempt.
+      await save({ ...item, state: 'waiting-offline' });
     } else {
       const attempts = item.attempts + 1;
-      const offline = !deps.isOnline();
+      if (attempts >= MAX_ATTEMPTS) {
+        await fail({ ...item, attempts }, retryReason(outcome.status, outcome.reason));
+        return;
+      }
       await save({
         ...item,
         attempts,
-        state: offline ? 'waiting-offline' : 'queued',
+        state: 'queued',
         nextAttemptAt: deps.now() + backoffMs(attempts, deps.random),
       });
     }
+  }
+
+  async function fail(item: QueueItem, reason: string) {
+    const failed = { ...item, state: 'failed' as const, error: reason };
+    await save(failed);
+    eventListeners.forEach((l) => l({ type: 'failed', item: failed }));
   }
 
   async function pump() {

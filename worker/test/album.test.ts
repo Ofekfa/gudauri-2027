@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MAX_PHOTOS_PER_FRAME } from '../../src/data/album';
 import { hasExif } from '../../src/lib/album/jpeg';
-import type { AlbumPhoto } from '../../src/lib/album/protocol';
+import { MAX_FULL_BYTES, MAX_UPLOAD_BYTES, type AlbumPhoto } from '../../src/lib/album/protocol';
+import { MAX_BODY_BYTES } from '../src/limits';
 import {
   addPhoto,
   listing,
@@ -184,6 +185,85 @@ describe('POST /album/session', () => {
     expect(renewed.status).toBe(200);
     const limited = setup({ RL_AUTH: { limit: vi.fn().mockResolvedValue({ success: false }) } });
     expect((await limited.call('/album/session', { method: 'POST', body: '{}' })).status).toBe(429);
+  });
+});
+
+describe('album uploads: body size and CORS', () => {
+  it('accepts real photo sizes, far above the chat body limit', async () => {
+    const { session, upload } = setup();
+    const token = await session();
+    const full = fakeJpeg(MAX_FULL_BYTES - 100);
+    expect(full.length).toBeGreaterThan(MAX_BODY_BYTES * 50);
+    expect((await upload(token, 'snowman', 'photo-big1', full)).status).toBe(201);
+  });
+
+  it('rejects a declared body over the upload limit with a readable 413', async () => {
+    const { call, session } = setup();
+    const token = await session();
+    const res = await call('/album/snowman/photos', {
+      method: 'POST',
+      token,
+      body: 'x',
+      headers: { 'Content-Length': String(MAX_UPLOAD_BYTES + 1) },
+    });
+    expect(res.status).toBe(413);
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe(ORIGIN);
+  });
+
+  it('lets the browser preflight every album change with Authorization and If-Match', async () => {
+    const { call } = setup();
+    const cases = [
+      ['/album/session', 'POST'],
+      ['/album/snowman/photos', 'POST'],
+      ['/album/photos/photo-0001', 'PATCH'],
+      ['/album/photos/photo-0001', 'DELETE'],
+      ['/album/snowman/cover', 'PUT'],
+    ] as const;
+    for (const [path, method] of cases) {
+      const res = await call(path, {
+        method: 'OPTIONS',
+        headers: {
+          'Access-Control-Request-Method': method,
+          'Access-Control-Request-Headers': 'authorization, content-type, if-match',
+        },
+      });
+      expect(res.status, `${method} ${path}`).toBe(204);
+      expect(res.headers.get('Access-Control-Allow-Origin')).toBe(ORIGIN);
+      expect(res.headers.get('Access-Control-Allow-Methods')).toContain(method);
+      const allowed = res.headers.get('Access-Control-Allow-Headers')!.toLowerCase();
+      for (const h of ['authorization', 'content-type', 'if-match']) expect(allowed).toContain(h);
+    }
+    const stranger = await call('/album/snowman/photos', {
+      method: 'OPTIONS',
+      origin: 'https://evil.example',
+      headers: { 'Access-Control-Request-Method': 'POST' },
+    });
+    expect(stranger.status).toBe(403);
+  });
+
+  // Without CORS headers on errors the browser reports status 0, and the
+  // client can't tell "not set up" or "wrong token" from "offline".
+  it('sends CORS headers on 501, 401 and 429 so the client can read them', async () => {
+    const off = setup({ ALBUM_SIGNING_KEY: undefined });
+    const notSetUp = await off.call('/album/session', {
+      method: 'POST',
+      body: JSON.stringify({ code: CODE, who: 'maya' }),
+    });
+    expect(notSetUp.status).toBe(501);
+    expect(notSetUp.headers.get('Access-Control-Allow-Origin')).toBe(ORIGIN);
+    const offUpload = await off.upload('whatever', 'snowman', 'photo-0001');
+    expect(offUpload.status).toBe(501);
+    expect(offUpload.headers.get('Access-Control-Allow-Origin')).toBe(ORIGIN);
+
+    const { upload } = setup();
+    const badToken = await upload('not-a-token', 'snowman', 'photo-0001');
+    expect(badToken.status).toBe(401);
+    expect(badToken.headers.get('Access-Control-Allow-Origin')).toBe(ORIGIN);
+
+    const limited = setup({ RL_DATA: { limit: vi.fn().mockResolvedValue({ success: false }) } });
+    const tooMany = await limited.upload('whatever', 'snowman', 'photo-0001');
+    expect(tooMany.status).toBe(429);
+    expect(tooMany.headers.get('Access-Control-Allow-Origin')).toBe(ORIGIN);
   });
 });
 

@@ -42,7 +42,7 @@ export interface AlbumRepository {
 /** What happened to an upload: done, worth retrying later, or a definite failure. */
 export type UploadOutcome =
   | { kind: 'done'; photo: AlbumPhoto }
-  | { kind: 'retry'; status: number }
+  | { kind: 'retry'; status: number; reason?: string }
   | { kind: 'failed'; status: number; reason: string };
 
 const FAILURE_REASON: Record<number, string> = {
@@ -51,6 +51,15 @@ const FAILURE_REASON: Record<number, string> = {
   413: 'This photo is too large.',
   415: 'Only photos can be added.',
 };
+
+/** Why an upload that kept needing retries gave up (shown on the photo). */
+export function retryReason(status: number, reason?: string): string {
+  if (reason) return reason;
+  if (status === 0) return 'No response from the server.';
+  if (status === 401) return 'The album didn’t accept this phone. Re-join and try again.';
+  if (status === 429) return 'Too many tries. Wait a minute and try again.';
+  return `The server had a problem (${status}).`;
+}
 
 export function createRemoteAlbumRepository(base: string | null = WORKER_URL): AlbumRepository {
   const url = (path: string) => `${base}${path}`;
@@ -114,7 +123,9 @@ export function createRemoteAlbumRepository(base: string | null = WORKER_URL): A
             resolve({ kind: 'retry', status: xhr.status });
           }
         };
-        xhr.onerror = xhr.ontimeout = () => resolve({ kind: 'retry', status: 0 });
+        xhr.onerror = () => resolve({ kind: 'retry', status: 0 });
+        xhr.ontimeout = () =>
+          resolve({ kind: 'retry', status: 0, reason: 'The upload took too long.' });
         xhr.send(form);
       });
     },
