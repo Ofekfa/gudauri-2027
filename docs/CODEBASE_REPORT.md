@@ -30,7 +30,7 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **ever
 
 **Tests:** 404 site + 75 Worker, plus a local end-to-end check (not committed: privacy, offline resume, Undo, viewer, story, Quick add).
 
-**Live:** viewing works; `POST /album/session` answers 501 until `ALBUM_SIGNING_KEY` is set, so adding photos doesn't work yet (§10).
+**Live:** viewing and adding work since `v1.12.1` (#93). The fix added `uploader.ts`: token errors fail with a reason, there are capped retries with an attempt deadline, and a failed photo shows "Upload failed — tap to retry". `ALBUM_SIGNING_KEY` is set. Tests: 413 site + 79 Worker.
 
 ### Phase 10.2 — Avatar hair colours (`v1.11.1`, `v1.11.2`)
 
@@ -335,7 +335,7 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **ever
 - Live site: https://ofekfa.github.io/gudauri-2027/
 - Worker (AI proxy + data, sync and album routes): `https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev`
 - `PLAN.md`: phases 1–7, 8.0–8.7, 9.1–9.2 and 10.1–10.3 are done.
-- Live Worker status (checked 2026-10-22): `/album` lists (empty); `/sync` answers 401 without a code, so `GROUP_CODE` is set; `POST /album/session` answers **501**, because `ALBUM_SIGNING_KEY` isn't set yet.
+- Live Worker status (checked 2026-10-22, after `v1.12.1`): `/album` lists (empty after the live test photos were deleted); `/sync` answers 401 without a code, so `GROUP_CODE` is set; `POST /album/session` answers 401 for a wrong code, because `ALBUM_SIGNING_KEY` is set.
 - Open item: hands-on testing on real phones (iOS Safari speech, camera/HEIC uploads, Android Chrome, game touch steering).
 
 **Stack and versions** (from `package.json` / `worker/package.json`)
@@ -408,7 +408,7 @@ There's no router library, state library, CSS framework, date library or icon li
 │  │                         dishImages(.json), tracks(.json), musicEmbeds, fallbackRates, album (+tests)
 │  ├─ game/                  canvas game: constants, engine (pure), render, sprites, input, controller, highScores (+tests)
 │  ├─ lib/                   pure logic, framework-light, unit-tested
-│  │  ├─ album/              protocol, jpeg, pipeline, queue, repository, token, selectors, zip, download, service, useAlbum
+│  │  ├─ album/              protocol, jpeg, pipeline, queue, repository, token, uploader, selectors, zip, download, service, useAlbum
 │  │  ├─ currency/           rates (shared with Worker), convert, fallback, ratesClient, useRates
 │  │  ├─ facts/              types, rotation, settings, carousel
 │  │  ├─ food/               types, selectors, lastViewed
