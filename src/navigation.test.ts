@@ -29,7 +29,14 @@ describe('navigation', () => {
   });
 
   it('puts the Round 2 trip tools in the tab bar', () => {
-    expect(TAB_BAR_ITEMS.map((i) => i.path)).toContain('/itinerary');
+    expect(TAB_BAR_ITEMS.map((i) => i.path)).toEqual([
+      '/',
+      '/itinerary',
+      '/packing',
+      '/weather',
+      '/more',
+    ]);
+    expect(activeTabPath('/game')).toBe('/more');
     expect(activeTabPath('/flights')).toBe('/more');
   });
 

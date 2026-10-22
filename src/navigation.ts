@@ -77,13 +77,22 @@ export const SECTIONS: SectionItem[] = [
     inTabBar: true,
   },
   {
+    path: '/weather',
+    group: 'plan',
+    title: 'Weather & snow',
+    navLabel: 'Weather',
+    icon: 'cloudSnow',
+    blurb: 'Forecast, snow and live cams at three altitudes.',
+    inTabBar: true,
+  },
+  {
     path: '/game',
     group: 'fun',
     title: 'Ski game',
     navLabel: 'Game',
     icon: 'game',
     blurb: 'Dodge trees, grab khachapuri.',
-    inTabBar: true,
+    inTabBar: false,
   },
   {
     path: '/facts',
