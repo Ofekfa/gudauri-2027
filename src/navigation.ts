@@ -95,6 +95,15 @@ export const SECTIONS: SectionItem[] = [
     inTabBar: false,
   },
   {
+    path: '/music',
+    group: 'fun',
+    title: 'Georgian music',
+    navLabel: 'Music',
+    icon: 'music',
+    blurb: 'Our background soundtrack and modern Georgian playlists.',
+    inTabBar: false,
+  },
+  {
     path: '/credits',
     group: 'fun',
     title: 'Credits',
