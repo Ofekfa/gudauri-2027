@@ -16,6 +16,43 @@ export function parseHashQuery(hash: string): URLSearchParams {
   return new URLSearchParams(index === -1 ? '' : hash.slice(index + 1));
 }
 
+/** "/food/khinkali" → "/food" (a section plus one detail segment); other paths are unchanged. */
+export function basePath(path: string): string {
+  const match = /^(\/[^/]+)\/[^/]+$/.exec(path);
+  return match ? match[1]! : path;
+}
+
+export interface RouteMatch<T> {
+  page: T;
+  /** The section path, e.g. "/food" for "/food/khinkali". */
+  base: string;
+  /** The detail segment, decoded, when the route takes one. */
+  param?: string;
+}
+
+/**
+ * Exact routes first, then "section + one segment" routes (e.g. "/food/:id").
+ * Deeper paths never match, so they fall through to Not Found.
+ */
+export function matchRoute<E, P>(
+  path: string,
+  exact: Readonly<Record<string, E>>,
+  withParam: Readonly<Record<string, P>>,
+): RouteMatch<E> | RouteMatch<P> | null {
+  const page = exact[path];
+  if (page) return { page, base: path };
+  const base = basePath(path);
+  const paramPage = base === path ? undefined : withParam[base];
+  if (!paramPage) return null;
+  let param: string;
+  try {
+    param = decodeURIComponent(path.slice(base.length + 1));
+  } catch {
+    return null;
+  }
+  return { page: paramPage, base, param };
+}
+
 export function href(path: string, params?: Record<string, string>): string {
   const query = params ? new URLSearchParams(params).toString() : '';
   return query ? `#${path}?${query}` : `#${path}`;
