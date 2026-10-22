@@ -21,6 +21,7 @@
     "../src/lib/currency/rates.ts",
     "../src/lib/itinerary/types.ts",
     "../src/lib/weather/openMeteo.ts",
-    "../src/data/zones.ts"
+    "../src/data/zones.ts",
+    "../src/lib/itinerary/plan.ts"
   ]
 }

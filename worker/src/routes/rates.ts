@@ -5,7 +5,8 @@ import {
   type Rates,
   type RatesPayload,
 } from '../../../src/lib/currency/rates';
-import { cacheStoreFor, getOrRefresh, UpstreamUnavailableError } from '../cache';
+import { cacheStoreFor, getOrRefresh, UpstreamUnavailableError, type CachedResult } from '../cache';
+import type { Env } from '../env';
 import { errorJson, json } from '../http';
 import { RATES_BROWSER_MAX_AGE_S, RATES_MAX_STALE_MS, RATES_TTL_MS } from '../limits';
 import type { Route } from '../router';
@@ -26,19 +27,24 @@ export async function fetchRates(fetchImpl: typeof fetch = fetch): Promise<Rates
   }
 }
 
+/** Cached rates (shared by /rates and the assistant's live context). */
+export function loadRates(env: Env): Promise<CachedResult<Rates>> {
+  return getOrRefresh(
+    cacheStoreFor(env.CACHE),
+    RATES_CACHE_KEY,
+    { ttlMs: RATES_TTL_MS, maxStaleMs: RATES_MAX_STALE_MS },
+    () => fetchRates(),
+    validateRates,
+  );
+}
+
 export const ratesRoute: Route = {
   method: 'GET',
   path: '/rates',
   rateLimit: 'RL_DATA',
   async handler({ env, cors }) {
     try {
-      const result = await getOrRefresh(
-        cacheStoreFor(env.CACHE),
-        RATES_CACHE_KEY,
-        { ttlMs: RATES_TTL_MS, maxStaleMs: RATES_MAX_STALE_MS },
-        () => fetchRates(),
-        validateRates,
-      );
+      const result = await loadRates(env);
       const payload: RatesPayload = {
         base: 'GEL',
         ...result.data,

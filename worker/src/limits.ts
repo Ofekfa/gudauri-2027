@@ -30,3 +30,10 @@ export const MAX_ICS_BYTES = 3_000_000;
 export const WEATHER_TTL_MS = 30 * MINUTE_MS;
 export const WEATHER_MAX_STALE_MS = DAY_MS;
 export const WEATHER_BROWSER_MAX_AGE_S = 300;
+
+/** The assistant's live-data block: two days of (Hebrew) plan + weather + rates, ~450 tokens. */
+export const LIVE_CONTEXT_MAX_CHARS = 1500;
+/** Each live source gets this long before the assistant answers without it. */
+export const LIVE_SOURCE_TIMEOUT_MS = 1500;
+/** Calendar titles/locations are shortened in the prompt. */
+export const LIVE_TEXT_MAX_CHARS = 60;
