@@ -21,7 +21,7 @@
 | 8.7   | Offline mode (service worker) + baked fallback rate                      | ✅ Done | v1.8.0  |
 | 9.1   | Georgian food page                                                       | ⏳ Next | v1.9.0  |
 | 9.2   | Background Georgian music                                                | ✅ Done | v1.10.0 |
-| 10.1  | Shared lists across our phones (sync)                                    | ⏳ Next | v1.11.0 |
+| 10.1  | Shared lists across our phones (sync)                                    | ✅ Done | v1.11.0 |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/
 
@@ -1077,3 +1077,5 @@ Packing lists and to-dos lived only on each phone. Decisions (Ofek, 2026-10-22):
 - **Privacy:** list contents are stored in our Cloudflare account and reachable only with the code.
 - **Tests:** record diff/merge, adapters, client merge during an in-flight sync, Durable Object merge rules, route auth/validation.
 - **Manual step for Ofek:** choose a long passphrase, run `npx wrangler secret put GROUP_CODE` in `worker/`, and share the code privately with Ron, Roy and Maya.
+
+**Status (2026-10-22):** shipped as `v1.11.0`. The Durable Object deployed on the Workers Free plan. Verified end to end with a local Worker (emulated Durable Object) and two separate browser profiles: join, see the other phone's item with "· Ofek", tick it and see it packed with "· Maya" on the first phone, wrong code rejected. Live `/sync` answers `501` until Ofek sets `GROUP_CODE`.

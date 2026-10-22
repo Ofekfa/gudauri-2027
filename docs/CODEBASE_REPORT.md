@@ -1,6 +1,6 @@
 # Gudauri 2027 — Codebase Report
 
-_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 9.2 (`v1.10.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
+_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 10.1 (`v1.11.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
 
 ## Changelog since v1.0.0
 
@@ -52,6 +52,22 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **upda
 - Lesson: in-place `npm install` can drop optional platform bindings from a lockfile (npm/cli#4828). Regenerate it from scratch if CI reports "Cannot find native binding".
 
 **Tests:** 107 site + 22 Worker.
+
+### Phase 10.1 — Shared lists across our phones (`v1.11.0`)
+
+**Worker**
+
+- `POST /sync` (`worker/src/routes/sync.ts`): Bearer group code compared in constant time with the `GROUP_CODE` secret; 501 until set; `RL_DATA`; size and count caps; `no-store`.
+- `worker/src/sync/ListsStore.ts`: a SQLite-backed Durable Object (`LISTS` binding, migration `v1`) that applies each sync in `transactionSync`.
+- `worker/src/sync/recordStore.ts`: `applySync`: group-wide revision, last arrival wins per record, tombstones, cap of 3,000 records per doc.
+- CORS allows `Authorization`; the Worker's vitest config stubs `cloudflare:workers`.
+
+**Site**
+
+- `src/lib/sync/`: `protocol.ts` (shared), `records.ts`, `adapters.ts` (packing and to-dos), `syncClient.ts` (`sync:<doc>` base/rev/changed-by), `settings.ts` (`sync:settings`), `useListSync.ts` (load, debounced edits, 15 s polling, return/online).
+- UI: `components/common/SyncPanel.tsx` (join / status), `ChangedBy.tsx` in packing and to-do rows.
+
+**Tests:** 372 site + 64 Worker.
 
 ### Phase 9.2 — Background Georgian music (`v1.10.0`)
 
