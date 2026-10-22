@@ -29,6 +29,15 @@ namespace_id = "1002"
 binding = "CACHE"
 id = "3587a739aace4a73a4b2f88477cb2d41"
 
+# Shared packing/to-do lists (one SQLite-backed Durable Object for the group).
+[[durable_objects.bindings]]
+name = "LISTS"
+class_name = "ListsStore"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ListsStore"]
+
 [vars]
 # Comma-separated list of sites allowed to call the assistant.
 ALLOWED_ORIGINS = "https://ofekfa.github.io,http://localhost:5173,http://localhost:4173"
