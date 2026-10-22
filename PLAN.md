@@ -25,6 +25,7 @@
 | 10.2  | Avatar hair colours (Ron brown, Ofek light brown)                        | ✅ Done | v1.11.1 |
 | 10.3  | Album: our trip in photos                                                | ✅ Done | v1.12.0 |
 | 10.3a | Fix: album uploads stuck at "Uploading 0%"                               | ✅ Done | v1.12.1 |
+| 10.4  | Album card carousel, custom moments, bigger snowfall                     | ✅ Done | v1.13.0 |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/ · **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev · Session handoff: `docs/HANDOFF.md`
 
@@ -32,7 +33,15 @@
 
 **10.3 Album** is shipped and **adding photos works live** (`v1.12.1`). The upload bug was caused by `ALBUM_SIGNING_KEY` not being set (`501`), which the client retried forever without telling anyone. Token errors now fail at once with a reason, retries are capped at 5 with an attempt deadline, the photo shows "Upload failed — tap to retry", and the key is set. See "Resolved bug" in `docs/HANDOFF.md`.
 
-**Next action:** Ofek's real-phone album test (camera, gallery multi-select, airplane mode).
+**10.4** (`v1.13.0`, PRs #95–#97):
+
+- browse a moment's photos on its grid card;
+- add, edit, move and delete **our own moments** (stored by the Worker, string fractional order keys, delete cascades to photos);
+- bigger snowflakes, more of them on bigger screens (`36 + 18 × MP`, max 110; 4.5–12 px).
+
+All three are verified live.
+
+**Next action:** Ofek's real-phone album test (camera, gallery multi-select, airplane mode, swiping a card, adding "Breakfast", the snowflakes).
 
 ### Queued (in order)
 
