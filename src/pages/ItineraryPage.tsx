@@ -3,12 +3,17 @@ import { EntryList } from '../components/itinerary/EntryList';
 import { PageHeader } from '../components/PageHeader';
 import { getTripPhase } from '../lib/time/countdown';
 import { trip } from '../data/trip';
-import { dayLabel, groupByDay, itineraryDays, mergeEntries, nowNext } from '../lib/itinerary/plan';
+import {
+  dayLabel,
+  displayZone,
+  groupByDay,
+  itineraryDays,
+  mergeEntries,
+  nowNext,
+} from '../lib/itinerary/plan';
 import { useItinerary } from '../lib/itinerary/useItinerary';
 import { tripTotalDays } from '../lib/time/countdown';
 import { formatAgo } from '../lib/time/format';
-
-const TZ = trip.destinationTimeZone;
 
 /** "Wed 24 Feb" for a calendar day. */
 function dayTitle(day: string): string {
@@ -37,7 +42,10 @@ export default function ItineraryPage() {
   const { data, status } = useItinerary();
   const days = useMemo(() => itineraryDays(trip), []);
   const entries = useMemo(() => mergeEntries(trip, data?.events ?? []), [data]);
-  const groups = useMemo(() => groupByDay(entries, days, TZ), [entries, days]);
+  const groups = useMemo(
+    () => groupByDay(entries, days, (e) => displayZone(e, trip)),
+    [entries, days],
+  );
   const now = Date.now();
   // Now/next only make sense while we're actually on the trip.
   const during = getTripPhase(now, trip).kind === 'during';
@@ -49,7 +57,7 @@ export default function ItineraryPage() {
     <>
       <PageHeader
         title="Itinerary"
-        subtitle="Our day-by-day plan from the shared Google Calendar, in Georgia time (UTC+4)."
+        subtitle="Our day-by-day plan from the shared Google Calendar, in Georgia time (UTC+4). Until we land, times are in Israel time."
       />
 
       {status === 'not-configured' && !data && (
@@ -97,12 +105,7 @@ export default function ItineraryPage() {
                   {dayTitle(day)} <span class="itin-day__sub">{daySubtitle(day)}</span>
                 </h2>
                 {list.length ? (
-                  <EntryList
-                    entries={list}
-                    timeZone={TZ}
-                    nowIds={nowIds}
-                    nextId={next?.id ?? null}
-                  />
+                  <EntryList entries={list} nowIds={nowIds} nextId={next?.id ?? null} />
                 ) : (
                   <p class="empty-note itin-day__empty">Nothing planned.</p>
                 )}

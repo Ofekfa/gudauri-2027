@@ -7,7 +7,17 @@ import {
   loadCachedItinerary,
   saveCachedItinerary,
 } from './itineraryClient';
-import { dayLabel, flightEntries, groupByDay, itineraryDays, mergeEntries, nowNext } from './plan';
+import {
+  dayLabel,
+  displayZone,
+  flightEntries,
+  flightTimes,
+  groupByDay,
+  itineraryDays,
+  legOf,
+  mergeEntries,
+  nowNext,
+} from './plan';
 import { validateItineraryPayload, type ItineraryEvent } from './types';
 
 const TZ = 'Asia/Tbilisi';
@@ -126,5 +136,88 @@ describe('itinerary client', () => {
     expect(loadCachedItinerary(store)).toBeNull();
     saveCachedItinerary(payload, store);
     expect(loadCachedItinerary(store)).toEqual(payload);
+  });
+});
+
+describe('local times before and after landing', () => {
+  const at = (iso: string) => new Date(iso).toISOString();
+  const event = (title: string, startIso: string, endIso: string, location?: string) => ({
+    id: title,
+    title,
+    start: at(startIso),
+    end: at(endIso),
+    allDay: false,
+    location,
+  });
+
+  it('recognises our flights in the calendar, spaces and all', () => {
+    expect(
+      legOf(
+        event('טיסה', '2027-02-24T05:15:00+02:00', '2027-02-24T09:50:00+02:00', 'El Al LY 5107'),
+        trip,
+      ),
+    ).toBe('outbound');
+    expect(
+      legOf(
+        event('Flight home LY5110', '2027-02-28T23:55:00+04:00', '2027-03-01T00:35:00+02:00'),
+        trip,
+      ),
+    ).toBe('inbound');
+    expect(
+      legOf(event('Dinner', '2027-02-25T20:00:00+04:00', '2027-02-25T21:00:00+04:00'), trip),
+    ).toBeUndefined();
+    const merged = mergeEntries(trip, [
+      event('טיסה', '2027-02-24T05:15:00+02:00', '2027-02-24T09:50:00+02:00', 'El Al LY 5107'),
+    ]);
+    expect(merged.filter((e) => e.leg === 'outbound')).toHaveLength(1);
+    expect(merged.find((e) => e.leg === 'outbound')?.kind).toBe('flight');
+  });
+
+  it('uses Israel time until we land, then Georgia time', () => {
+    const breakfast = event('McDonald’s', '2027-02-24T03:00:00+02:00', '2027-02-24T03:45:00+02:00');
+    const drive = event(
+      'Drive to the hotel',
+      '2027-02-24T13:00:00+04:00',
+      '2027-02-24T16:00:00+04:00',
+    );
+    expect(displayZone(breakfast, trip)).toBe('Asia/Jerusalem');
+    expect(displayZone(drive, trip)).toBe('Asia/Tbilisi');
+    expect(
+      displayZone({ ...drive, allDay: true, start: '2027-02-24', end: '2027-02-25' }, trip),
+    ).toBe('Asia/Tbilisi');
+  });
+
+  it('groups a late pre-flight event on its Israeli date', () => {
+    const lateNight = event(
+      'Pack the car',
+      '2027-02-23T23:30:00+02:00',
+      '2027-02-23T23:50:00+02:00',
+    );
+    const days = itineraryDays(trip);
+    const groups = groupByDay(mergeEntries(trip, [lateNight]), days, (e) => displayZone(e, trip));
+    expect(groups.get('2027-02-23')?.map((e) => e.title)).toEqual(['Pack the car']);
+    // In Georgia time it would have landed on the 24th.
+    expect(
+      groupByDay(mergeEntries(trip, [lateNight]), days, 'Asia/Tbilisi')
+        .get('2027-02-24')
+        ?.map((e) => e.title),
+    ).toContain('Pack the car');
+  });
+
+  it('shows flights from the booking, each end in its own time', () => {
+    expect(flightTimes('outbound', trip)).toEqual({
+      from: 'TLV',
+      depart: '05:15',
+      to: 'TBS',
+      arrive: '09:50',
+      nextDay: false,
+    });
+    expect(flightTimes('inbound', trip)).toEqual({
+      from: 'TBS',
+      depart: '23:55',
+      to: 'TLV',
+      arrive: '00:35',
+      nextDay: true,
+    });
   });
 });

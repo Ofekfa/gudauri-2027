@@ -7,7 +7,7 @@
 import { ZONES } from '../../src/data/zones';
 import { trip } from '../../src/data/trip';
 import type { Rates } from '../../src/lib/currency/rates';
-import { groupByDay, mergeEntries } from '../../src/lib/itinerary/plan';
+import { displayZone, flightTimes, groupByDay, mergeEntries } from '../../src/lib/itinerary/plan';
 import type { ItineraryEvent } from '../../src/lib/itinerary/types';
 import { getTripPhase, localDateIn } from '../../src/lib/time/countdown';
 import type { ZoneWeather } from '../../src/lib/weather/types';
@@ -113,9 +113,9 @@ export function itineraryLines(r: CachedResult<ItineraryEvent[]>, nowMs: number)
   const first = today < trip.firstDay ? trip.firstDay : today;
   const days = [first, shiftDay(first, 1)].filter((d) => d <= shiftDay(trip.lastDay, 1));
   if (days.length === 0) return [];
-  const groups = groupByDay(mergeEntries(trip, r.data), days, TZ);
+  const groups = groupByDay(mergeEntries(trip, r.data), days, (e) => displayZone(e, trip));
   const lines = [
-    `Our plan from the shared calendar (titles in Hebrew; all times Tbilisi time${staleNote(r)}; on ${dayName(trip.firstDay)} we start in Israel and fly to Tbilisi):`,
+    `Our plan from the shared calendar (titles in Hebrew; times are Georgia time unless marked Israel time${staleNote(r)}; on ${dayName(trip.firstDay)} we start in Israel and fly to Tbilisi):`,
   ];
   for (const day of days) {
     const entries = groups.get(day) ?? [];
@@ -126,15 +126,21 @@ export function itineraryLines(r: CachedResult<ItineraryEvent[]>, nowMs: number)
           ? `Tomorrow, ${dayName(day)}`
           : dayName(day);
     const items = entries.map((e) => {
-      const time = e.allDay
-        ? 'all day'
-        : new Intl.DateTimeFormat('en-GB', {
-            timeZone: TZ,
-            hour: '2-digit',
-            minute: '2-digit',
-            hourCycle: 'h23',
-          }).format(Date.parse(e.start));
-      return `${time} ${cleanText(e.title)}${e.location ? ` (${cleanText(e.location)})` : ''}`;
+      const where = e.location ? ` (${cleanText(e.location)})` : '';
+      if (e.leg) {
+        const f = flightTimes(e.leg, trip);
+        return `${cleanText(e.title)}${where}: departs ${f.depart} ${f.from} time, arrives ${f.arrive ?? 'TBC'} ${f.to} time`;
+      }
+      if (e.allDay) return `all day ${cleanText(e.title)}${where}`;
+      const zone = displayZone(e, trip);
+      const time = new Intl.DateTimeFormat('en-GB', {
+        timeZone: zone,
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+      }).format(Date.parse(e.start));
+      const israel = zone === trip.destinationTimeZone ? '' : ' Israel time';
+      return `${time}${israel} ${cleanText(e.title)}${where}`;
     });
     lines.push(`- ${label}: ${items.length ? items.join('; ') : 'nothing planned'}.`);
   }

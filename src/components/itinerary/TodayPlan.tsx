@@ -1,7 +1,7 @@
 import { useMemo } from 'preact/hooks';
 import { getTripPhase } from '../../lib/time/countdown';
 import { trip } from '../../data/trip';
-import { groupByDay, mergeEntries, nowNext } from '../../lib/itinerary/plan';
+import { displayZone, groupByDay, mergeEntries, nowNext } from '../../lib/itinerary/plan';
 import { useItinerary } from '../../lib/itinerary/useItinerary';
 import { href } from '../../lib/router/hashRouter';
 import { localDateIn } from '../../lib/time/countdown';
@@ -16,7 +16,7 @@ export function TodayPlan() {
   const now = Date.now();
   const today = localDateIn(now, TZ);
   const entries = useMemo(() => mergeEntries(trip, data?.events ?? []), [data]);
-  const todays = groupByDay(entries, [today], TZ).get(today) ?? [];
+  const todays = groupByDay(entries, [today], (e) => displayZone(e, trip)).get(today) ?? [];
   // Now/next only make sense while we're actually on the trip.
   const during = getTripPhase(now, trip).kind === 'during';
   const { now: current, next } = during ? nowNext(entries, now) : { now: [], next: null };
@@ -29,7 +29,6 @@ export function TodayPlan() {
       {todays.length ? (
         <EntryList
           entries={todays}
-          timeZone={TZ}
           nowIds={new Set(current.map((e) => e.id))}
           nextId={next?.id ?? null}
         />
