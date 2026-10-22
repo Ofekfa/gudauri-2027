@@ -36,6 +36,7 @@
 - Phase 2: the map page doesn't use pinch-zoom; zoom buttons (100–300%) plus native scrolling keep it simple and accessible. Phones open at 200%.
 - Between phases 2 and 3: avatar tweaks per feedback (Maya brown eyes + glasses, Roy undercut, Ofek warmer skin), tagged as part of v0.3.0.
 - Phase 10.2 (`v1.11.1`): hair colours per feedback: Ron brown (was black), Ofek light/ash brown (was blond). `og-image.png` regenerated with `npm run og-image`.
+- `v1.11.2`: Roy's name is spelled **Roi** everywhere it's shown (his id stays `roy`, so stored lists, scores and sync keep working).
 - Phase 3: a generic toast system (`src/lib/toast`) landed early because undo-delete needs it; Phase 4 fact pop-ups reuse it. Import confirmation is inline rather than a browser dialog. The starter template marks everything "Already have" by default.
 - Phase 4: 55 facts (target 40+). A fact-check pass corrected the Kobi gondola year (2019), Khachapuri Index start (2011), speed-skiing record (255.5 km/h, 2023) and Military Road details. Unsupported details were dropped. Pop-ups are also paused on the Facts page, and the fact data loads lazily.
 - Between phases 4 and 5: the Fun facts page became a one-at-a-time viewer (← → keys, swipe, Previous/Next) per feedback.

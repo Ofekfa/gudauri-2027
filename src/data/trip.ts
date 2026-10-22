@@ -6,6 +6,7 @@
 
 export const TBC = 'TBC' as const;
 
+/** Stable ids used in stored data and sync; display names live in `trip.travelers` (Roi's id stays 'roy'). */
 export type TravelerId = 'ofek' | 'ron' | 'roy' | 'maya';
 
 export interface Traveler {
@@ -85,7 +86,7 @@ export const trip: Trip = {
   travelers: [
     { id: 'ofek', name: 'Ofek' },
     { id: 'ron', name: 'Ron' },
-    { id: 'roy', name: 'Roy' },
+    { id: 'roy', name: 'Roi' },
     { id: 'maya', name: 'Maya' },
   ],
   outbound: {

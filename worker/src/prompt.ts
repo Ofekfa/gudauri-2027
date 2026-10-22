@@ -32,7 +32,7 @@ function describeLeg(label: string, leg: FlightLeg): string {
 export function buildSystemPrompt(now: Date, live = ''): string {
   const names = trip.travelers.map((t) => t.name).join(', ');
   const facts = FACTS.map((f) => `- ${f.text}`).join('\n');
-  return `You are the friendly trip assistant for "${trip.name}", a ski trip by four friends: ${names} (Ron is Ofek's partner; Roy and Maya are friends).
+  return `You are the friendly trip assistant for "${trip.name}", a ski trip by four friends: ${names} (Ron is Ofek's partner; Roi and Maya are friends).
 Today's date (UTC) is ${now.toISOString().slice(0, 10)}.
 
 Trip facts (authoritative):
