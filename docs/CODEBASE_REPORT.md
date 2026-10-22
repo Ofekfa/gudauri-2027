@@ -1,6 +1,6 @@
 # Gudauri 2027 — Codebase Report
 
-_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 9.1 (`v1.9.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
+_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 9.2 (`v1.10.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
 
 ## Changelog since v1.0.0
 
@@ -52,6 +52,35 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **upda
 - Lesson: in-place `npm install` can drop optional platform bindings from a lockfile (npm/cli#4828). Regenerate it from scratch if CI reports "Cannot find native binding".
 
 **Tests:** 107 site + 22 Worker.
+
+### Phase 9.2 — Background Georgian music (`v1.10.0`)
+
+**Data**
+
+- `scripts/track-sources.ts` lists 49 tracks: Commons and archive.org MP3 URLs, licence, source page, attribution.
+- `scripts/analyze-tracks.ts` (ffprobe/ffmpeg loudnorm, retries) writes `src/data/tracks.json`: `durationS`, `loudnessLufs`, `gainDb`, `checkedOn`.
+- `src/data/tracks.ts` types it, with `ALLOWED_LICENSES`.
+- `src/data/musicEmbeds.ts` holds 6 official YouTube playlists/videos.
+
+**Engine (`src/lib/music/`)**
+
+- `machine.ts`: phases `waiting|loading|playing|unavailable`; flags `enabled`, `hidden`, `listening`, `speaking`, `external`; `failures`; `trackRequest`. Derived values: `shouldPlay`, `needsTrack(state, served)`, `volumeFactor` (0.2 while speaking), `showsGestureHint`.
+- `shuffleBag.ts`: persisted as `music:bag`; one play per cycle; weighted artist spreading with a must-play rule; at most 2 same-era picks preferred.
+- `settings.ts`: `music:settings` `{ enabled, volume, chosen }`; default on, off on Save-Data/2G until the visitor chooses.
+- `player.ts`: volume = user × 10^(gainDb/20) × duck; next-track metadata preload; 20 s load timeout; retry once, then skip; Media Session.
+- `musicStore.ts`: first-gesture unlock with an inline silent MP3, then lazy import of the player.
+
+**UI**
+
+- `components/music/MusicControl.tsx` (header): play/mute, next, now-playing panel, `aria-live` announcements.
+- `#/music` (`MusicPage`, `EmbedCard`, `TrackCredits`); `#/credits` lists the tracks too.
+- Icons: `music`, `play`, `pause`, `skip`.
+
+**Speech:** `synthesis.ts` reports start/end and `AssistantPage` reports listening to `speechActivity`.
+
+**Bundle:** main +2.4 kB gzipped; player + tracks is a 6 kB gzipped lazy chunk.
+
+**Tests:** 359 site + 55 Worker.
 
 ### Phase 9.1 — Georgian food page (`v1.9.0`)
 
