@@ -1772,6 +1772,235 @@ main:focus {
   color: #ffffff;
 }
 
+/* ---------- Weather ---------- */
+.mountain-card {
+  padding: var(--space-3);
+}
+.mountain {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Reserve space up front so nothing shifts (viewBox 360x280). */
+  aspect-ratio: 360 / 280;
+}
+.mountain__rock {
+  fill: var(--map-ridge);
+}
+.mountain__outline {
+  fill: none;
+  stroke: var(--map-lift);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  opacity: 0.6;
+}
+.mountain__snow {
+  fill: var(--map-snow);
+  stroke: var(--run-easy);
+  stroke-width: 0.6;
+  stroke-opacity: 0.5;
+}
+.mountain__line {
+  stroke: var(--color-ink-muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.mountain__dot {
+  fill: var(--color-ink-muted);
+}
+.mountain__name {
+  fill: var(--color-ink-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.mountain__value {
+  fill: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+}
+.mountain__snowlabel {
+  fill: var(--color-primary);
+  font-size: 12px;
+}
+.mountain__zone.is-selected .mountain__line {
+  stroke: var(--color-primary);
+  stroke-dasharray: none;
+  stroke-width: 2;
+}
+.mountain__zone.is-selected .mountain__dot {
+  fill: var(--color-primary);
+}
+.mountain__zone.is-selected .mountain__name {
+  fill: var(--color-primary);
+}
+.mountain__hotel path {
+  fill: var(--map-hotel);
+}
+.mountain__hotel-label {
+  fill: var(--map-hotel);
+  font-size: 10px;
+  font-weight: 700;
+}
+.mountain__footnote {
+  fill: var(--color-ink-muted);
+  font-size: 9px;
+}
+.zone-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: var(--space-4) 0 var(--space-3);
+}
+.zone-tabs__button {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding-block: var(--space-2);
+  border-radius: var(--radius-md);
+  line-height: 1.2;
+}
+.zone-tabs__elevation {
+  font-size: 0.75rem;
+  font-weight: 500;
+  opacity: 0.85;
+}
+.zone-card__title {
+  font-size: var(--text-lg);
+}
+.zone-card__place {
+  margin: var(--space-1) 0 var(--space-3);
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+.zone-now {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+}
+.zone-now__temp {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+}
+.zone-now__meta {
+  color: var(--color-ink-muted);
+}
+.zone-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+}
+.zone-facts dt {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-ink-muted);
+}
+.zone-facts dd {
+  margin: 0;
+  font-weight: 600;
+}
+.zone-facts__note {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-ink-muted);
+}
+.forecast {
+  display: grid;
+  /* Seven narrow columns fit a 375 px phone without sideways scrolling. */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.forecast__day {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: var(--space-2) 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.forecast__name {
+  font-weight: 700;
+}
+.forecast__icon {
+  font-size: 1.25rem;
+}
+.forecast__max {
+  font-weight: 700;
+}
+.forecast__min {
+  color: var(--color-ink-muted);
+}
+.forecast__snow {
+  font-size: 0.6875rem;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+.webcam {
+  margin: 0;
+}
+.webcam__frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #0e2a47;
+}
+.webcam__frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.webcam__play {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: linear-gradient(160deg, #0f3d6e, #1a6bb8 60%, #4aa3e8);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  font-size: var(--text-lg);
+  cursor: pointer;
+}
+.webcam__play-icon {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 20%);
+  font-size: 1.4rem;
+}
+.webcam__play-sub {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  opacity: 0.9;
+}
+.webcam__caption {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
 /* ---------- Toasts ---------- */
 .toasts {
   position: fixed;
