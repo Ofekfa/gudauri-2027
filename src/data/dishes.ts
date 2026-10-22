@@ -15,6 +15,7 @@ export const DISHES: Dish[] = [
   // Cold starters & salads
   {
     id: 'pkhali',
+    name: 'Pkhali',
     nameKa: 'ფხალი',
     transliteration: 'pkhali',
     nameEn: 'Vegetable and walnut pâté',
@@ -34,6 +35,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'badrijani-nigvzit',
+    name: 'Badrijani nigvzit',
     nameKa: 'ბადრიჯანი ნიგვზით',
     transliteration: 'badrijani nigvzit',
     nameEn: 'Aubergine rolls with walnuts',
@@ -57,6 +59,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'jonjoli',
+    name: 'Jonjoli',
     nameKa: 'ჯონჯოლი',
     transliteration: 'jonjoli',
     nameEn: 'Pickled bladdernut flowers',
@@ -73,6 +76,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'gebzhalia',
+    name: 'Gebzhalia',
     nameKa: 'გებჟალია',
     transliteration: 'gebzhalia',
     nameEn: 'Cheese rolls with mint',
@@ -90,6 +94,7 @@ export const DISHES: Dish[] = [
   // Soups
   {
     id: 'kharcho',
+    name: 'Kharcho',
     nameKa: 'ხარჩო',
     transliteration: 'kharcho',
     nameEn: 'Beef soup with sour plum',
@@ -111,6 +116,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'chikhirtma',
+    name: 'Chikhirtma',
     nameKa: 'ჩიხირთმა',
     transliteration: 'chikhirtma',
     nameEn: 'Silky chicken soup',
@@ -127,6 +133,7 @@ export const DISHES: Dish[] = [
   // Breads & pastries
   {
     id: 'khachapuri-imeruli',
+    name: 'Imeruli khachapuri',
     nameKa: 'იმერული ხაჭაპური',
     transliteration: 'imeruli khach’ap’uri',
     nameEn: 'Imeretian khachapuri',
@@ -144,6 +151,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'khachapuri-adjaruli',
+    name: 'Adjaruli khachapuri',
     nameKa: 'აჭარული ხაჭაპური',
     transliteration: 'ach’aruli khach’ap’uri',
     nameEn: 'Adjarian khachapuri',
@@ -161,6 +169,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'khachapuri-megruli',
+    name: 'Megruli khachapuri',
     nameKa: 'მეგრული ხაჭაპური',
     transliteration: 'megruli khach’ap’uri',
     nameEn: 'Megrelian khachapuri',
@@ -176,6 +185,8 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'khachapuri-penovani',
+    emoji: '🥐',
+    name: 'Penovani khachapuri',
     nameKa: 'ფენოვანი ხაჭაპური',
     transliteration: 'penovani khach’ap’uri',
     nameEn: 'Flaky khachapuri',
@@ -190,6 +201,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'lobiani',
+    name: 'Lobiani',
     nameKa: 'ლობიანი',
     transliteration: 'lobiani',
     nameEn: 'Bean-filled bread',
@@ -207,6 +219,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'kubdari',
+    name: 'Kubdari',
     nameKa: 'კუბდარი',
     transliteration: 'k’ubdari',
     nameEn: 'Svan meat pie',
@@ -222,6 +235,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'shoti',
+    name: 'Shoti',
     nameKa: 'შოთი',
     transliteration: 'shoti',
     nameEn: 'Canoe-shaped bread',
@@ -237,6 +251,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'mchadi',
+    name: 'Mchadi',
     nameKa: 'მჭადი',
     transliteration: 'mch’adi',
     nameEn: 'Cornbread',
@@ -256,6 +271,7 @@ export const DISHES: Dish[] = [
   // Dumplings & mains
   {
     id: 'khinkali',
+    name: 'Khinkali',
     nameKa: 'ხინკალი',
     transliteration: 'khink’ali',
     nameEn: 'Soup dumplings',
@@ -275,6 +291,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'mtsvadi',
+    name: 'Mtsvadi',
     nameKa: 'მწვადი',
     transliteration: 'mts’vadi',
     nameEn: 'Grilled meat skewers',
@@ -291,6 +308,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'shkmeruli',
+    name: 'Shkmeruli',
     nameKa: 'შქმერული',
     transliteration: 'shkmeruli',
     nameEn: 'Chicken in garlic-milk sauce',
@@ -305,6 +323,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'ojakhuri',
+    name: 'Ojakhuri',
     nameKa: 'ოჯახური',
     transliteration: 'ojakhuri',
     nameEn: 'Family-style meat and potatoes',
@@ -317,6 +336,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'chakapuli',
+    name: 'Chakapuli',
     nameKa: 'ჩაქაფული',
     transliteration: 'chakapuli',
     nameEn: 'Lamb and tarragon stew',
@@ -339,6 +359,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'chashushuli',
+    name: 'Chashushuli',
     nameKa: 'ჩაშუშული',
     transliteration: 'chashushuli',
     nameEn: 'Spicy beef and tomato stew',
@@ -353,6 +374,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'ajapsandali',
+    name: 'Ajapsandali',
     nameKa: 'აჯაფსანდალი',
     transliteration: 'ajapsandali',
     nameEn: 'Summer vegetable stew',
@@ -368,6 +390,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'satsivi',
+    name: 'Satsivi',
     nameKa: 'საცივი',
     transliteration: 'satsivi',
     nameEn: 'Poultry in walnut sauce',
@@ -390,6 +413,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'lobio',
+    name: 'Lobio',
     nameKa: 'ლობიო',
     transliteration: 'lobio',
     nameEn: 'Bean stew',
@@ -405,6 +429,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'kupati',
+    name: 'Kupati',
     nameKa: 'კუპატი',
     transliteration: 'k’up’at’i',
     nameEn: 'Spiced pork sausage',
@@ -421,6 +446,7 @@ export const DISHES: Dish[] = [
   // Sauces, sides & cheese
   {
     id: 'tkemali',
+    name: 'Tkemali',
     nameKa: 'ტყემალი',
     transliteration: 't’q’emali',
     nameEn: 'Sour plum sauce',
@@ -436,6 +462,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'ajika',
+    name: 'Ajika',
     nameKa: 'აჯიკა',
     transliteration: 'ajik’a',
     nameEn: 'Hot pepper paste',
@@ -452,6 +479,8 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'bazhe',
+    emoji: '🥣',
+    name: 'Bazhe',
     nameKa: 'ბაჟე',
     transliteration: 'bazhe',
     nameEn: 'Walnut sauce',
@@ -466,6 +495,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'elarji',
+    name: 'Elarji',
     nameKa: 'ელარჯი',
     transliteration: 'elarji',
     nameEn: 'Cornmeal with cheese',
@@ -481,6 +511,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'sulguni',
+    name: 'Sulguni',
     nameKa: 'სულგუნი',
     transliteration: 'sulguni',
     nameEn: 'Stretchy brined cheese',
@@ -499,6 +530,7 @@ export const DISHES: Dish[] = [
   // Sweets
   {
     id: 'churchkhela',
+    name: 'Churchkhela',
     nameKa: 'ჩურჩხელა',
     transliteration: 'churchkhela',
     nameEn: 'Nut and grape-must candle',
@@ -515,6 +547,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'pelamushi',
+    name: 'Pelamushi',
     nameKa: 'ფელამუში',
     transliteration: 'pelamushi',
     nameEn: 'Grape-must pudding',
@@ -530,6 +563,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'gozinaki',
+    name: 'Gozinaki',
     nameKa: 'გოზინაყი',
     transliteration: 'gozinaq’i',
     nameEn: 'Honey and walnut brittle',
@@ -542,6 +576,7 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'tklapi',
+    name: 'Tklapi',
     nameKa: 'ტყლაპი',
     transliteration: 't’q’lap’i',
     nameEn: 'Fruit leather',
@@ -557,6 +592,7 @@ export const DISHES: Dish[] = [
   // Drinks
   {
     id: 'qvevri-wine',
+    name: 'Qvevri wine',
     nameKa: 'ქვევრის ღვინო',
     transliteration: 'kvevris ghvino',
     nameEn: 'Qvevri wine',
@@ -577,6 +613,8 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'chacha',
+    emoji: '🥃',
+    name: 'Chacha',
     nameKa: 'ჭაჭა',
     transliteration: 'ch’ach’a',
     nameEn: 'Grape brandy',
@@ -593,6 +631,8 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'lagidze-waters',
+    emoji: '🥤',
+    name: 'Lagidze waters',
     nameKa: 'ლაღიძის წყალი',
     transliteration: 'laghidzis ts’q’ali',
     nameEn: 'Lagidze waters',
@@ -607,6 +647,8 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'tarkhuna',
+    emoji: '🥤',
+    name: 'Tarkhuna',
     nameKa: 'ტარხუნა',
     transliteration: 't’arkhuna',
     nameEn: 'Tarragon soda',
@@ -620,6 +662,8 @@ export const DISHES: Dish[] = [
   },
   {
     id: 'borjomi',
+    emoji: '💧',
+    name: 'Borjomi',
     nameKa: 'ბორჯომი',
     transliteration: 'borjomi',
     nameEn: 'Borjomi mineral water',

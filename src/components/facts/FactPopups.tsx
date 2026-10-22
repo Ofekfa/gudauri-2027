@@ -12,8 +12,12 @@ import { toasts } from '../../lib/toast/toastStore';
 
 /** How often to check whether a fact is due (cheap; the gate does the real limiting). */
 const CHECK_INTERVAL_MS = 5_000;
-/** Pages where a pop-up would get in the way (games, the facts page itself, input-heavy tools). */
-const BLOCKED_PATHS = new Set(['/game', '/facts', '/currency', '/todo']);
+/**
+ * Pages where a pop-up would get in the way: games, input-heavy tools, and pages
+ * that already show facts (Facts; Food, whose dish pages show their related facts).
+ * Paths are sections, so /food covers every dish page too.
+ */
+const BLOCKED_PATHS = new Set(['/game', '/facts', '/currency', '/todo', '/food']);
 
 /** Invisible: occasionally shows a fun fact as a toast. */
 export function FactPopups({ path }: { path: string }) {

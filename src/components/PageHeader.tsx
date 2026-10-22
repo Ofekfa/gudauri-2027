@@ -8,10 +8,12 @@ interface PageHeaderProps {
   subtitle?: string;
   /** Hide the "Back to Home" link (used on Home itself). */
   isHome?: boolean;
+  /** Where the back link goes instead of Home (e.g. a dish page back to its list). */
+  back?: { path: string; label: string };
 }
 
 /** Page title + way back. Receives focus on navigation so screen readers announce the new page. */
-export function PageHeader({ title, subtitle, isHome = false }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, isHome = false, back }: PageHeaderProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     // Skip on first load so we don't steal focus from the browser's default.
@@ -21,9 +23,9 @@ export function PageHeader({ title, subtitle, isHome = false }: PageHeaderProps)
   return (
     <div class="page-header">
       {!isHome && (
-        <a class="back-link" href={href(HOME.path)}>
+        <a class="back-link" href={href(back?.path ?? HOME.path)}>
           <Icon name="arrowLeft" size={18} />
-          Back to Home
+          {back?.label ?? 'Back to Home'}
         </a>
       )}
       <h1 ref={headingRef} tabIndex={-1}>

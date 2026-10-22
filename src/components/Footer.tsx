@@ -1,3 +1,5 @@
+import { href } from '../lib/router/hashRouter';
+
 export function Footer() {
   return (
     <footer class="site-footer">
@@ -7,7 +9,7 @@ export function Footer() {
         <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
           OpenStreetMap contributors
         </a>
-        , ODbL.
+        , ODbL. <a href={href('/credits')}>All credits</a>
       </p>
     </footer>
   );

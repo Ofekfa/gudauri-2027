@@ -11,6 +11,7 @@ import { NO_FILTERS, type Dish } from './types';
 const dish = (over: Partial<Dish> & Pick<Dish, 'id' | 'category'>): Dish => ({
   nameKa: 'ხინკალი',
   transliteration: over.id,
+  name: over.id,
   nameEn: over.id,
   description: '',
   ingredients: [],

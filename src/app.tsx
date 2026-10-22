@@ -29,6 +29,8 @@ const PAGES: Record<string, ComponentType> = {
   '/todo': lazyPage(() => import('./pages/TodoPage')),
   '/itinerary': lazyPage(() => import('./pages/ItineraryPage')),
   '/weather': lazyPage(() => import('./pages/WeatherPage')),
+  '/food': lazyPage(() => import('./pages/FoodPage')),
+  '/credits': lazyPage(() => import('./pages/CreditsPage')),
   '/more': MorePage,
 };
 
@@ -36,7 +38,9 @@ const PAGES: Record<string, ComponentType> = {
 export interface ParamPageProps {
   param: string;
 }
-const PARAM_PAGES: Record<string, ComponentType<ParamPageProps>> = {};
+const PARAM_PAGES: Record<string, ComponentType<ParamPageProps>> = {
+  '/food': lazyPage<ParamPageProps>(() => import('./pages/FoodDetailPage')),
+};
 
 function focusMain() {
   document.getElementById('main')?.focus();

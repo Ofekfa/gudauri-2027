@@ -18,7 +18,7 @@ describe('dishes', () => {
     const ids = DISHES.map((d) => d.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ids) expect(id).toMatch(SLUG);
-    expect(findDish('khinkali')?.nameEn).toBe('Soup dumplings');
+    expect(findDish('khinkali')?.name).toBe('Khinkali');
     expect(findDish('nope')).toBeUndefined();
   });
 
@@ -32,6 +32,7 @@ describe('dishes', () => {
     expect(dish.nameKa).toMatch(MKHEDRULI);
     expect(dish.transliteration).toMatch(TRANSLITERATION);
     expect(dish.nameEn.trim()).not.toBe('');
+    expect(dish.name).toMatch(/^[A-Z][a-z]+( [a-z]+)*$/);
     expect(dish.description.length).toBeGreaterThan(30);
     expect(dish.description.length).toBeLessThanOrEqual(MAX_DESCRIPTION);
     expect(dish.ingredients.length).toBeGreaterThan(0);
