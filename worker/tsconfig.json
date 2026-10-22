@@ -24,6 +24,7 @@
     "../src/data/zones.ts",
     "../src/lib/itinerary/plan.ts",
     "../src/data/dishes.ts",
-    "../src/lib/food/types.ts"
+    "../src/lib/food/types.ts",
+    "../src/lib/sync/protocol.ts"
   ]
 }

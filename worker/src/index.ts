@@ -9,10 +9,12 @@ import { chatRoute } from './routes/chat';
 import { healthRoute } from './routes/health';
 import { itineraryRoute } from './routes/itinerary';
 import { ratesRoute } from './routes/rates';
+import { syncRoute } from './routes/sync';
 import { weatherRoute } from './routes/weather';
 
 export type { Env } from './env';
 export { parseMessages } from './routes/chat';
+export { ListsStore } from './sync/ListsStore';
 
 export const handleRequest = createRouter([
   healthRoute,
@@ -20,6 +22,7 @@ export const handleRequest = createRouter([
   ratesRoute,
   itineraryRoute,
   weatherRoute,
+  syncRoute,
 ]);
 
 export default {

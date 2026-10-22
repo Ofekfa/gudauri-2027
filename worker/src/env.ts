@@ -18,6 +18,17 @@ export interface Env {
   CACHE?: KvLike;
   /** Secret: the Google Calendar "secret address in iCal format". Never logged or echoed. */
   CALENDAR_ICS_URL?: string;
+  /** Secret: the group code that unlocks shared lists. Never logged or echoed. */
+  GROUP_CODE?: string;
+  /** Durable Object namespace holding the shared lists. */
+  LISTS?: {
+    idFromName(name: string): unknown;
+    get(id: unknown): {
+      sync(
+        request: import('../../src/lib/sync/protocol').SyncRequest,
+      ): Promise<import('../../src/lib/sync/protocol').SyncResponse>;
+    };
+  };
   ALLOWED_ORIGINS: string;
   MODEL: string;
 }
