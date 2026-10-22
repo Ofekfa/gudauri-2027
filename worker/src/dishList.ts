@@ -7,8 +7,9 @@ import type { Dish } from '../../src/lib/food/types';
 import { DISH_LIST_MAX_CHARS } from './limits';
 
 function dietTag(dish: Dish): string {
-  const { vegan, vegetarian, nuts, spicy } = dish.diet;
-  const tags = [vegan ? 'vegan' : vegetarian ? 'vegetarian' : 'not vegetarian'];
+  const { vegan, vegetarian, nuts, spicy, vegetarianOption } = dish.diet;
+  const base = vegan ? 'vegan' : vegetarian ? 'vegetarian' : 'not vegetarian';
+  const tags = [vegetarianOption ? 'usually meat; vegetarian versions exist' : base];
   if (nuts) tags.push('nuts');
   if (spicy >= 2) tags.push('spicy');
   return tags.join(', ');
