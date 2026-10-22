@@ -69,48 +69,56 @@ export default function ItineraryPage() {
             : 'The calendar couldn’t be reached just now; this is the latest copy we have.'}
         </p>
       )}
-      {status === 'loading' && !data && (
+      {status === 'loading' && !data ? (
+        // Render the days only once we know what's in them, so nothing shifts on first load.
         <p class="page-loading" role="status">
           Loading the plan…
         </p>
+      ) : (
+        <>
+          <nav class="filters__group itin-days" aria-label="Jump to day">
+            {days.map((day) => (
+              <button
+                key={day}
+                type="button"
+                class="chip-button chip-button--small"
+                onClick={() => jumpTo(day)}
+              >
+                {dayTitle(day)}
+              </button>
+            ))}
+          </nav>
+
+          {days.map((day) => {
+            const list = groups.get(day) ?? [];
+            return (
+              <section key={day} class="itin-day" aria-labelledby={`day-${day}`}>
+                <h2 id={`day-${day}`} class="itin-day__title" tabIndex={-1}>
+                  {dayTitle(day)} <span class="itin-day__sub">{daySubtitle(day)}</span>
+                </h2>
+                {list.length ? (
+                  <EntryList
+                    entries={list}
+                    timeZone={TZ}
+                    nowIds={nowIds}
+                    nextId={next?.id ?? null}
+                  />
+                ) : (
+                  <p class="empty-note itin-day__empty">Nothing planned.</p>
+                )}
+              </section>
+            );
+          })}
+
+          <p class="rates-meta">
+            {data
+              ? `${calendarEvents} calendar event${calendarEvents === 1 ? '' : 's'} · updated ${formatAgo(Date.parse(data.fetchedAt), now)}. `
+              : ''}
+            Flights come from our booking details. Add or change plans in the shared Google
+            Calendar; they show up here within about 20 minutes.
+          </p>
+        </>
       )}
-
-      <nav class="filters__group itin-days" aria-label="Jump to day">
-        {days.map((day) => (
-          <button
-            key={day}
-            type="button"
-            class="chip-button chip-button--small"
-            onClick={() => jumpTo(day)}
-          >
-            {dayTitle(day)}
-          </button>
-        ))}
-      </nav>
-
-      {days.map((day) => {
-        const list = groups.get(day) ?? [];
-        return (
-          <section key={day} class="itin-day" aria-labelledby={`day-${day}`}>
-            <h2 id={`day-${day}`} class="itin-day__title" tabIndex={-1}>
-              {dayTitle(day)} <span class="itin-day__sub">{daySubtitle(day)}</span>
-            </h2>
-            {list.length ? (
-              <EntryList entries={list} timeZone={TZ} nowIds={nowIds} nextId={next?.id ?? null} />
-            ) : (
-              <p class="empty-note itin-day__empty">Nothing planned.</p>
-            )}
-          </section>
-        );
-      })}
-
-      <p class="rates-meta">
-        {data
-          ? `${calendarEvents} calendar event${calendarEvents === 1 ? '' : 's'} · updated ${formatAgo(Date.parse(data.fetchedAt), now)}. `
-          : ''}
-        Flights come from our booking details. Add or change plans in the shared Google Calendar;
-        they show up here within about 20 minutes.
-      </p>
     </>
   );
 }
