@@ -1,6 +1,7 @@
 import { href } from '../lib/router/hashRouter';
 import { activeTabPath, HOME, TAB_BAR_ITEMS } from '../navigation';
 import { Icon } from './Icon';
+import { MusicControl } from './music/MusicControl';
 import { trip } from '../data/trip';
 
 interface HeaderProps {
@@ -31,6 +32,7 @@ export function Header({ activePath }: HeaderProps) {
           ))}
         </ul>
       </nav>
+      <MusicControl />
     </header>
   );
 }

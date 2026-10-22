@@ -1,9 +1,9 @@
 /**
- * Always-loaded front for the background music (kept tiny). It owns the
- * shell's <audio> element, shows the "tap anywhere" state, and on the first
- * gesture unlocks audio synchronously (iOS requires play() inside the
- * gesture) before lazy-loading the real player. No audio is fetched before
- * that gesture.
+ * Always-loaded front for the background music (kept tiny). It owns the one
+ * audio element (created on the first gesture and kept for the whole visit,
+ * so music continues across pages), shows the "tap anywhere" state, and
+ * unlocks audio synchronously inside that gesture (iOS requires play() there)
+ * before lazy-loading the real player. No audio is fetched before it.
  */
 import { speechActivity } from '../speech/activity';
 import {
@@ -71,19 +71,26 @@ async function start() {
   }
 }
 
-function onFirstGesture() {
-  window.removeEventListener('pointerdown', onFirstGesture, true);
-  window.removeEventListener('keydown', onFirstGesture, true);
-  if (!settings.enabled || !audio) return;
+/** Creates the element and unlocks it; must run synchronously inside a gesture. */
+function startFromGesture() {
+  audio ??= new Audio();
   unlock(audio);
   void start();
 }
 
+function onFirstGesture() {
+  window.removeEventListener('pointerdown', onFirstGesture, true);
+  window.removeEventListener('keydown', onFirstGesture, true);
+  if (settings.enabled) startFromGesture();
+}
+
+let initialised = false;
+
 export const music = {
-  /** Called once by the shell with its <audio> element. */
-  attach(el: HTMLAudioElement) {
-    if (audio) return;
-    audio = el;
+  /** Called once by the shell: waits for the first gesture. */
+  init() {
+    if (initialised) return;
+    initialised = true;
     window.addEventListener('pointerdown', onFirstGesture, true);
     window.addEventListener('keydown', onFirstGesture, true);
   },
@@ -96,10 +103,8 @@ export const music = {
   toggle() {
     if (player) return player.dispatch({ type: 'TOGGLE' });
     settings = saveMusicSettings({ enabled: !settings.enabled }, settings);
-    if (settings.enabled && audio) {
-      unlock(audio);
-      void start();
-    }
+    // Turning music on is itself a gesture (this runs inside the click).
+    if (settings.enabled) startFromGesture();
     emit();
   },
   next() {
