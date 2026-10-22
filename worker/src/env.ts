@@ -20,6 +20,15 @@ export interface Env {
   CALENDAR_ICS_URL?: string;
   /** Secret: the group code that unlocks shared lists. Never logged or echoed. */
   GROUP_CODE?: string;
+  /** Signs album tokens (HMAC). Rotating it logs everyone out of the album. */
+  ALBUM_SIGNING_KEY?: string;
+  /** Session attempts: strict per-IP limit. */
+  RL_AUTH?: RateLimiter;
+  /** Durable Object namespace for the album (index + one object per frame). */
+  ALBUM?: {
+    idFromName(name: string): unknown;
+    get(id: unknown): import('./routes/album').AlbumStub;
+  };
   /** Durable Object namespace holding the shared lists. */
   LISTS?: {
     idFromName(name: string): unknown;
@@ -33,4 +42,4 @@ export interface Env {
   MODEL: string;
 }
 
-export type RateLimitBinding = 'RATE_LIMITER' | 'RL_DATA';
+export type RateLimitBinding = 'RATE_LIMITER' | 'RL_DATA' | 'RL_AUTH';

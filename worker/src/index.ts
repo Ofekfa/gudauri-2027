@@ -5,6 +5,7 @@
  */
 import type { Env } from './env';
 import { createRouter } from './router';
+import { albumRoutes } from './routes/album';
 import { chatRoute } from './routes/chat';
 import { healthRoute } from './routes/health';
 import { itineraryRoute } from './routes/itinerary';
@@ -15,6 +16,7 @@ import { weatherRoute } from './routes/weather';
 export type { Env } from './env';
 export { parseMessages } from './routes/chat';
 export { ListsStore } from './sync/ListsStore';
+export { AlbumStore } from './album/AlbumStore';
 
 export const handleRequest = createRouter([
   healthRoute,
@@ -23,6 +25,7 @@ export const handleRequest = createRouter([
   itineraryRoute,
   weatherRoute,
   syncRoute,
+  ...albumRoutes,
 ]);
 
 export default {
