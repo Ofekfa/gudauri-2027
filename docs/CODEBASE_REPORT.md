@@ -1,6 +1,6 @@
 # Gudauri 2027 — Codebase Report
 
-_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.7 (`v1.8.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
+_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 9.1 (`v1.9.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
 
 ## Changelog since v1.0.0
 
@@ -52,6 +52,36 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **upda
 - Lesson: in-place `npm install` can drop optional platform bindings from a lockfile (npm/cli#4828). Regenerate it from scratch if CI reports "Cannot find native binding".
 
 **Tests:** 107 site + 22 Worker.
+
+### Phase 9.1 — Georgian food page (`v1.9.0`)
+
+**Router**
+
+- `matchRoute(path, exact, withParam)` and `basePath` in `src/lib/router/hashRouter.ts`: exact routes first, then a section with one URI-decoded detail segment (`/food/:id`).
+- `App` has `PARAM_PAGES` (pages get `param`) and uses the section path for titles, tab highlighting and fact pop-up blocking. `lazyPage` forwards props.
+
+**Data**
+
+- `src/lib/food/types.ts`: `Dish` (`name` menu spelling, `nameEn`, `nameKa`, `transliteration`, `category`, `diet` incl. `vegetarianOption`, `dietNote`, `howToEat`, `funFact`, `region`, `emoji`, `sources`, `relatedFactIds`).
+- `src/data/dishes.ts`: 38 dishes in 7 categories, with `ORDERING_PHRASE_IDS` (existing `word-*` facts) and `findDish`.
+- `src/lib/food/selectors.ts`: `normalize`, `searchDishes`, `filterDishes`, `groupByCategory`. `lastViewed.ts` provides back-navigation focus.
+
+**Images**
+
+- `scripts/fetch-dish-images.ts` + `scripts/dish-image-sources.ts` (pinned Commons files and alt text) use **sharp** (dev) to write `public/food/<id>-{320,640}.{avif,webp}` (≤ 60 kB each) and `src/data/dishImages.json` credits (typed by `dishImages.ts`).
+- 34 photos. Penovani, bazhe, qvevri wine and Borjomi use `DishIllustration`.
+- **Service worker:** `food/` is excluded from the precache; a runtime cache-first `image` route stores photos in `gudauri-images` (max 120, kept across versions).
+
+**UI**
+
+- `#/food` (More → Fun): search, diet chips, sticky category chips, `DishCard` grid.
+- `#/food/<id>`: `FoodDetailPage` with photo credit, related facts, `WordCardBody` ordering phrases (now with a `headingLevel` prop), and sources.
+- `#/credits`: all photo and data credits, linked from the footer.
+- `PageHeader` has a `back` prop. Fact pop-ups are blocked on `/food`.
+
+**Worker:** `worker/src/dishList.ts` adds a compact dish list (≤ `DISH_LIST_MAX_CHARS` = 2,500; ~2,300 used) to the system prompt.
+
+**Tests:** 280 site + 55 Worker.
 
 ### Phase 8.7 — Offline mode + fallback rate (`v1.8.0`)
 
@@ -358,12 +388,11 @@ There's no router library, state library, CSS framework, date library or icon li
 
 **Nav UI today**
 
-- **Mobile bottom tab bar** (`BottomTabBar.tsx`, shown under 56rem): a fixed **5-column** grid of Home · Flights · Packing · Game · More. It is **full**.
-  - Sections with `inTabBar: false` (Facts, Map, Assistant) appear as cards on `#/more`, and the More tab lights up for them (`activeTabPath`).
+- **Mobile bottom tab bar** (`BottomTabBar.tsx`, shown under 56rem): a fixed **5-column** grid of Home · Itinerary · Packing · Weather · More. It is **full**.
+  - Every other section (Flights, To-do, Currency, Map, Assistant, Food, Facts, Game, Credits) appears as a card on `#/more`, grouped Plan / Tools / Fun, and the More tab lights up for them (`activeTabPath`).
   - New pages should go under More, or replace a tab.
-- **Desktop header nav** (`Header.tsx`, 56rem and up): renders **Home + every SECTION** inline as pills, currently 7 links.
-  - It has **no overflow handling**. Adding 4–5 more sections (11–12 links) would likely overflow or wrap between about 900 and 1,200 px **(unverified, not tested)**.
-  - Fix before adding pages: a desktop "More" dropdown, or show only `inTabBar` items + More.
+- **Desktop header nav** (`Header.tsx`, 56rem and up): shows the same 5 `TAB_BAR_ITEMS`, so it never overflows.
+- **Detail routes:** `matchRoute` in `hashRouter.ts` supports one detail segment (`/food/:id`); `App` passes `basePath(path)` to titles, tab highlighting and fact pop-up blocking.
 - **Home "Explore" cards** (`SectionCards`) list all `SECTIONS`. They scale fine with more items.
 
 ## 4. Data & config
@@ -730,10 +759,10 @@ Facts per topic: gudauri 8 · resort 9 · georgia 12 · food 11 · skiing 7 · b
 
 **Commands**
 
-- Site: `npm run dev`, `lint` (ESLint + `prettier --check`), `format`, `typecheck` (app **and** `scripts/` tsconfig), `test` (Vitest run), `build` (typecheck + Vite), `preview`, `fetch:pistes`.
+- Site: `npm run dev`, `lint` (ESLint + `prettier --check`), `format`, `typecheck` (app, `scripts/` and `src/sw` tsconfigs), `test` (Vitest run), `build` (typecheck + Vite), `preview`, `fetch:pistes`, `fetch:rates` (run by the Pages deploy), `fetch:dish-images` (rarely, then review by eye).
 - Worker: `npm test`, `npm run typecheck`, `npx wrangler dev|deploy|tail`.
 
-**Tests: 95 site + 11 Worker**, all pure or unit-level. There are no component, DOM or E2E tests.
+**Tests: 280 site + 55 Worker** (as of `v1.9.0`; the table below dates from `v1.0.0`), all pure or unit-level. There are no component, DOM or E2E tests; headless puppeteer checks are run by hand.
 
 | File                                                         | Covers                                                                             |
 | ------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
