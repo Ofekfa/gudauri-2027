@@ -28,6 +28,11 @@ describe('navigation', () => {
     expect(MORE_GROUPS.every((g) => g.items.length > 0)).toBe(true);
   });
 
+  it('puts the Round 2 trip tools in the tab bar', () => {
+    expect(TAB_BAR_ITEMS.map((i) => i.path)).toContain('/itinerary');
+    expect(activeTabPath('/flights')).toBe('/more');
+  });
+
   it('finds items by path', () => {
     expect(findNavItem('/flights')?.title).toBe('Flights');
     expect(findNavItem('/nope')).toBeUndefined();

@@ -41,13 +41,22 @@ export const HOME: NavItem = {
 
 export const SECTIONS: SectionItem[] = [
   {
+    path: '/itinerary',
+    group: 'plan',
+    title: 'Itinerary',
+    navLabel: 'Itinerary',
+    icon: 'calendar',
+    blurb: 'Our day-by-day plan from the shared calendar.',
+    inTabBar: true,
+  },
+  {
     path: '/flights',
     group: 'plan',
     title: 'Flights',
     navLabel: 'Flights',
     icon: 'plane',
     blurb: 'Flight times, airports and baggage.',
-    inTabBar: true,
+    inTabBar: false,
   },
   {
     path: '/todo',
