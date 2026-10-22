@@ -16,6 +16,8 @@ export interface Env {
   RL_DATA?: RateLimiter;
   /** Shared response cache; absent locally or before the namespace exists (memory-only then). */
   CACHE?: KvLike;
+  /** Secret: the Google Calendar "secret address in iCal format". Never logged or echoed. */
+  CALENDAR_ICS_URL?: string;
   ALLOWED_ORIGINS: string;
   MODEL: string;
 }
