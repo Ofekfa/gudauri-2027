@@ -18,7 +18,8 @@
     "test:watch": "vitest",
     "fetch:pistes": "node scripts/fetch-pistes.ts",
     "fetch:rates": "node scripts/fetch-rates.ts",
-    "fetch:dish-images": "node scripts/fetch-dish-images.ts"
+    "fetch:dish-images": "node scripts/fetch-dish-images.ts",
+    "analyze:tracks": "node scripts/analyze-tracks.ts"
   },
   "dependencies": {
     "preact": "^11.0.1"
