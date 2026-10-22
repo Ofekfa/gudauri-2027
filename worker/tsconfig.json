@@ -25,6 +25,9 @@
     "../src/lib/itinerary/plan.ts",
     "../src/data/dishes.ts",
     "../src/lib/food/types.ts",
-    "../src/lib/sync/protocol.ts"
+    "../src/lib/sync/protocol.ts",
+    "../src/data/album.ts",
+    "../src/lib/album/protocol.ts",
+    "../src/lib/album/jpeg.ts"
   ]
 }

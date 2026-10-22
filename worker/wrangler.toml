@@ -24,6 +24,15 @@ namespace_id = "1002"
   limit = 60
   period = 60
 
+# Album session attempts (group code → token): strict per-IP limit.
+[[ratelimits]]
+name = "RL_AUTH"
+namespace_id = "1003"
+
+  [ratelimits.simple]
+  limit = 5
+  period = 60
+
 # Shared cache for upstream data (rates, weather, calendar). The id is not a secret.
 [[kv_namespaces]]
 binding = "CACHE"
@@ -34,9 +43,18 @@ id = "3587a739aace4a73a4b2f88477cb2d41"
 name = "LISTS"
 class_name = "ListsStore"
 
+# The album: an index object plus one object per frame for the images.
+[[durable_objects.bindings]]
+name = "ALBUM"
+class_name = "AlbumStore"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["ListsStore"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["AlbumStore"]
 
 [vars]
 # Comma-separated list of sites allowed to call the assistant.
