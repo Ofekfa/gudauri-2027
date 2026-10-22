@@ -9,11 +9,18 @@ import { chatRoute } from './routes/chat';
 import { healthRoute } from './routes/health';
 import { itineraryRoute } from './routes/itinerary';
 import { ratesRoute } from './routes/rates';
+import { weatherRoute } from './routes/weather';
 
 export type { Env } from './env';
 export { parseMessages } from './routes/chat';
 
-export const handleRequest = createRouter([healthRoute, chatRoute, ratesRoute, itineraryRoute]);
+export const handleRequest = createRouter([
+  healthRoute,
+  chatRoute,
+  ratesRoute,
+  itineraryRoute,
+  weatherRoute,
+]);
 
 export default {
   fetch: (request: Request, env: Env) => handleRequest(request, env),
