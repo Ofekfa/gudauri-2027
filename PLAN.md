@@ -22,6 +22,8 @@
 | 9.1   | Georgian food page                                                       | ⏳ Next | v1.9.0  |
 | 9.2   | Background Georgian music                                                | ✅ Done | v1.10.0 |
 | 10.1  | Shared lists across our phones (sync)                                    | ✅ Done | v1.11.0 |
+| 10.2  | Avatar hair colours (Ron brown, Ofek light brown)                        | ✅ Done | v1.11.1 |
+| 10.3  | Album: our trip in photos                                                | ⏳ Next | v1.12.0 |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/
 
@@ -33,6 +35,7 @@
 - Phase 2: eye colors not given in the brief were chosen (Ron, Roy: brown) and can be edited in `src/data/characters.ts`. Maya was later changed to brown eyes and glasses (see below). Skier pose uses a "pizza" wedge.
 - Phase 2: the map page doesn't use pinch-zoom; zoom buttons (100–300%) plus native scrolling keep it simple and accessible. Phones open at 200%.
 - Between phases 2 and 3: avatar tweaks per feedback (Maya brown eyes + glasses, Roy undercut, Ofek warmer skin), tagged as part of v0.3.0.
+- Phase 10.2 (`v1.11.1`): hair colours per feedback: Ron brown (was black), Ofek light/ash brown (was blond). `og-image.png` regenerated with `npm run og-image`.
 - Phase 3: a generic toast system (`src/lib/toast`) landed early because undo-delete needs it; Phase 4 fact pop-ups reuse it. Import confirmation is inline rather than a browser dialog. The starter template marks everything "Already have" by default.
 - Phase 4: 55 facts (target 40+). A fact-check pass corrected the Kobi gondola year (2019), Khachapuri Index start (2011), speed-skiing record (255.5 km/h, 2023) and Military Road details. Unsupported details were dropped. Pop-ups are also paused on the Facts page, and the fact data loads lazily.
 - Between phases 4 and 5: the Fun facts page became a one-at-a-time viewer (← → keys, swipe, Previous/Next) per feedback.
@@ -106,7 +109,7 @@ Env: Node 24.8, npm 11.6, git 2.39, gh authenticated.
 │  │  ├─ facts/ rotation.ts (rate limiter + shuffle-bag, pure)
 │  │  └─ speech/ recognition.ts · synthesis.ts (feature-detected)
 │  ├─ components/ Layout · Header · BottomTabBar · PageTitle · Toast · Avatar · MapBackground · Icon
-│  ├─ avatars/ ofek.tsx ron.tsx roy.tsx maya.tsx (+ ski poses) · parts.ts (shared face/skin/hair tokens)
+│  ├─ avatars/ ofek.tsx ron.tsx roy.tsx maya.tsx (+ ski poses) · parts.ts (shared face/skin/hair tokens)  ← as built: data/characters.ts + avatars/FaceArt.tsx, Avatar.tsx
 │  ├─ pages/ Home(Countdown) · Flights · Packing · Facts · Map · Game · Assistant · NotFound
 │  ├─ game/ engine.ts · loop.ts · entities.ts · input.ts · spawn.ts · render.ts · constants.ts · highScores.ts
 │  ├─ assistant/ ChatPanel.tsx · client.ts · systemPrompt.ts
@@ -157,7 +160,7 @@ type TripPhase = { kind:'before'; remainingMs } | { kind:'during'; day: 1..5; to
 - **Flights page:** cards per leg, local times formatted in each airport's zone with labels like "05:15 (Israel, UTC+2)", baggage icons, "times shown in local time of each airport" note. No PNR, seats or surnames.
 - **Packing:** reducer + selectors (pure, tested). Inline add row (Enter adds, Esc cancels), click/Enter to edit the name in place, Delete key/button with a 5 s undo toast. Filters as chip toggles; progress bar "18/30 packed". Starter template (~35 items across 4 categories) offered once per profile via a banner (Accept / Skip). Export downloads `gudauri-packing-<date>.json`; import validates the shape and version before replacing, after a confirm step. Storage: `safeStorage` wraps get/set in try/catch and falls back to in-memory.
 - **Facts:** `facts.ts` with 40+ facts, each written in my own words with a `source` URL. Already verified: altitude ≈1,990–3,279 m, heli-skiing heritage, above the tree line, Jvari Pass 2,379 m, Georgian Military Road, Friendship Monument (1983, neutral wording), 8,000-year wine evidence (PNAS 2017), qvevri UNESCO **intangible** heritage (2013), Georgian scripts UNESCO intangible (2016), khachapuri/khinkali/churchkhela/badrijani, supra/tamada, plus general skiing and beginner tips. Disputed numbers (piste km 35–76, lifts 15–18) are either left out or cited with "according to X". Marco Polo ski-in/out is described as "close to the Pirveli lift" (from booking sites only). Rotation: a shuffle bag (no repeats until all have shown), first toast after 20 s, at most one per 45 s, paused while the tab is hidden and on the Game page, auto-dismiss after 12 s, mute toggle persisted.
-- **Avatars:** hand-built SVG in a shared "sticker" style (same head shape, outline weight and eye style) with a parametric `parts.ts` (skin, hair shape and color, eye color). Each traveler gets a `face` and a `ski` pose (with goggles, jacket in their color). `role="img"` + `aria-label="Ofek"`. All four are reviewed together side by side before moving on.
+- **Avatars:** hand-built SVG in a shared "sticker" style (same head shape, outline weight and eye style) with a parametric `parts.ts` (skin, hair shape and color, eye color). _(As built: the parameters live in `src/data/characters.ts` and are drawn by `src/avatars/FaceArt.tsx`.)_ Each traveler gets a `face` and a `ski` pose (with goggles, jacket in their color). `role="img"` + `aria-label="Ofek"`. All four are reviewed together side by side before moving on.
 - **Map:** `scripts/fetch-pistes.ts` runs an Overpass query on bbox `42.44,44.40,42.57,44.53` (piste:type=downhill + aerialway). It projects the data to local SVG coordinates, simplifies (Douglas–Peucker) and writes `src/data/pistes.json` (small, committed). An original stylized SVG render (blue/red/black/green difficulty colors, lifts as dashed lines with names) is the blurred background on all pages and a full interactive `#/map` page (tap a run to see its name and difficulty). The footer and map page show "© OpenStreetMap contributors (ODbL), OpenSkiMap.org" with links. Map data is ODbL; the code is MIT. The derived JSON is noted as ODbL in the README.
 - **Game:** fixed-timestep update + rAF render, object pools, pre-rendered sprites (avatar ski poses rasterized to an offscreen canvas once), DPR capped at 2, no allocations in the loop. Controls: ←/→ or A/D, touch = hold the left/right half of the screen, P/Esc pauses, auto-pause on blur. Speed ramps with distance. Obstacles: trees, rocks, flags (missing a gate = penalty); collectibles: khachapuri ⭐ and snowflakes. High scores per character in localStorage (top 5). Reduced motion only affects decorative effects.
 - **Assistant:** see §6. Chat transcript with avatar bubbles; a mic button only when `SpeechRecognition`/`webkitSpeechRecognition` exists, otherwise a hint plus the text box. TTS toggle (speechSynthesis), language `en-US`. Streams the response if the provider supports it. Errors map to friendly messages (rate-limited, daily quota used up, offline).

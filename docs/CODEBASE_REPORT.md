@@ -1,6 +1,6 @@
 # Gudauri 2027 — Codebase Report
 
-_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 10.1 (`v1.11.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
+_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 10.2 (`v1.11.1`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
 
 ## Changelog since v1.0.0
 
@@ -337,7 +337,7 @@ There's no router library, state library, CSS framework, date library or icon li
   - The proxy uses **Cloudflare Workers AI** with no API key.
   - The planned per-IP **daily cap was dropped**: the free rate limiter only supports 10 s/60 s windows and is approximate.
   - The Groq fallback was documented in planning but **not implemented**.
-- **Avatars:** changed after feedback (Maya: brown eyes + glasses; Roy: undercut; Ofek: warmer skin).
+- **Avatars:** changed after feedback (Maya: brown eyes + glasses; Roy: undercut; Ofek: warmer skin). Phase 10.2 (`v1.11.1`): Ron's hair brown, Ofek's light/ash brown; tests keep hair readable against skin and all four hair colours apart; `og-image.png` comes from `scripts/og-image.mjs`.
 - **Phase 7:** the font is now self-hosted (Fredoka, OFL), replacing Google Fonts, for performance.
 
 ## 2. Structure
