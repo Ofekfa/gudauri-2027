@@ -110,7 +110,9 @@ describe('live context', () => {
       { data: EVENTS, fetchedAt: FETCHED, stale: false },
       Date.parse('2026-10-22T09:00:00Z'),
     );
-    expect(lines[1]).toMatch(/^- Wed 24 Feb: 07:15 El Al LY5107/);
+    expect(lines[1]).toMatch(
+      /^- Wed 24 Feb: El Al LY5107: Tel Aviv → Tbilisi \(TLV → TBS\): departs 05:15 TLV time, arrives 09:50 TBS time/,
+    );
     expect(lines[2]).toMatch(/^- Thu 25 Feb: 09:30/);
   });
 

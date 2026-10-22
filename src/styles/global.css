@@ -1831,7 +1831,7 @@ main:focus {
 }
 .itin-entry {
   display: grid;
-  grid-template-columns: 6.5rem 1fr;
+  grid-template-columns: 7.5rem 1fr;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
 }
@@ -1843,6 +1843,12 @@ main:focus {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--color-ink-muted);
+}
+.itin-entry__zone {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-primary);
 }
 .itin-entry__body {
   display: grid;

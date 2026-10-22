@@ -1,12 +1,16 @@
-import type { Trip } from '../../data/trip';
+import type { FlightLeg, Trip } from '../../data/trip';
 import { TBC } from '../../data/trip';
 import { daysBetween, localDateIn } from '../time/countdown';
 import type { ItineraryEvent } from './types';
 
 export type EntryKind = 'event' | 'flight';
 
+export type LegId = 'outbound' | 'inbound';
+
 export interface ItineraryEntry extends ItineraryEvent {
   kind: EntryKind;
+  /** Set when the entry is one of our flights (ours, or a calendar event naming the flight). */
+  leg?: LegId;
 }
 
 /** Calendar days shown (YYYY-MM-DD): the day before arrival through the day after the last day. */
@@ -25,21 +29,29 @@ function shift(day: string, n: number): string {
 
 const flightKey = (s: string) => s.replace(/\s+/g, '').toUpperCase();
 
+const legs = (trip: Trip): { id: LegId; leg: FlightLeg }[] => [
+  { id: 'outbound', leg: trip.outbound },
+  { id: 'inbound', leg: trip.inbound },
+];
+
+/** Which of our flights a calendar event names ("LY 5107" counts), if any. */
+export function legOf(event: ItineraryEvent, trip: Trip): LegId | undefined {
+  const text = flightKey(`${event.title} ${event.location ?? ''}`);
+  return legs(trip).find(({ leg }) => text.includes(flightKey(leg.flightNo)))?.id;
+}
+
 /**
  * Our two flights from trip.ts as fixed entries, unless the calendar already
  * has an event naming the same flight number (to avoid duplicates).
  */
 export function flightEntries(trip: Trip, calendar: ItineraryEvent[]): ItineraryEntry[] {
-  const mentioned = (flightNo: string) =>
-    calendar.some((e) => flightKey(`${e.title} ${e.location ?? ''}`).includes(flightKey(flightNo)));
-  return [
-    { leg: trip.outbound, id: 'flight-outbound' },
-    { leg: trip.inbound, id: 'flight-inbound' },
-  ]
-    .filter(({ leg }) => !mentioned(leg.flightNo))
-    .map(({ leg, id }) => ({
-      id,
+  const mentioned = new Set(calendar.map((e) => legOf(e, trip)));
+  return legs(trip)
+    .filter(({ id }) => !mentioned.has(id))
+    .map(({ leg, id: legId }) => ({
+      id: `flight-${legId}`,
       kind: 'flight' as const,
+      leg: legId,
       title: `${leg.carrier} ${leg.flightNo}: ${leg.from.city} → ${leg.to.city}`,
       start: new Date(Date.parse(leg.departure)).toISOString(),
       end: new Date(Date.parse(leg.arrival === TBC ? leg.departure : leg.arrival)).toISOString(),
@@ -50,7 +62,10 @@ export function flightEntries(trip: Trip, calendar: ItineraryEvent[]): Itinerary
 
 /** Calendar events plus flights, sorted by start (all-day first within a day). */
 export function mergeEntries(trip: Trip, calendar: ItineraryEvent[]): ItineraryEntry[] {
-  const events: ItineraryEntry[] = calendar.map((e) => ({ ...e, kind: 'event' }));
+  const events: ItineraryEntry[] = calendar.map((e) => {
+    const leg = legOf(e, trip);
+    return leg ? { ...e, kind: 'flight', leg } : { ...e, kind: 'event' };
+  });
   return [...events, ...flightEntries(trip, calendar)].sort((a, b) => sortKey(a) - sortKey(b));
 }
 
@@ -67,14 +82,50 @@ export function entryDays(entry: ItineraryEntry, timeZone: string): string[] {
   return [localDateIn(Date.parse(entry.start), timeZone)];
 }
 
+/** Before we land in Georgia we read times in Israel; from landing on, in Georgia. */
+export function displayZone(entry: ItineraryEvent, trip: Trip): string {
+  const landing = trip.outbound.arrival === TBC ? trip.outbound.departure : trip.outbound.arrival;
+  if (!entry.allDay && Date.parse(entry.start) < Date.parse(landing))
+    return trip.outbound.from.timeZone;
+  return trip.destinationTimeZone;
+}
+
+/** Departure and arrival, each in its own airport's time, from the booking (trip.ts). */
+export function flightTimes(
+  legId: LegId,
+  trip: Trip,
+): { from: string; depart: string; to: string; arrive: string | null; nextDay: boolean } {
+  const leg = legId === 'outbound' ? trip.outbound : trip.inbound;
+  const local = (iso: string, timeZone: string) => ({
+    time: new Intl.DateTimeFormat('en-GB', {
+      timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(Date.parse(iso)),
+    date: localDateIn(Date.parse(iso), timeZone),
+  });
+  const dep = local(leg.departure, leg.from.timeZone);
+  const arr = leg.arrival === TBC ? null : local(leg.arrival, leg.to.timeZone);
+  return {
+    from: leg.from.iata,
+    depart: dep.time,
+    to: leg.to.iata,
+    arrive: arr?.time ?? null,
+    nextDay: arr !== null && arr.date > dep.date,
+  };
+}
+
 export function groupByDay(
   entries: ItineraryEntry[],
   days: string[],
-  timeZone: string,
+  /** One zone for everything, or a zone per entry (see displayZone). */
+  timeZone: string | ((entry: ItineraryEntry) => string),
 ): Map<string, ItineraryEntry[]> {
+  const zoneOf = typeof timeZone === 'string' ? () => timeZone : timeZone;
   const map = new Map(days.map((d) => [d, [] as ItineraryEntry[]]));
   for (const entry of entries) {
-    for (const day of entryDays(entry, timeZone)) map.get(day)?.push(entry);
+    for (const day of entryDays(entry, zoneOf(entry))) map.get(day)?.push(entry);
   }
   // Within a day: all-day entries first, then by start time.
   for (const list of map.values()) {
