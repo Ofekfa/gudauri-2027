@@ -24,7 +24,17 @@ const publicRoute: Route = {
   public: true,
   handler: async () => json(200, { pub: 1 }),
 };
-const handle = createRouter([dataRoute, publicRoute]);
+const itemGet: Route = {
+  method: 'GET',
+  path: '/things/:id/parts/:part',
+  handler: async ({ params, cors }) => json(200, params, cors),
+};
+const itemDelete: Route = {
+  method: 'DELETE',
+  path: '/things/:id/parts/:part',
+  handler: async ({ params, cors }) => json(200, { deleted: params.id }, cors),
+};
+const handle = createRouter([dataRoute, publicRoute, itemGet, itemDelete]);
 
 const req = (path: string, init: { method?: string; origin?: string | null } = {}) => {
   const headers = new Headers({ 'CF-Connecting-IP': '9.9.9.9' });
@@ -67,5 +77,28 @@ describe('router pipeline', () => {
     expect(res.status).toBe(429);
     expect(limit).toHaveBeenCalledWith({ key: '9.9.9.9' });
     expect(chatLimit).not.toHaveBeenCalled();
+  });
+});
+
+describe('path parameters and several methods per path', () => {
+  it('decodes :params and picks the route by method', async () => {
+    const got = await handle(req('/things/a%20b/parts/7'), env());
+    expect(await got.json()).toEqual({ id: 'a b', part: '7' });
+    const del = await handle(req('/things/x/parts/1', { method: 'DELETE' }), env());
+    expect(await del.json()).toEqual({ deleted: 'x' });
+  });
+
+  it('advertises every method of the path in preflights and 405s', async () => {
+    const pre = await handle(req('/things/x/parts/1', { method: 'OPTIONS' }), env());
+    expect(pre.headers.get('Access-Control-Allow-Methods')).toBe('GET, DELETE, OPTIONS');
+    const wrong = await handle(req('/things/x/parts/1', { method: 'PUT' }), env());
+    expect(wrong.status).toBe(405);
+    expect(wrong.headers.get('Allow')).toBe('GET, DELETE, OPTIONS');
+  });
+
+  it('does not match partial or deeper paths, and rejects bad encoding', async () => {
+    expect((await handle(req('/things/x/parts'), env())).status).toBe(404);
+    expect((await handle(req('/things/x/parts/1/more'), env())).status).toBe(404);
+    expect((await handle(req('/things/%E0%A4%A/parts/1'), env())).status).toBe(400);
   });
 });

@@ -37,8 +37,13 @@ const PAGES: Record<string, ComponentType> = {
 
 /** Pages that take one detail segment, e.g. "/food/:id"; they receive it as `param`. */
 export interface ParamPageProps {
+  /** The first detail segment. */
   param: string;
+  /** All detail segments (up to the section's limit). */
+  params: string[];
 }
+/** Detail segments each section accepts (default 1). */
+const PARAM_SEGMENTS: Record<string, number> = {};
 const PARAM_PAGES: Record<string, ComponentType<ParamPageProps>> = {
   '/food': lazyPage<ParamPageProps>(() => import('./pages/FoodDetailPage')),
 };
@@ -49,7 +54,7 @@ function focusMain() {
 
 export function App() {
   const path = useHashPath();
-  const route = matchRoute(path, PAGES, PARAM_PAGES);
+  const route = matchRoute(path, PAGES, PARAM_PAGES, PARAM_SEGMENTS);
   // Detail pages ("/food/khinkali") belong to their section for titles and navigation.
   const sectionPath = route?.base ?? path;
   const item = findNavItem(sectionPath);
@@ -71,7 +76,7 @@ export function App() {
   let content;
   if (route?.param !== undefined) {
     const DetailPage = route.page as ComponentType<ParamPageProps>;
-    content = <DetailPage param={route.param} />;
+    content = <DetailPage param={route.param} params={route.params ?? [route.param]} />;
   } else if (route) {
     const Page = route.page as ComponentType;
     content = <Page />;
