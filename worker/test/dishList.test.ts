@@ -17,6 +17,7 @@ describe('dish list for the assistant', () => {
     expect(dishLine(byId('kubdari'))).toBe('- Kubdari: Svan meat pie, Svaneti (not vegetarian)');
     expect(dishLine(byId('pkhali'))).toContain('(vegan, nuts)');
     expect(dishLine(byId('ajika'))).toContain('spicy');
+    expect(dishLine(byId('lobiani'))).toContain('usually meat; vegetarian versions exist');
     expect(dishLine(byId('qvevri-wine'))).not.toMatch(/Qvevri wine: Qvevri wine/);
   });
 

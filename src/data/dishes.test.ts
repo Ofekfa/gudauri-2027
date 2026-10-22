@@ -40,6 +40,11 @@ describe('dishes', () => {
     for (const source of dish.sources) expect(source).toMatch(/^https:\/\/\S+$/);
     // Vegan food is vegetarian; spicy is a 0–3 scale.
     if (dish.diet.vegan) expect(dish.diet.vegetarian).toBe(true);
+    // A vegetarian option only makes sense for dishes that aren't vegetarian, and needs explaining.
+    if (dish.diet.vegetarianOption) {
+      expect(dish.diet.vegetarian).toBe(false);
+      expect(dish.dietNote).toBeTruthy();
+    }
     expect([0, 1, 2, 3]).toContain(dish.diet.spicy);
   });
 

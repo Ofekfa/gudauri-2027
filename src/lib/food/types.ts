@@ -40,6 +40,8 @@ export interface Diet {
   /** Contains walnuts, hazelnuts or other nuts as usually made. */
   nuts: boolean;
   spicy: SpicyLevel;
+  /** Usually made with meat, but a vegetarian version is common (e.g. mushroom khinkali). */
+  vegetarianOption?: boolean;
 }
 
 export interface Dish {
