@@ -1,3 +1,4 @@
+import { TrackCredits } from '../components/music/TrackCredits';
 import { PageHeader } from '../components/PageHeader';
 import { DISH_IMAGES } from '../data/dishImages';
 import { findDish } from '../data/dishes';
@@ -37,6 +38,18 @@ export default function CreditsPage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      <section aria-labelledby="credits-music">
+        <h2 id="credits-music" class="section-title">
+          Background music
+        </h2>
+        <p class="credits-intro">
+          Streamed unmodified from Wikimedia Commons and the Internet Archive. NC licences allow
+          this non-commercial site; ND tracks are never edited (volume is evened by the player). See
+          the <a href={href('/music')}>Music page</a>.
+        </p>
+        <TrackCredits />
       </section>
 
       <section aria-labelledby="credits-data">
