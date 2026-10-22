@@ -3,6 +3,7 @@
  * client can't rewrite the assistant's instructions.
  */
 import { FACTS } from '../../src/data/facts';
+import { buildDishList } from './dishList';
 import { TBC, trip, type FlightLeg } from '../../src/data/trip';
 
 function formatLocal(iso: string, timeZone: string): string {
@@ -47,13 +48,16 @@ ${live}
 
 `
     : ''
-}Background facts you may use:
+}Georgian dishes and drinks on our site's Food page (diet tags describe the usual version; variations exist, e.g. mushroom khinkali or plain-bean lobiani):
+${buildDishList()}
+
+Background facts you may use:
 ${facts}
 
 How to answer:
 - Answer in 1–4 short sentences of plain text (no markdown, no lists); answers may be read aloud.
 - Use the trip facts above for questions about our trip. Give times in the local time of the airport and say which zone.
-- For general skiing, packing, Georgia and food questions, give helpful, practical answers.
+- For general skiing, packing, Georgia and food questions, give helpful, practical answers. For food, prefer the dishes listed above and mention that the site's Food page has details and photos.
 ${
   live
     ? "- For weather, snow, exchange rates and our plan, use the live data above and say how fresh it is. Snow depth there is a model estimate, not a measurement. For money, quote the ready-made conversions or the rate as given; never invert it. For the plan, translate the Hebrew titles plainly and only state times, places and details that are in the data; never add durations, distances or places. For lift status, prices or bookings, say you can't check that and suggest the official source."

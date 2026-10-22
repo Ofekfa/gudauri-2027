@@ -22,6 +22,8 @@
     "../src/lib/itinerary/types.ts",
     "../src/lib/weather/openMeteo.ts",
     "../src/data/zones.ts",
-    "../src/lib/itinerary/plan.ts"
+    "../src/lib/itinerary/plan.ts",
+    "../src/data/dishes.ts",
+    "../src/lib/food/types.ts"
   ]
 }

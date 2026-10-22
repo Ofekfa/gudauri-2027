@@ -37,3 +37,6 @@ export const LIVE_CONTEXT_MAX_CHARS = 1500;
 export const LIVE_SOURCE_TIMEOUT_MS = 1500;
 /** Calendar titles/locations are shortened in the prompt. */
 export const LIVE_TEXT_MAX_CHARS = 60;
+
+/** The dish list in the system prompt (~600 tokens). */
+export const DISH_LIST_MAX_CHARS = 2500;
