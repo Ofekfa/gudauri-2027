@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { speechActivity } from '../lib/speech/activity';
 import {
   askAssistant,
   ASSISTANT_ERROR_TEXT,
@@ -74,9 +75,13 @@ export default function AssistantPage() {
     () => () => {
       stopSpeaking();
       recognizer.current?.abort();
+      speechActivity.setListening(false);
     },
     [],
   );
+
+  // Background music pauses while the microphone listens.
+  useEffect(() => speechActivity.setListening(listening), [listening]);
 
   const add = (bubble: Omit<Bubble, 'id'>) =>
     setBubbles((list) => [...list, { ...bubble, id: nextId.current++ }]);

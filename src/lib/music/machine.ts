@@ -30,6 +30,12 @@ export interface MusicState {
   /** An embedded player on the Music page took over. */
   external: boolean;
   failures: number;
+  /**
+   * Bumped whenever a new track is wanted (first start, next, end, error,
+   * back online). The player serves each request once, so pausing and
+   * resuming mid-load never picks another track.
+   */
+  trackRequest: number;
 }
 
 export type MusicEvent =
@@ -54,32 +60,39 @@ export const initialMusicState = (enabled: boolean): MusicState => ({
   speaking: false,
   external: false,
   failures: 0,
+  trackRequest: 0,
+});
+
+const wantTrack = (state: MusicState, phase: Phase = 'loading'): MusicState => ({
+  ...state,
+  phase,
+  trackRequest: state.trackRequest + 1,
 });
 
 export function musicReducer(state: MusicState, event: MusicEvent): MusicState {
   switch (event.type) {
     case 'GESTURE':
-      return state.phase === 'waiting' ? { ...state, phase: 'loading' } : state;
+      return state.phase === 'waiting' ? wantTrack(state) : state;
     case 'TOGGLE':
       return musicReducer(state, { type: 'SET_ENABLED', enabled: !state.enabled });
     case 'SET_ENABLED': {
       const next = { ...state, enabled: event.enabled };
       // Turning music on is a gesture too, and a fresh start after failures.
       if (event.enabled && (state.phase === 'waiting' || state.phase === 'unavailable')) {
-        return { ...next, phase: 'loading', failures: 0 };
+        return wantTrack({ ...next, failures: 0 });
       }
       return next;
     }
     case 'NEXT':
     case 'ENDED':
-      return state.phase === 'waiting' ? state : { ...state, phase: 'loading' };
+      return state.phase === 'waiting' ? state : wantTrack(state);
     case 'READY':
       return state.phase === 'loading' ? { ...state, phase: 'playing', failures: 0 } : state;
     case 'ERROR': {
       const failures = state.failures + 1;
       return failures >= MAX_FAILURES
         ? { ...state, phase: 'unavailable', failures }
-        : { ...state, phase: 'loading', failures };
+        : wantTrack({ ...state, failures });
     }
     case 'VISIBILITY':
       return { ...state, hidden: event.hidden };
@@ -90,7 +103,7 @@ export function musicReducer(state: MusicState, event: MusicEvent): MusicState {
     case 'EXTERNAL':
       return { ...state, external: event.active };
     case 'ONLINE':
-      return state.phase === 'unavailable' ? { ...state, phase: 'loading', failures: 0 } : state;
+      return state.phase === 'unavailable' ? wantTrack({ ...state, failures: 0 }) : state;
   }
 }
 
@@ -102,8 +115,9 @@ export const shouldPlay = (s: MusicState) =>
   !s.listening &&
   !s.external;
 
-/** A track needs loading: the machine asked for one and playback is allowed. */
-export const needsTrack = (s: MusicState) => s.phase === 'loading' && shouldPlay(s);
+/** A new track is wanted that the player (which last served `served`) hasn't started yet. */
+export const needsTrack = (s: MusicState, served: number) =>
+  s.trackRequest > served && shouldPlay(s);
 
 export const volumeFactor = (s: MusicState) => (s.speaking ? DUCK_FACTOR : 1);
 
