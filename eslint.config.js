@@ -26,7 +26,7 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.serviceworker } },
   },
   {
-    files: ['scripts/**/*.ts', 'build/**/*.ts'],
+    files: ['scripts/**/*.ts', 'scripts/**/*.mjs', 'build/**/*.ts'],
     languageOptions: { globals: { ...globals.node } },
   },
   prettier,
