@@ -21,6 +21,9 @@ import { loadWeather } from './routes/weather';
 const TZ = trip.destinationTimeZone;
 const DAY_MS = 86_400_000;
 const RATE_DECIMALS = 3;
+/** Pre-computed so the small model never has to do (or invert) the arithmetic. */
+const QUICK_GEL_AMOUNTS = [10, 20, 50, 100];
+const QUICK_ILS_AMOUNT = 100;
 
 export interface LiveSources {
   rates: () => Promise<CachedResult<Rates>>;
@@ -76,8 +79,11 @@ const staleNote = (r: CachedResult<unknown>) => (r.stale ? ', may be out of date
 
 export function ratesLines(r: CachedResult<Rates>): string[] {
   const { ILS, EUR } = r.data.gelPer;
+  const quick = QUICK_GEL_AMOUNTS.map((gel) => `${gel} GEL = ${Math.round(gel / ILS)} ILS`).join(
+    '; ',
+  );
   return [
-    `Exchange rates (${r.data.source === 'nbg' ? 'National Bank of Georgia' : 'ExchangeRate-API'}, valid ${r.data.validFrom}${staleNote(r)}): 1 ILS = ${ILS.toFixed(RATE_DECIMALS)} GEL; 1 EUR = ${EUR.toFixed(RATE_DECIMALS)} GEL; 1 GEL = ${(1 / ILS).toFixed(2)} ILS.`,
+    `Exchange rates (${r.data.source === 'nbg' ? 'National Bank of Georgia' : 'ExchangeRate-API'}, valid ${r.data.validFrom}${staleNote(r)}): 1 GEL = ${(1 / ILS).toFixed(2)} ILS; 1 ILS = ${ILS.toFixed(RATE_DECIMALS)} GEL; 1 EUR = ${EUR.toFixed(RATE_DECIMALS)} GEL. Ready-made: ${quick}; ${QUICK_ILS_AMOUNT} ILS = ${Math.round(QUICK_ILS_AMOUNT * ILS)} GEL.`,
   ];
 }
 
@@ -108,7 +114,9 @@ export function itineraryLines(r: CachedResult<ItineraryEvent[]>, nowMs: number)
   const days = [first, shiftDay(first, 1)].filter((d) => d <= shiftDay(trip.lastDay, 1));
   if (days.length === 0) return [];
   const groups = groupByDay(mergeEntries(trip, r.data), days, TZ);
-  const lines = [`Our plan from the shared calendar (Tbilisi times${staleNote(r)}):`];
+  const lines = [
+    `Our plan from the shared calendar (titles in Hebrew; all times Tbilisi time${staleNote(r)}; on ${dayName(trip.firstDay)} we start in Israel and fly to Tbilisi):`,
+  ];
   for (const day of days) {
     const entries = groups.get(day) ?? [];
     const label =
