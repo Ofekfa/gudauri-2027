@@ -27,6 +27,7 @@ const PAGES: Record<string, ComponentType> = {
   '/assistant': lazyPage(() => import('./pages/AssistantPage')),
   '/currency': lazyPage(() => import('./pages/CurrencyPage')),
   '/todo': lazyPage(() => import('./pages/TodoPage')),
+  '/itinerary': lazyPage(() => import('./pages/ItineraryPage')),
   '/more': MorePage,
 };
 

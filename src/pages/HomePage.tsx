@@ -1,6 +1,7 @@
 import { Countdown } from '../components/Countdown';
 import { Crew } from '../components/Crew';
 import { NextTodos } from '../components/todo/NextTodos';
+import { TodayPlan } from '../components/itinerary/TodayPlan';
 import { getTripPhase } from '../lib/time/countdown';
 import { PageHeader } from '../components/PageHeader';
 import { SectionCards } from '../components/SectionCards';
@@ -23,6 +24,7 @@ export function HomePage() {
       />
       <Countdown />
       {getTripPhase(Date.now(), trip).kind === 'before' && <NextTodos />}
+      {getTripPhase(Date.now(), trip).kind === 'during' && <TodayPlan />}
       <section aria-labelledby="crew-title">
         <h2 id="crew-title" class="section-title">
           The crew
