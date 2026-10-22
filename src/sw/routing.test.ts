@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SKIP_WAITING_MESSAGE } from '../lib/pwa/register';
-import { cacheNameFor, classify, SKIP_WAITING, staleCaches } from './routing';
+import { cacheNameFor, classify, IMAGE_CACHE, SKIP_WAITING, staleCaches } from './routing';
 
 const SCOPE = 'https://ofekfa.github.io/gudauri-2027/';
 const PRECACHED = new Set(['index.html', 'assets/index-abc.js', 'fonts/fredoka-latin.woff2']);
@@ -38,11 +38,22 @@ describe('service worker routing', () => {
     );
   });
 
+  it('caches dish photos at runtime instead of precaching them', () => {
+    expect(classify(req(`${SCOPE}food/khinkali-320.avif`), SCOPE, PRECACHED)).toBe('image');
+    expect(
+      classify(req(`${SCOPE}food/khinkali-640.webp`, { method: 'HEAD' }), SCOPE, PRECACHED),
+    ).toBe('network');
+    expect(classify(req('https://upload.wikimedia.org/food/x.jpg'), SCOPE, PRECACHED)).toBe(
+      'network',
+    );
+  });
+
   it('cleans up only our own older caches', () => {
     const current = cacheNameFor('new');
-    expect(staleCaches([cacheNameFor('old'), current, 'someone-else'], current)).toEqual([
-      cacheNameFor('old'),
-    ]);
+    // The runtime photo cache survives version changes.
+    expect(
+      staleCaches([cacheNameFor('old'), current, 'someone-else', IMAGE_CACHE], current),
+    ).toEqual([cacheNameFor('old')]);
   });
 
   it('agrees with the page on the update message', () => {
