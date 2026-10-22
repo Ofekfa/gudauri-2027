@@ -39,7 +39,8 @@ describe('detail routes', () => {
     expect(basePath('/food/khinkali')).toBe('/food');
     expect(basePath('/food')).toBe('/food');
     expect(basePath('/')).toBe('/');
-    expect(basePath('/a/b/c')).toBe('/a/b/c');
+    expect(basePath('/album/snowman/p1')).toBe('/album');
+    expect(basePath('/a/b/c/d')).toBe('/a/b/c/d');
   });
 
   it('prefers exact routes, then one-segment detail routes', () => {
@@ -47,6 +48,7 @@ describe('detail routes', () => {
     expect(matchRoute(parseHash('#/food/khinkali/'), exact, withParam)).toEqual({
       page: 'dish',
       base: '/food',
+      params: ['khinkali'],
       param: 'khinkali',
     });
     expect(matchRoute(parseHash('#/food/khinkali?from=list'), exact, withParam)?.param).toBe(
@@ -60,5 +62,26 @@ describe('detail routes', () => {
     expect(matchRoute('/food/a/b', exact, withParam)).toBeNull();
     expect(matchRoute('/food/%E0%A4%A', exact, withParam)).toBeNull();
     expect(matchRoute('/nope', exact, withParam)).toBeNull();
+  });
+});
+
+describe('two-segment detail routes', () => {
+  const exact = { '/album': 'grid', '/album/story': 'story' };
+  const withParam = { '/album': 'frame', '/food': 'dish' };
+  const max = { '/album': 2 };
+
+  it('passes up to the allowed number of segments, decoded', () => {
+    expect(matchRoute('/album/snowman', exact, withParam, max)?.params).toEqual(['snowman']);
+    expect(matchRoute('/album/snowman/p%201', exact, withParam, max)?.params).toEqual([
+      'snowman',
+      'p 1',
+    ]);
+    expect(matchRoute('/album/a/b/c', exact, withParam, max)).toBeNull();
+    // Food still takes one segment.
+    expect(matchRoute('/food/a/b', exact, withParam, max)).toBeNull();
+  });
+
+  it('lets an exact route win over a detail route', () => {
+    expect(matchRoute('/album/story', exact, withParam, max)?.page).toBe('story');
   });
 });
