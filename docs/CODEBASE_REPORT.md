@@ -1,6 +1,6 @@
 # Gudauri 2027 — Codebase Report
 
-_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.5 (`v1.6.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
+_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.6 (`v1.7.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
 
 ## Changelog since v1.0.0
 
@@ -52,6 +52,22 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **upda
 - Lesson: in-place `npm install` can drop optional platform bindings from a lockfile (npm/cli#4828). Regenerate it from scratch if CI reports "Cannot find native binding".
 
 **Tests:** 107 site + 22 Worker.
+
+### Phase 8.6 — Assistant live context + polish (`v1.7.0`)
+
+**Worker**
+
+- `worker/src/liveContext.ts`: `buildLiveContext(sources, now)` → plan for today and tomorrow (Tbilisi; the first trip days before the trip), weather per zone, rates with ready-made conversions.
+  - 1.5 s per source (`LIVE_SOURCE_TIMEOUT_MS`); failures are omitted.
+  - `fitToBudget` keeps whole lines in priority order (plan first during the trip; otherwise rates and weather first), max `LIVE_CONTEXT_MAX_CHARS` = 1,500.
+  - `cleanText` flattens and caps calendar text at 60 characters.
+- `/rates`, `/weather`, `/itinerary` export `loadRates`/`loadWeather`/`loadItinerary`, shared with the live context.
+- `buildSystemPrompt(now, live)` adds the block as data, not instructions, and switches the "no live data" rule.
+- Imports `src/lib/itinerary/plan.ts` and `src/lib/time/countdown.ts` (both pure).
+
+**Tests:** Worker 51 (+8 live context). Chat tests stub `fetch`.
+
+**Docs:** README (all sections, data credits), worker README (data routes, secrets and bindings, live context), CLAUDE.md (Worker scope, shared-code rule, quality numbers).
 
 ### Phase 8.5 — Weather, snow & webcams (`v1.6.0`)
 

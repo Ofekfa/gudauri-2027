@@ -1,12 +1,12 @@
-# Gudauri 2027 — assistant proxy (Cloudflare Worker)
+# Gudauri 2027 — Cloudflare Worker
 
-A tiny serverless proxy between the static site and a **free** AI model on [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/).
+A small serverless backend for the static site: a proxy to a **free** AI model on [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/), plus cached live data (itinerary, weather, exchange rates).
 
 - **No API keys anywhere.** The Worker calls the model through Cloudflare's `AI` binding, so there's nothing secret to leak or commit.
-- **System prompt built server-side** from `src/data/trip.ts` and `src/data/facts.ts`, so clients can't rewrite the assistant's instructions.
+- **System prompt built server-side** from `src/data/trip.ts` and `src/data/facts.ts`, so clients can't rewrite the assistant's instructions. It adds a **live-data block** (`src/liveContext.ts`): the plan for today and tomorrow, weather per zone and GEL rates, read from the same cache as the data routes, at most 1,500 characters, each source given 1.5 s. Calendar text is flattened, length-capped and introduced as data, not instructions.
 - **Abuse protection:**
   - Origin allowlist with CORS (`ALLOWED_ORIGINS` in `wrangler.toml`).
-  - Per-IP rate limit of 10 requests a minute, using Cloudflare's rate-limit binding.
+  - Per-IP rate limits using Cloudflare's rate-limit bindings: 10 a minute for `/chat` (`RATE_LIMITER`), 60 a minute for the data routes (`RL_DATA`).
   - Max 500 characters per message, last 10 messages only, 16 kB body cap, 320-token answers.
 - **Free-tier friendly:** Workers AI includes a daily allowance (10,000 "neurons"). With the default 8B model that's several hundred questions a day. Once it's used up, the API returns 503 and the site says to try tomorrow; nothing is ever billed on the free plan.
 
@@ -18,8 +18,8 @@ A tiny serverless proxy between the static site and a **free** AI model on [Clou
 | `src/router.ts`                  | Shared pipeline: path → origin allowlist → CORS preflight → method → per-IP rate limit → handler                                                                                                                                             |
 | `src/cors.ts`, `src/http.ts`     | CORS headers and JSON helpers                                                                                                                                                                                                                |
 | `src/cache.ts`                   | `getOrRefresh`: read-through cache with TTL + stale-on-error. KV (`CACHE` binding) when configured, plus a per-isolate memory layer. The Cache API isn't used, because it's only documented as working on custom domains, not `workers.dev`. |
-| `src/routes/*.ts`                | One file per route                                                                                                                                                                                                                           |
-| `src/prompt.ts`, `src/limits.ts` | System prompt (from the site's `src/data`) and limits                                                                                                                                                                                        |
+| `src/routes/*.ts`                | One file per route; data routes also export `loadRates`/`loadWeather`/`loadItinerary` for the live context                                                                                                                                   |
+| `src/prompt.ts`, `src/limits.ts` | System prompt (from the site's `src/data`) and limits/TTLs                                                                                                                                                                                   |
 
 To add a route, create `src/routes/<name>.ts` exporting a `Route` (method, path, `rateLimit` binding, handler) and add it to the list in `src/index.ts`.
 
@@ -39,6 +39,23 @@ To add a route, create `src/routes/<name>.ts` exporting a `Route` (method, path,
 | 503    | Daily free AI quota used up      |
 
 `GET /health` → `200 {"ok":true}`
+
+### Data routes (GET, origin-checked, `RL_DATA` limit, KV-cached with stale-on-error)
+
+| Route        | Source                                                          | Fresh for | Stale up to | Notes                                                                                                                                                                         |
+| ------------ | --------------------------------------------------------------- | --------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/rates`     | National Bank of Georgia (fallback: open.er-api.com)            | 12 h      | 7 days      | `{ base, gelPer: { ILS, EUR }, validFrom, source, fetchedAt, stale }`                                                                                                         |
+| `/weather`   | Open-Meteo, one call for the three zones in `src/data/zones.ts` | 30 min    | 24 h        | Per zone: now, 7 days, last snowfall, modeled snow depth. Credit "Weather data by Open-Meteo.com" (CC BY 4.0) wherever it's shown.                                            |
+| `/itinerary` | The trip calendar's secret iCal address (`CALENDAR_ICS_URL`)    | 20 min    | 7 days      | Events 23 Feb–1 Mar only, parsed with ical.js (time zones, all-day, recurrence). Only id, title, start, end, allDay and location are returned. `501` until the secret is set. |
+
+`503` means the upstream failed and nothing usable was cached.
+
+## Secrets and bindings
+
+- **`CALENDAR_ICS_URL`** (secret): the Google Calendar "Secret address in iCal format". Set it from your own terminal with `npx wrangler secret put CALENDAR_ICS_URL` (it prompts; never paste it in chat or commit it). The Worker never logs or echoes it. If it leaks, reset it in Google Calendar's settings and set it again.
+- **`CACHE`** (KV namespace, id in `wrangler.toml`): the data cache. A few hundred writes a day at most, within the free tier.
+- **`RATE_LIMITER`**, **`RL_DATA`**: rate-limit bindings (see above).
+- **`AI`**: Workers AI.
 
 ## One-time setup (≈5 minutes)
 
@@ -109,4 +126,5 @@ npx wrangler tail   # live logs
 ## Notes
 
 - The Origin check stops other _websites_ from using the quota. A script can fake the header, so the rate limit and the free-tier cap are the real backstop.
-- No conversation data is stored by the Worker.
+- No conversation data is stored by the Worker. KV holds only the cached upstream data.
+- The live context uses Workers AI's small 8B model, which can still misread details (for example, mislabel a calendar event). Rates are given to it as ready-made conversions so it doesn't do arithmetic.
