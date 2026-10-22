@@ -16,8 +16,8 @@
 | 8.2   | Currency converter                                                       | ✅ Done | v1.3.0 |
 | 8.3   | Pre-flight to-do list                                                    | ✅ Done | v1.4.0 |
 | 8.4   | Itinerary (Google Calendar)                                              | ✅ Done | v1.5.0 |
-| 8.5   | Weather, snow & webcams                                                  | ⏳ Next | v1.6.0 |
-| 8.6   | Assistant live context + polish                                          | —       | v1.7.0 |
+| 8.5   | Weather, snow & webcams                                                  | ✅ Done | v1.6.0 |
+| 8.6   | Assistant live context + polish                                          | ⏳ Next | v1.7.0 |
 | 8.7   | Offline mode (service worker) + baked fallback rate                      | —       | v1.8.0 |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/
@@ -47,6 +47,7 @@
 - Phase 8.3: the to-do list has five lists (four travelers + Shared). Day-based deadlines are the **end of that day in Israel time**, and check-ins are exact (departure − 3 h, shown in Israel time; LY5110's appears as 18:55 Israel = 20:55 Tbilisi). The El Al check-in window stays unverified and is worded as "usually ~24 h; confirm in the El Al app". The passport item points to Georgia's current entry rules rather than stating a validity requirement. The Home card reads storage synchronously so it never shifts the layout. Testing lesson: tap UI by DOM `click()` in headless tests (the fixed tab bar intercepts coordinate taps at 375 px), and wait for colour transitions before axe contrast checks.
 
 - Phase 8.4: Ofek set `CALENDAR_ICS_URL` from his own terminal; it was never seen or echoed. The live feed gave 38 trip events. ical.js 2.2.1 adds about 60 kB gzipped to the Worker. A 2,000-event feed parses in ~1.2 ms thanks to the text pre-filter. Flights from `trip.ts` are merged unless the calendar already names the flight number. **Calendar data note for Ofek:** the calendar's flight events look ~2 h off; LY 5107 is stored as 09:15–11:50 Tbilisi time vs the real 07:15–09:50, and the return lands at 01:55 on 1 Mar vs a 23:55 departure on 28 Feb. Day-1 events were probably typed in Tbilisi times with the event time zone set to Israel. The site shows the calendar as stored. Lesson: after `npm install` in `worker/`, check the lockfile still lists the `@rolldown/binding-*` packages; if not, regenerate it from scratch.
+- Phase 8.5: both Vitamin Cafe streams were re-checked through YouTube oEmbed on 2026-10-22 (Soliko `vBVWcSjPAZM`, Kudebi `aCHJ-r15RLM`); if a stream restarts with a new id, update `src/data/zones.ts`. One Open-Meteo call covers all three zones (elevation downscaling); the upstream response is ~70 kB and the Worker payload ~2.6 kB. Open-Meteo snaps all three zones to grid cells 3–8 km away, so only the elevation separates them, and snow depth is always labelled a model estimate. Nothing from YouTube loads until a cam is tapped. The forecast strip was made a 7-column grid because a sideways-scrolling list failed axe (keyboard-unreachable scroll region).
 
 ### Content Security Policy decision (Round 2, Phase 8.0)
 
