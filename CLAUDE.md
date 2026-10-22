@@ -4,18 +4,19 @@ Companion site for a 4-person ski trip. Static Preact + TypeScript app on GitHub
 
 ## Commands
 
-| Command                     | What it does                                                                                              |
-| --------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `npm run dev`               | Vite dev server at http://localhost:5173/gudauri-2027/                                                    |
-| `npm run lint`              | ESLint + Prettier check (fails CI if unformatted)                                                         |
-| `npm run format`            | Prettier write                                                                                            |
-| `npm run typecheck`         | `tsc --noEmit` for the app, `scripts/` and `src/sw` (own tsconfigs)                                       |
-| `npm test`                  | Vitest (run once). CI also runs it with `TZ=America/Los_Angeles`.                                         |
-| `npm run build`             | Typecheck + production build to `dist/`                                                                   |
-| `npm run fetch:pistes`      | Regenerate `src/data/pistes.json` from OpenStreetMap (rarely)                                             |
-| `npm run fetch:rates`       | Bake the latest NBG rate into `src/data/fallbackRates.ts` (the Pages deploy runs it)                      |
-| `npm run analyze:tracks`    | Check every music URL streams; measure duration and loudness into `src/data/tracks.json` (needs ffmpeg)   |
-| `npm run fetch:dish-images` | Download, crop and encode dish photos from Wikimedia Commons; review every image by eye before committing |
+| Command                     | What it does                                                                                                                   |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run dev`               | Vite dev server at http://localhost:5173/gudauri-2027/                                                                         |
+| `npm run lint`              | ESLint + Prettier check (fails CI if unformatted)                                                                              |
+| `npm run format`            | Prettier write                                                                                                                 |
+| `npm run typecheck`         | `tsc --noEmit` for the app, `scripts/` and `src/sw` (own tsconfigs)                                                            |
+| `npm test`                  | Vitest (run once). CI also runs it with `TZ=America/Los_Angeles`.                                                              |
+| `npm run build`             | Typecheck + production build to `dist/`                                                                                        |
+| `npm run fetch:pistes`      | Regenerate `src/data/pistes.json` from OpenStreetMap (rarely)                                                                  |
+| `npm run fetch:rates`       | Bake the latest NBG rate into `src/data/fallbackRates.ts` (the Pages deploy runs it)                                           |
+| `npm run analyze:tracks`    | Check every music URL streams; measure duration and loudness into `src/data/tracks.json` (needs ffmpeg)                        |
+| `npm run og-image`          | Regenerate the link-preview card `public/og-image.png` (needs a running preview and `CHROME_PATH`); run after changing avatars |
+| `npm run fetch:dish-images` | Download, crop and encode dish photos from Wikimedia Commons; review every image by eye before committing                      |
 
 Worker (`cd worker`): `npm test`, `npm run typecheck`, `npx wrangler dev`, `npx wrangler deploy` (normally done by CI, see below), `npx wrangler tail`.
 
