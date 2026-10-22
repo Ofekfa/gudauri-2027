@@ -17,7 +17,7 @@ const CHECK_INTERVAL_MS = 5_000;
  * that already show facts (Facts; Food, whose dish pages show their related facts).
  * Paths are sections, so /food covers every dish page too.
  */
-const BLOCKED_PATHS = new Set(['/game', '/facts', '/currency', '/todo', '/food']);
+const BLOCKED_PATHS = new Set(['/game', '/facts', '/currency', '/todo', '/food', '/album']);
 
 /** Invisible: occasionally shows a fun fact as a toast. */
 export function FactPopups({ path }: { path: string }) {

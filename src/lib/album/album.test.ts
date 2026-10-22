@@ -11,7 +11,15 @@ import {
   type QueueItem,
 } from './queue';
 import type { UploadOutcome } from './repository';
-import { albumProgress, coverFor, photosByFrame, suggestFrame, viewerIndex } from './selectors';
+import {
+  albumProgress,
+  pendingLabel,
+  coverFor,
+  photosByFrame,
+  storySlides,
+  suggestFrame,
+  viewerIndex,
+} from './selectors';
 import { crc32, createZip, zipName } from './zip';
 
 const photo = (id: string, frameId: string, uploadedAt: string): AlbumPhoto => ({
@@ -59,6 +67,27 @@ describe('album selectors', () => {
     );
     expect(suggestFrame(Date.parse('2027-02-25T08:00:00Z'), all)).toBe('the-four-of-us');
     expect(suggestFrame(Date.parse('2027-03-05T18:00:00Z'), byFrame)).toBe('mcdonalds'); // after the trip
+  });
+
+  it('builds the story: a title card per moment with photos, in story order', () => {
+    const slides = storySlides(photos).map((s) =>
+      s.kind === 'title' ? `# ${s.frame.id} (${s.count})` : s.photo.id,
+    );
+    expect(slides).toEqual([
+      '# snowman (2)',
+      'photo-a',
+      'photo-c',
+      '# dinner-2027-02-24 (1)',
+      'photo-b',
+    ]);
+  });
+
+  it('describes photos still on this phone', () => {
+    expect(pendingLabel([])).toBeNull();
+    expect(pendingLabel(['queued', 'uploading'])).toBe('Uploading 2…');
+    expect(pendingLabel(['waiting-offline', 'failed'])).toBe(
+      '1 waiting for signal · 1 couldn’t be added',
+    );
   });
 
   it('finds the viewer index, defaulting to the first photo', () => {

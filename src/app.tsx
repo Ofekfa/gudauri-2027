@@ -9,6 +9,7 @@ import { lazyPage } from './lib/router/lazyPage';
 import { MapBackground } from './components/map/MapBackground';
 import { Snowfall } from './components/Snowfall';
 import { ToastHost } from './components/ToastHost';
+import { AlbumQueueHost } from './components/album/AlbumQueueHost';
 import { FactPopups } from './components/facts/FactPopups';
 import { findNavItem, HOME } from './navigation';
 import { ComingSoonPage } from './pages/ComingSoonPage';
@@ -32,6 +33,8 @@ const PAGES: Record<string, ComponentType> = {
   '/food': lazyPage(() => import('./pages/FoodPage')),
   '/credits': lazyPage(() => import('./pages/CreditsPage')),
   '/music': lazyPage(() => import('./pages/MusicPage')),
+  '/album': lazyPage(() => import('./pages/AlbumPage')),
+  '/album/story': lazyPage(() => import('./pages/AlbumStoryPage')),
   '/more': MorePage,
 };
 
@@ -43,9 +46,10 @@ export interface ParamPageProps {
   params: string[];
 }
 /** Detail segments each section accepts (default 1). */
-const PARAM_SEGMENTS: Record<string, number> = {};
+const PARAM_SEGMENTS: Record<string, number> = { '/album': 2 };
 const PARAM_PAGES: Record<string, ComponentType<ParamPageProps>> = {
   '/food': lazyPage<ParamPageProps>(() => import('./pages/FoodDetailPage')),
+  '/album': lazyPage<ParamPageProps>(() => import('./pages/AlbumFramePage')),
 };
 
 function focusMain() {
@@ -97,6 +101,7 @@ export function App() {
       </main>
       <Footer />
       <ToastHost />
+      <AlbumQueueHost />
       <FactPopups path={sectionPath} />
       <BottomTabBar activePath={sectionPath} />
     </>

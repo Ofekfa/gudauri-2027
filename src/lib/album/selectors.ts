@@ -1,7 +1,8 @@
-import { ALBUM_FRAMES, PLANNED_FRAMES } from '../../data/album';
+import { ALBUM_FRAMES, PLANNED_FRAMES, type AlbumFrame } from '../../data/album';
 import { trip } from '../../data/trip';
 import { localDateIn } from '../time/countdown';
 import type { AlbumFrameState, AlbumPhoto } from './protocol';
+import type { QueueState } from './queue';
 
 /** Photos per frame, oldest first (ties by id), for every frame. */
 export function photosByFrame(photos: readonly AlbumPhoto[]): Map<string, AlbumPhoto[]> {
@@ -63,3 +64,33 @@ export const viewerIndex = (photos: readonly AlbumPhoto[], photoId: string | und
     0,
     photos.findIndex((p) => p.id === photoId),
   );
+
+export type StorySlide =
+  | { kind: 'title'; frame: AlbumFrame; count: number }
+  | { kind: 'photo'; frame: AlbumFrame; photo: AlbumPhoto };
+
+/** Story order: a title card for each moment with photos, then its photos. */
+export function storySlides(photos: readonly AlbumPhoto[]): StorySlide[] {
+  const byFrame = photosByFrame(photos);
+  return ALBUM_FRAMES.flatMap((frame): StorySlide[] => {
+    const list = byFrame.get(frame.id) ?? [];
+    if (list.length === 0) return [];
+    return [
+      { kind: 'title', frame, count: list.length },
+      ...list.map((photo) => ({ kind: 'photo' as const, frame, photo })),
+    ];
+  });
+}
+
+/** What a frame card says about its photos still on this phone, if any. */
+export function pendingLabel(states: readonly QueueState[]): string | null {
+  const failed = states.filter((s) => s === 'failed').length;
+  const waiting = states.filter((s) => s === 'waiting-offline').length;
+  const active = states.length - failed - waiting;
+  const parts = [
+    active && `Uploading ${active}…`,
+    waiting && `${waiting} waiting for signal`,
+    failed && `${failed} couldn’t be added`,
+  ].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
+}
