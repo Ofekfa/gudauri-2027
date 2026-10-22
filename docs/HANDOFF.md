@@ -2,7 +2,7 @@
 
 ## Current state
 
-The last tag is **`v1.12.1`** (the album upload fix). `main` is at the docs PR that marks the bug resolved, and its CI is green.
+The last tag is **`v1.13.0`**: the card carousel (#95), custom moments (#96) and the bigger snowfall (#97). `main` is at the docs PR for it, and its CI is green.
 
 - **Live site:** https://ofekfa.github.io/gudauri-2027/
 - **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev
@@ -10,15 +10,28 @@ The last tag is **`v1.12.1`** (the album upload fix). `main` is at the docs PR t
 Both match `main`:
 
 - Pages deploys on every push to `main`.
-- The Worker was last deployed from `8bc7f14` (#93), and `ALBUM_SIGNING_KEY` is set.
+- The Worker was last deployed from `5f1cf5e` (#96, custom moment routes), and `ALBUM_SIGNING_KEY` is set.
 
 There are no open PRs and no work-in-progress branches; old merged branches remain on the remote. Read `PLAN.md` (status, queue, decisions) and `CLAUDE.md` (conventions, gotchas) first.
 
 ## In progress
 
-Phase 10.3 Album shipped in PRs #86–#91; the upload bug was fixed in #93 (`v1.12.1`). **Adding photos works on the live site** (verified 2026-10-22, see "Resolved bug"). Left to do:
+Phase 10.3 Album shipped in PRs #86–#91; the upload bug was fixed in #93 (`v1.12.1`). **Adding photos works on the live site** (verified 2026-10-22, see "Resolved bug").
 
-1. Ofek's real-phone test: camera photo, gallery multi-select, airplane mode (steps in the `v1.12.1` report and below).
+Phase 10.4 (`v1.13.0`) is shipped and verified live:
+
+- **#95:** moment cards are a mini carousel (arrows, swipe, ← →, dots / "2 / 7", tap → `#/album/<moment>/<photo>`).
+- **#96:** our own moments. "+ Add moment", stored by the Worker (`/album/moments` routes), with string fractional order keys; edit, move and delete (which cascades to photos).
+- **#97:** snowflakes 4.5–12 px, `36 + 18 × MP` (max 110), paused in hidden tabs.
+
+Live checks on 2026-10-22:
+
+- 3 test photos browsed on a card, plus the deep link; a test moment added after Bowling, deep-linked after a reload, then deleted. All test data was removed. Ofek's own 2 McDonald's photos are untouched.
+- 60 fps at 4× throttle with 42/59/102 flakes; axe 0 on 17 routes in light and dark; Lighthouse mobile 96–100 / 100 / 100, CLS 0.
+
+Left to do: Ofek's real-phone test (camera, gallery multi-select, airplane mode, plus the `v1.13.0` checklist: swiping a card, adding "Breakfast", the snowflakes).
+
+**Lighthouse gotcha:** pass hash routes with a literal `#` (`"<url>/#/album"`). A `%23` makes it request a real path that 404s, which shows up as best practices 96.
 
 ## Open questions for Ofek
 

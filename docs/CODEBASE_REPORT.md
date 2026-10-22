@@ -4,6 +4,22 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **ever
 
 ## Changelog since v1.0.0
 
+### Phase 10.4 — Album cards, custom moments, snowfall (`v1.13.0`)
+
+- **Card carousel (#95):**
+  - `components/album/CardCarousel.tsx` and the pure `lib/album/cardCarousel.ts` (start at the cover, `step`, dots up to 5 then "2 / 7", `photoHref`);
+  - `useCarousel` gained `keys: 'element'` so a card's ← → don't act page-wide;
+  - a new `--tap-target` token (44 px).
+- **Custom moments (#96):**
+  - `lib/album/moments.ts`, shared with the Worker: `keyBetween` string fractional keys, `mergeMoments`, `keyAfter`, `defaultAfter`, `applyMomentOps`;
+  - `CustomMoment` and `parseMomentInput` in `protocol.ts`; a `moments` table in the `index` Durable Object;
+  - routes `POST /album/moments`, `PATCH`/`DELETE /album/moments/:id`;
+  - `service.momentsOf()` (merged order plus optimistic ops), `queue.failMissing`, and a 410 "This moment was deleted.";
+  - the `MomentForm` component; selectors and `downloadAlbum`/`zipPlan` take the moment list;
+  - a new `--color-accent-ink` token: the dark-mode danger button contrast went from 2.15 to 8.45:1.
+- **Snowfall (#97):** `lib/snowfall/flakes.ts` (`flakeCount`, `makeFlakes`, all constants); `Snowfall` sizes itself on mount and pauses when the tab is hidden.
+- **Tests:** 434 site + 88 Worker.
+
 ### Phase 10.3 — Album: our trip in photos (`v1.12.0`)
 
 **Routing:**
