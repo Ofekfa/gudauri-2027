@@ -19,13 +19,47 @@
 | 8.5   | Weather, snow & webcams                                                  | ✅ Done | v1.6.0  |
 | 8.6   | Assistant live context + polish                                          | ✅ Done | v1.7.0  |
 | 8.7   | Offline mode (service worker) + baked fallback rate                      | ✅ Done | v1.8.0  |
-| 9.1   | Georgian food page                                                       | ⏳ Next | v1.9.0  |
+| 9.1   | Georgian food page                                                       | ✅ Done | v1.9.0  |
 | 9.2   | Background Georgian music                                                | ✅ Done | v1.10.0 |
 | 10.1  | Shared lists across our phones (sync)                                    | ✅ Done | v1.11.0 |
 | 10.2  | Avatar hair colours (Ron brown, Ofek light brown)                        | ✅ Done | v1.11.1 |
 | 10.3  | Album: our trip in photos                                                | ✅ Done | v1.12.0 |
 
-**Live:** https://ofekfa.github.io/gudauri-2027/
+**Live:** https://ofekfa.github.io/gudauri-2027/ · **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev · Session handoff: `docs/HANDOFF.md`
+
+### Current phase
+
+**10.3 Album** is shipped (`v1.12.0`), but **adding photos doesn't work live yet**. Uploads stay at "Uploading 0%" forever, with no error shown. The reproduced cause is that `ALBUM_SIGNING_KEY` isn't set, so the token request returns `501`, and the client then retries forever without telling anyone. See "Open bug" in `docs/HANDOFF.md`.
+
+**Next action:** fix the album upload bug. That means at least: surface the "not set up" and "wrong code" token errors in the UI instead of retrying forever, and have Ofek set the key.
+
+### Queued (in order)
+
+1. Fix the album upload bug (above), then a real-phone album test by Ofek (iOS Safari + Android Chrome).
+2. Day-1 calendar times. Ofek: "let's deal with the time later". The feed is UTC and parsed correctly; his Google Calendar display/event time zone is probably Israel.
+3. Ideas offered to Ofek, **not yet requested or scheduled**:
+   - expenses / settle-up;
+   - a ski-day briefing;
+   - an offline safety card;
+   - a leaderboard and trip awards.
+
+### Decisions made in Round 4 (Ofek, 2026-10-22)
+
+Reasons are given where Ofek or the analysis stated them.
+
+| Decision                                                                                                                                                       | Reason                                                                                                         |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Shared lists: **one group code**; **everyone edits every list**; packing and to-dos sync                                                                       | Simplest for 4 friends; no accounts                                                                            |
+| Ron's hair brown, Ofek's light/ash brown                                                                                                                       | Ofek's feedback: the avatars didn't match                                                                      |
+| Display "Roi" (not "Roy"); id stays `roy`                                                                                                                      | Correct spelling; keeping the id preserves stored lists, scores and sync                                       |
+| Album under **More → Fun**; tab bar unchanged                                                                                                                  | Ofek's choice                                                                                                  |
+| **5 dinner frames** (Wed 24 – Sun 28), derived from `trip.ts`; **3 bonus frames**                                                                              | One per evening of the trip; bonus frames don't count toward progress                                          |
+| Album **viewing is public** (anyone with the link)                                                                                                             | Ofek's choice: easy sharing. Images are `noindex`                                                              |
+| Adding, captions, cover and delete need the **same `GROUP_CODE`** as lists (no separate album passcode), exchanged for a token signed with `ALBUM_SIGNING_KEY` | One code to remember; the token avoids sending the code on every upload and can be revoked by rotating the key |
+| **Anyone of us can delete any photo** (inline confirm; Undo after adding)                                                                                      | Ofek's choice                                                                                                  |
+| **Storage: Durable Objects SQLite**, sharded per frame                                                                                                         | R2 most likely needs a payment card; KV's free limits (1 GB, 1,000 writes/day) don't fit                       |
+| **Quick add** card on Home during the trip                                                                                                                     | Fastest path to add a photo                                                                                    |
+| Day-1 calendar time issue deferred                                                                                                                             | Ofek: "let's deal with the time later"                                                                         |
 
 ### Deviations from the original plan
 
@@ -1086,7 +1120,7 @@ Packing lists and to-dos lived only on each phone. Decisions (Ofek, 2026-10-22):
 - **Tests:** record diff/merge, adapters, client merge during an in-flight sync, Durable Object merge rules, route auth/validation.
 - **Manual step for Ofek:** choose a long passphrase, run `npx wrangler secret put GROUP_CODE` in `worker/`, and share the code privately with Ron, Roy and Maya.
 
-**Status (2026-10-22):** shipped as `v1.11.0`. The Durable Object deployed on the Workers Free plan. Verified end to end with a local Worker (emulated Durable Object) and two separate browser profiles: join, see the other phone's item with "· Ofek", tick it and see it packed with "· Maya" on the first phone, wrong code rejected. Live `/sync` answers `501` until Ofek sets `GROUP_CODE`.
+**Status (2026-10-22):** shipped as `v1.11.0`. The Durable Object deployed on the Workers Free plan. Verified end to end with a local Worker (emulated Durable Object) and two separate browser profiles: join, see the other phone's item with "· Ofek", tick it and see it packed with "· Maya" on the first phone, wrong code rejected. Live `/sync` answered `501` until Ofek set `GROUP_CODE`. It's now set (wrong codes get `401`), but Ofek hasn't reported his two-phone check yet.
 
 ## Phase 10.3 — Album: our trip in photos → `v1.12.0`
 
@@ -1142,5 +1176,5 @@ A page of frames, one per moment of the trip in story order; any of us adds phot
   - **viewing:** a phone that hasn't joined can view but not add;
   - **viewer:** caption, cover and delete (the cover resets) work; story mode works; Quick add suggests tonight's dinner;
   - axe 0 in light and dark; CLS 0; no overflow at 375 px.
-- **Live:** viewing works. `POST /album/session` answers `501` until Ofek sets `ALBUM_SIGNING_KEY`, so adding is off until then.
+- **Live:** viewing works. `POST /album/session` answers `501` because `ALBUM_SIGNING_KEY` isn't set. **Open bug:** in that state an added photo sits at "Uploading 0%" forever with no error (reproduced locally; see `docs/HANDOFF.md`).
 - **Not checked:** real iPhone and Android phones (camera, HEIC → JPEG, upload on mountain signal) still need Ofek's test.
