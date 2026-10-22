@@ -24,18 +24,19 @@
 | 10.1  | Shared lists across our phones (sync)                                    | ✅ Done | v1.11.0 |
 | 10.2  | Avatar hair colours (Ron brown, Ofek light brown)                        | ✅ Done | v1.11.1 |
 | 10.3  | Album: our trip in photos                                                | ✅ Done | v1.12.0 |
+| 10.3a | Fix: album uploads stuck at "Uploading 0%"                               | ✅ Done | v1.12.1 |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/ · **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev · Session handoff: `docs/HANDOFF.md`
 
 ### Current phase
 
-**10.3 Album** is shipped (`v1.12.0`), but **adding photos doesn't work live yet**. Uploads stay at "Uploading 0%" forever, with no error shown. The reproduced cause is that `ALBUM_SIGNING_KEY` isn't set, so the token request returns `501`, and the client then retries forever without telling anyone. See "Open bug" in `docs/HANDOFF.md`.
+**10.3 Album** is shipped and **adding photos works live** (`v1.12.1`). The upload bug was caused by `ALBUM_SIGNING_KEY` not being set (`501`), which the client retried forever without telling anyone. Token errors now fail at once with a reason, retries are capped at 5 with an attempt deadline, the photo shows "Upload failed — tap to retry", and the key is set. See "Resolved bug" in `docs/HANDOFF.md`.
 
-**Next action:** fix the album upload bug. That means at least: surface the "not set up" and "wrong code" token errors in the UI instead of retrying forever, and have Ofek set the key.
+**Next action:** Ofek's real-phone album test (camera, gallery multi-select, airplane mode).
 
 ### Queued (in order)
 
-1. Fix the album upload bug (above), then a real-phone album test by Ofek (iOS Safari + Android Chrome).
+1. Real-phone album test by Ofek (iOS Safari + Android Chrome).
 2. Day-1 calendar times. Ofek: "let's deal with the time later". The feed is UTC and parsed correctly; his Google Calendar display/event time zone is probably Israel.
 3. Ideas offered to Ofek, **not yet requested or scheduled**:
    - expenses / settle-up;
