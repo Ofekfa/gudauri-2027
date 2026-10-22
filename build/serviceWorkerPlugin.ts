@@ -13,6 +13,8 @@ const SW_FILE = 'sw.js';
 const SHELL = 'index.html';
 /** Not needed offline: the GitHub Pages 404 page, the link-preview image and the font licence. */
 const PUBLIC_EXCLUDE = new Set(['404.html', 'og-image.png', 'fonts/Fredoka-OFL.txt']);
+/** Cached at runtime as they're viewed instead (see IMAGE_PREFIX in src/sw/routing.ts). */
+const PUBLIC_EXCLUDE_DIRS = ['food/'];
 const VERSION_LENGTH = 12;
 
 function listFiles(dir: string): string[] {
@@ -43,7 +45,9 @@ export function serviceWorker(): Plugin {
         (f) => f.fileName !== SW_FILE && !f.fileName.endsWith('.map'),
       );
       const publicFiles = publicDir
-        ? listFiles(publicDir).filter((f) => !PUBLIC_EXCLUDE.has(f))
+        ? listFiles(publicDir).filter(
+            (f) => !PUBLIC_EXCLUDE.has(f) && !PUBLIC_EXCLUDE_DIRS.some((dir) => f.startsWith(dir)),
+          )
         : [];
       const manifest = [
         ...new Set([SHELL, ...built.map((f) => f.fileName), ...publicFiles]),

@@ -4,7 +4,7 @@
  * else (the Worker's /chat and data routes, YouTube, OpenStreetMap links)
  * goes straight to the network.
  */
-export type RouteKind = 'shell' | 'precache' | 'network';
+export type RouteKind = 'shell' | 'precache' | 'image' | 'network';
 
 export interface RequestLike {
   method: string;
@@ -15,6 +15,11 @@ export interface RequestLike {
 /** The app shell every navigation is answered with (routing is hash-based). */
 export const SHELL = 'index.html';
 export const CACHE_PREFIX = 'gudauri-precache-';
+/** Dish photos are cached as they're viewed (too many to precache); kept across versions. */
+export const IMAGE_CACHE = 'gudauri-images';
+export const IMAGE_PREFIX = 'food/';
+/** Oldest entries are dropped beyond this (≈ every dish at both sizes, one format). */
+export const MAX_CACHED_IMAGES = 120;
 /** Message a waiting worker accepts to take over (mirrored in lib/pwa/register.ts). */
 export const SKIP_WAITING = 'SKIP_WAITING';
 
@@ -34,7 +39,8 @@ export function classify(
     // A direct link to a file (e.g. the share image) isn't a page.
     return FILE_EXTENSION.test(path) && !path.endsWith('.html') ? 'network' : 'shell';
   }
-  return precached.has(path) ? 'precache' : 'network';
+  if (precached.has(path)) return 'precache';
+  return path.startsWith(IMAGE_PREFIX) ? 'image' : 'network';
 }
 
 export const cacheNameFor = (version: string) => `${CACHE_PREFIX}${version}`;

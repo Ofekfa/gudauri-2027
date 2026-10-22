@@ -4,7 +4,15 @@
  * offline after one visit. Built by build/serviceWorkerPlugin.ts, which fills
  * in the precache list and version.
  */
-import { cacheNameFor, classify, SHELL, SKIP_WAITING, staleCaches } from './routing';
+import {
+  cacheNameFor,
+  classify,
+  IMAGE_CACHE,
+  MAX_CACHED_IMAGES,
+  SHELL,
+  SKIP_WAITING,
+  staleCaches,
+} from './routing';
 
 declare let self: ServiceWorkerGlobalScope;
 
@@ -35,9 +43,29 @@ self.addEventListener('message', (event) => {
   if ((event.data as { type?: unknown } | null)?.type === SKIP_WAITING) void self.skipWaiting();
 });
 
+/** Cache-first for dish photos; a miss is fetched, stored and the cache trimmed. */
+async function cachedImage(request: Request): Promise<Response> {
+  const cache = await caches.open(IMAGE_CACHE);
+  const hit = await cache.match(request);
+  if (hit) return hit;
+  const response = await fetch(request);
+  if (response.ok) {
+    await cache.put(request, response.clone());
+    const keys = await cache.keys();
+    await Promise.all(
+      keys.slice(0, Math.max(0, keys.length - MAX_CACHED_IMAGES)).map((k) => cache.delete(k)),
+    );
+  }
+  return response;
+}
+
 self.addEventListener('fetch', (event) => {
   const kind = classify(event.request, self.registration.scope, PRECACHED);
   if (kind === 'network') return;
+  if (kind === 'image') {
+    event.respondWith(cachedImage(event.request));
+    return;
+  }
   event.respondWith(
     (async () => {
       const cache = await caches.open(CACHE);
