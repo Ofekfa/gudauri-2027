@@ -26,6 +26,8 @@ export function useHashPath(): string {
   useEffect(() => {
     const onChange = () => setPath(parseHash(window.location.hash));
     window.addEventListener('hashchange', onChange);
+    // Effects run after first paint: catch a hash change that happened before we subscribed.
+    onChange();
     return () => window.removeEventListener('hashchange', onChange);
   }, []);
   return path;
