@@ -100,7 +100,7 @@ main:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-2);
   height: var(--header-height);
   padding: 0 var(--gutter);
   padding-top: env(safe-area-inset-top);
@@ -110,6 +110,8 @@ main:focus {
 }
 
 .brand {
+  flex: none;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -134,6 +136,119 @@ main:focus {
 
 .desktop-nav {
   display: none;
+}
+
+/* ---------- Background music ---------- */
+.music {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.music .icon-button {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+.music__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  /* Shares the phone header with the brand; titles are truncated. */
+  max-width: min(12rem, 28vw);
+  min-height: 2.5rem;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-ink-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.music__status:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-ink);
+}
+.music__status-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.music__hint-long {
+  display: none;
+}
+@media (min-width: 40rem) {
+  .music__hint-long {
+    display: inline;
+  }
+  .music__hint-short {
+    display: none;
+  }
+}
+/* Very narrow phones: the logo alone identifies the site (the link keeps its name). */
+@media (max-width: 22rem) {
+  .brand__text {
+    display: none;
+  }
+}
+.music__toggle[aria-pressed='true'] {
+  color: var(--color-primary);
+}
+.music__next:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.music-panel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: var(--space-2);
+  width: min(20rem, calc(100vw - 2 * var(--gutter)));
+  padding: var(--space-4);
+}
+.music-panel p {
+  margin: 0;
+}
+.music-panel__title {
+  font-weight: 700;
+}
+.music-panel__artist,
+.music-panel__meta,
+.music-panel__note,
+.music-panel__license {
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+.music-panel__attribution {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: 0.75rem;
+}
+.music-panel__era {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+.music-panel__era--modern {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+.music-panel__volume {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.music-panel__volume input {
+  width: 100%;
+  accent-color: var(--color-primary);
 }
 
 /* ---------- Bottom tab bar (mobile) ---------- */

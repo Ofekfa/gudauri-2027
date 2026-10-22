@@ -20,6 +20,8 @@ import { emptyBag, nextTrack, type BagState } from './shuffleBag';
 
 /** A track that hasn't started within this long counts as failed. */
 const LOAD_TIMEOUT_MS = 20_000;
+/** Hosts (archive.org especially) fail now and then; retry once after this pause before skipping. */
+const RETRY_DELAY_MS = 1_500;
 const BAG_VERSION = 1;
 
 interface StoredBag extends BagState {
@@ -106,8 +108,11 @@ export function createMusicPlayer({
     audio.volume = trackVolume(settings.volume, track?.gainDb ?? 0, volumeFactor(state));
   }
 
+  let retried = false;
+
   function startTrack() {
     track = pickNext();
+    retried = false;
     audio.src = track.src;
     applyVolume();
     clearTimeout(loadTimer);
@@ -156,9 +161,21 @@ export function createMusicPlayer({
   });
   audio.addEventListener('ended', () => dispatch({ type: 'ENDED' }));
   audio.addEventListener('error', () => {
-    // A missing or undecodable file: skip it. (The unlock clip has no track.)
+    // The unlock clip has no track.
     if (!track) return;
-    if (import.meta.env.DEV) console.warn('[music] skipped', track.id, audio.error?.message);
+    const failed = track;
+    if (!retried) {
+      retried = true;
+      setTimeout(() => {
+        // Still the same track and still wanted: try the same file once more.
+        if (track !== failed || !shouldPlay(state)) return;
+        audio.src = failed.src;
+        sync();
+      }, RETRY_DELAY_MS);
+      return;
+    }
+    // Missing, undecodable or still failing: skip it.
+    if (import.meta.env.DEV) console.warn('[music] skipped', failed.id, audio.error?.message);
     dispatch({ type: 'ERROR' });
   });
   document.addEventListener('visibilitychange', () =>
