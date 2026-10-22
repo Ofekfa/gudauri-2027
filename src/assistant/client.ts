@@ -15,7 +15,8 @@ export type AssistantErrorKind =
 
 export const ASSISTANT_ERROR_TEXT: Record<AssistantErrorKind, string> = {
   'not-configured': 'The assistant isn’t connected yet. Ofek still needs to finish its setup.',
-  offline: 'I couldn’t reach the assistant. Check your connection and try again.',
+  offline:
+    'I couldn’t reach the assistant. It needs an internet connection; the rest of the site works offline.',
   'rate-limited': 'Whoa, lots of questions! Give me a minute and ask again.',
   quota: 'The free AI allowance for today is used up. Try again tomorrow!',
   'too-long': `That question is a bit long. Please keep it under ${MAX_QUESTION_CHARS} characters.`,

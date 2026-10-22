@@ -33,3 +33,16 @@ describe('toast store', () => {
     expect(store.getAll().map((t) => t.message)).toEqual(['b', 'c']);
   });
 });
+
+describe('sticky toasts', () => {
+  it('stay until dismissed when durationMs is null', () => {
+    vi.useFakeTimers();
+    const store = createToastStore();
+    const id = store.show({ message: 'New version', durationMs: null });
+    vi.advanceTimersByTime(60 * 60_000);
+    expect(store.getAll().map((t) => t.id)).toEqual([id]);
+    store.dismiss(id);
+    expect(store.getAll()).toEqual([]);
+    vi.useRealTimers();
+  });
+});
