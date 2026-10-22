@@ -2,23 +2,25 @@
 
 ## Status
 
-| Phase | Scope                                                                    | Status  | Tag    |
-| ----- | ------------------------------------------------------------------------ | ------- | ------ |
-| 1     | Scaffold, tooling, CI, Pages, nav shell, trip config, countdown, flights | ✅ Done | v0.1.0 |
-| 2     | Avatars, map background, visual identity                                 | ✅ Done | v0.2.0 |
-| 3     | Packing list                                                             | ✅ Done | v0.3.0 |
-| 4     | Fun facts + pop-ups                                                      | ✅ Done | v0.4.0 |
-| 5     | Skiing game                                                              | ✅ Done | v0.5.0 |
-| 6     | Voice AI assistant + Worker proxy                                        | ✅ Done | v0.6.0 |
-| 7     | Polish: a11y, perf, mobile QA                                            | ✅ Done | v1.0.0 |
-| 8.0   | Round 2 foundations (nav, Worker router + CI deploy, list toolkit…)      | ✅ Done | v1.1.0 |
-| 8.1   | Georgian words                                                           | ✅ Done | v1.2.0 |
-| 8.2   | Currency converter                                                       | ✅ Done | v1.3.0 |
-| 8.3   | Pre-flight to-do list                                                    | ✅ Done | v1.4.0 |
-| 8.4   | Itinerary (Google Calendar)                                              | ✅ Done | v1.5.0 |
-| 8.5   | Weather, snow & webcams                                                  | ✅ Done | v1.6.0 |
-| 8.6   | Assistant live context + polish                                          | ✅ Done | v1.7.0 |
-| 8.7   | Offline mode (service worker) + baked fallback rate                      | ✅ Done | v1.8.0 |
+| Phase | Scope                                                                    | Status  | Tag     |
+| ----- | ------------------------------------------------------------------------ | ------- | ------- |
+| 1     | Scaffold, tooling, CI, Pages, nav shell, trip config, countdown, flights | ✅ Done | v0.1.0  |
+| 2     | Avatars, map background, visual identity                                 | ✅ Done | v0.2.0  |
+| 3     | Packing list                                                             | ✅ Done | v0.3.0  |
+| 4     | Fun facts + pop-ups                                                      | ✅ Done | v0.4.0  |
+| 5     | Skiing game                                                              | ✅ Done | v0.5.0  |
+| 6     | Voice AI assistant + Worker proxy                                        | ✅ Done | v0.6.0  |
+| 7     | Polish: a11y, perf, mobile QA                                            | ✅ Done | v1.0.0  |
+| 8.0   | Round 2 foundations (nav, Worker router + CI deploy, list toolkit…)      | ✅ Done | v1.1.0  |
+| 8.1   | Georgian words                                                           | ✅ Done | v1.2.0  |
+| 8.2   | Currency converter                                                       | ✅ Done | v1.3.0  |
+| 8.3   | Pre-flight to-do list                                                    | ✅ Done | v1.4.0  |
+| 8.4   | Itinerary (Google Calendar)                                              | ✅ Done | v1.5.0  |
+| 8.5   | Weather, snow & webcams                                                  | ✅ Done | v1.6.0  |
+| 8.6   | Assistant live context + polish                                          | ✅ Done | v1.7.0  |
+| 8.7   | Offline mode (service worker) + baked fallback rate                      | ✅ Done | v1.8.0  |
+| 9.1   | Georgian food page                                                       | ⏳ Next | v1.9.0  |
+| 9.2   | Background Georgian music                                                | —       | v1.10.0 |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/
 
@@ -702,3 +704,355 @@ Goal: the site opens and works on the mountain with **no signal at all**, not ju
 | El Al check-in window unverified                    | Wording "confirm in the El Al app"; due = departure − 3 h              |
 | Georgian font/TTS per device                        | System-font stack; TTS hidden without a voice; Ofek's device checklist |
 | Token scope                                         | Minimal custom token; widen only if the deploy fails, documented       |
+
+# Round 3
+
+## Round 3 plan: Food page (9.1 → `v1.9.0`) + background music (9.2 → `v1.10.0`)
+
+### Context
+
+Round 2 is complete: phases 8.0–8.7 are ✅ and `v1.8.0` is live with offline mode. Ofek wants two more features: a Georgian food page with deep-linkable dishes, and gesture-started background Georgian music. Both build on the Round 2 foundations and don't duplicate them:
+
+- nav groups and `MORE_GROUPS`;
+- `loadVersioned`/`saveVersioned`;
+- the toast store;
+- the Fact union with its 11 `food` facts and the 27 `word-*` entries;
+- the service worker;
+- the Worker prompt.
+
+All `CLAUDE.md` conventions, the quality bar and the PR/tag/stop workflow apply. Approved by Ofek on 2026-10-22.
+
+#### Decisions (confirmed with Ofek)
+
+| Topic             | Decision                                                                                                                                                                                                                                                                                                             |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Food placement    | More → **Fun**. The tab bar stays Home · Itinerary · Packing · Weather · More.                                                                                                                                                                                                                                       |
+| Music licences    | Allowed: PD, CC0, CC BY, CC BY-SA, CC BY-NC **and CC BY-NC-ND**. NC is fine because the site is non-commercial; record this in PLAN.md. ND tracks are streamed **unmodified**: no trimming, re-encoding or mixing; loudness is evened by player volume, not by editing files.                                        |
+| Modern music gap  | Openly licensed modern Georgian pop, rock and jazz is essentially non-existent. The background library covers traditional plus modern electronic and piano. A **visible Music page** adds official YouTube embeds of modern Georgian playlists (tap to load, per the YouTube terms), never used as background audio. |
+| Hosting           | **Stream from source**: Wikimedia Commons (`upload.wikimedia.org`, CORS `*`) and archive.org (CORS `*`, range requests), using their MP3 copies. No audio in git and no R2.                                                                                                                                          |
+| Game / hidden tab | **Keep playing on Game** (it has no audio of its own). **Pause when the tab is hidden or the phone locks**; resume on return unless the user muted.                                                                                                                                                                  |
+
+#### Research findings (2026-10-22)
+
+**Music** (counts are estimates and are verified per file by the 9.2 build script):
+
+| Pool                                                                                | Era                                    | Tracks              | Minutes | Licences                                                       |
+| ----------------------------------------------------------------------------------- | -------------------------------------- | ------------------- | ------- | -------------------------------------------------------------- |
+| Commons: Chakrulo (1957), Shen khar venakhi                                         | trad.                                  | 2                   | 8.5     | PD                                                             |
+| Commons: Sakhioba concert at Columbia (4 parts), Boryspil quartet                   | trad. (live)                           | 5 files (segmented) | ~60     | CC BY 3.0                                                      |
+| Commons: anthems (Tavisupleba etc.)                                                 | ceremonial                             | ~3 picked           | ~5      | PD                                                             |
+| archive.org: Kavsadze choir 1914 (Netavi Gogo, Mraval Zhamier)                      | trad. 78rpm                            | 2                   | 5.5     | CC BY-NC-ND 4.0 (recording PD in US)                           |
+| archive.org: Supruli choir live 2012                                                | trad.                                  | 5                   | 20      | CC BY-NC-ND 3.0                                                |
+| archive.org: Georgian Hymnographical Collection II/IV (Erkvanidze)                  | trad. chant                            | ≤19                 | ≤35     | CC BY-NC-ND 4.0 (uploader rights unverified, so needs a check) |
+| archive.org: Rezo Glonti, Nika Japaridze, Miranda Shvangiradze, Levan Lomidze remix | modern electronic/piano                | ~14                 | ~65     | CC BY-NC-ND / BY-NC-SA                                         |
+| Commons: Giorgi Latsabidze / Latsos Piano Duo                                       | modern performer, classical repertoire | up to ~35           | ~150    | PD / FAL / CC BY-SA                                            |
+
+- **Excluded:** unlicensed 78rpm rips, the lending-only "unlockedrecordings" collection, CC labels on what look like ripped albums ("Igor / Rustavi", Nina Sublatti), Jamendo (its API terms forbid offline caching, and no verified Georgian artists), and Bandcamp ("all rights reserved").
+- **Realistic library:** ~45–55 tracks and ≥ 2.5 h. Excluding Latsabidze, about 70% traditional; Latsabidze tracks are capped at ~10 so the mix still sounds Georgian.
+- **Optional for Ofek:** ask the Tbilisi Conservatoire and AudioLabs for permission to stream the 1966 Erkomaishvili recordings (101 tracks, 7 h).
+
+**Dish photos:** Commons has a freely licensed photo for 38 of 39 candidates; **penovani** has none, so it gets the illustrated placeholder. Bazhe and qvevri photos are weak. The Commons API returns `LicenseShortName`, `Artist` (HTML) and `LicenseUrl`. Its rate limits require ~2 s between calls and a User-Agent.
+
+**Pitfalls:**
+
+- Some category photos are mislabeled (lamb curry under Lobio, bread under Badrijani).
+- Several good photos were taken outside Georgia, so captions never say "in Georgia".
+- Lobiani isn't reliably vegetarian (Rachuli ham, lard).
+- Pkhali is vegan but contains nuts.
+
+#### Docs drift found (code wins; fixed in the 9.1 docs PR)
+
+- **`CLAUDE.md`:**
+  - the typecheck row omits `tsc -p src/sw`;
+  - the commands table is split by a blank line and misses `fetch:rates`;
+  - "lazy-loaded: game, assistant, map" — actually every page except Home, Flights and More is lazy.
+- **`docs/CODEBASE_REPORT.md` ~l.361–366:** still describes the Round 1 tab bar ("Home · Flights · Packing · Game · More", 7-link desktop header). The scripts list (~l.733) misses `fetch:rates` and the service-worker typecheck.
+- **`PLAN.md` 8.2 notes:** "The site has no offline mode" is superseded by 8.7.
+
+---
+
+### Phase 9.1 — Georgian food page → `v1.9.0`
+
+PRs:
+
+1. `docs/round-3-plan`
+2. `feat/param-routes`
+3. `feat/dish-data`
+4. `feat/dish-images`
+5. `feat/food-page`
+6. `feat/assistant-dishes`
+7. `docs/phase-9.1-status`
+
+#### 1. Router: prefix routes with one param (no library)
+
+- **`src/lib/router/hashRouter.ts`:** add a pure `matchRoute(path, exact: Record<string,T>, paramRoutes: Record<string,T>)` that returns `{ page, base, param? } | null`.
+  - Exact match first.
+  - Otherwise split into base + one segment: `/food/khinkali` gives `{ base: '/food', param: 'khinkali' }` when `/food` is in `paramRoutes`.
+  - More than one extra segment gives `null`, so the page is NotFound.
+  - Also add `basePath(path)`.
+- **`src/app.tsx`:** add `PARAM_PAGES = { '/food': FoodDetailPage }`. The page receives `param` as a prop.
+  - `findNavItem(basePath(path))` keeps titles and More highlighting working for detail pages.
+  - The detail page sets `document.title` to the dish name.
+  - An unknown dish id renders a friendly "Dish not found" with a link to `#/food`.
+- **`FactPopups`:** the `BLOCKED_PATHS` check uses `basePath`.
+- **Back from detail to `#/food`:** the list scrolls the last-viewed card into view and focuses it. The id is kept in module memory, not storage.
+- **Tests:** `matchRoute` covers exact, param, unknown base, extra segments, trailing slash and query; `basePath`; navigation for `/food` and `/food/x` → More active.
+
+#### 2. Dish data (`src/data/dishes.ts`, typed and validated)
+
+```ts
+type DishCategory = 'starters' | 'soups' | 'breads' | 'mains' | 'sauces' | 'sweets' | 'drinks';
+interface Dish {
+  id: string; // slug, e.g. 'khinkali'
+  nameKa: string; // Mkhedruli, rendered with lang="ka"
+  transliteration: string; // national system, like words.ts
+  nameEn: string;
+  category: DishCategory;
+  description: string; // own words, ≤ 280 chars
+  ingredients: string[];
+  funFact?: string;
+  region?: string; // e.g. 'Svaneti'
+  diet: { vegetarian: boolean; vegan: boolean; nuts: boolean; spicy: 0 | 1 | 2 | 3 };
+  dietNote?: string; // e.g. 'Often made with lard; ask'
+  howToEat?: string;
+  image: string | null; // key into dishImages (null → illustrated placeholder)
+  sources: string[]; // https, ≥ 1 (en.wikipedia + one more where possible)
+  relatedFactIds?: string[]; // existing FACTS ids (e.g. 'khinkali', 'pkhali', 'qvevri', 'supra')
+}
+```
+
+- **About 36 dishes:**
+
+  | Category          | Dishes                                                                                           |
+  | ----------------- | ------------------------------------------------------------------------------------------------ |
+  | Starters & salads | pkhali, badrijani nigvzit, jonjoli, ajapsandali, satsivi                                         |
+  | Soups             | kharcho, chikhirtma, matsoni soup                                                                |
+  | Breads & pastries | khachapuri imeruli, adjaruli, megruli, penovani; lobiani, kubdari, shoti/tonis puri, mchadi      |
+  | Mains             | khinkali, mtsvadi, shkmeruli, ojakhuri, chakapuli, chashushuli, lobio, kupati, elarji, gebzhalia |
+  | Sauces & cheese   | tkemali, ajika, bazhe, sulguni                                                                   |
+  | Sweets            | churchkhela, pelamushi, gozinaki, tklapi                                                         |
+  | Drinks            | qvevri wine, chacha, Lagidze waters, Borjomi, tarkhuna                                           |
+
+  Final count 35–40, adjusted while verifying.
+
+- **Ordering phrases:** `ORDERING_PHRASE_IDS` lists existing word ids (`word-bill`, `word-how-much`, `word-please`, `word-thanks`, `word-delicious`, `word-water`, `word-wine`, `word-bread`, `word-cheers`). They're rendered with the existing `WordCardBody`; no second words list.
+- **Accuracy:** every claim is checked against its sources and written in our own words. Uncertain dietary facts go in `dietNote` rather than being guessed.
+- **Worker size:** `dishes.ts` must not import assets. The Worker imports it for the prompt (§6).
+
+#### 3. Images
+
+- **`scripts/fetch-dish-images.ts`** (`npm run fetch:dish-images`, run by hand, rarely). A manifest maps each dish to a pinned Commons `File:` title.
+  - Fetches `imageinfo` metadata and refuses anything whose licence isn't CC0/PD/CC BY/CC BY-SA.
+  - Downloads a ~1600 px thumbnail (`iiurlwidth`), one at a time with a 2 s delay and a User-Agent.
+  - Uses **sharp** (new dev dependency) to centre-crop to 4:3 and output **AVIF + WebP at 320 and 640 px** to `public/food/<id>-<w>.<ext>`.
+  - Writes **`src/data/dishImages.ts`** (generated): `{ id, width, height, alt, author (HTML stripped), license, licenseUrl, sourceUrl (Commons file page), modified?: 'cropped, resized' }`.
+- **Budget:** ≤ 60 kB per file. The script steps quality down until it fits, and `src/data/dishImages.test.ts` asserts every file on disk is ≤ 60 kB and has complete credits.
+- **Manual review:** after generation I look at every image before committing, to catch mislabeled photos.
+- **Placeholder:** penovani and any rejected photo use `DishIllustration`, an inline SVG in the map/mountain style (category emoji motif). Never a wrong photo.
+- **Markup:** `<picture>` with AVIF and WebP `srcset` (`sizes`), explicit `width`/`height` (CLS 0), `loading="lazy"`, `decoding="async"`; eager on the detail hero.
+- **Service worker:** add `food/` to the precache exclusion (≈36 dishes × 4 files ≈ 2–3 MB would bloat every install). Add a **runtime cache-first** route for same-scope `food/*` images (cache `gudauri-images`, kept across versions, capped by our own count). Viewed photos work offline; unviewed ones show the illustration via `onError`. Add `classify` tests.
+- **Credits:** licence information on each detail page. An aggregated new **`#/credits`** page (More → Fun, plus a footer link) lists dish photos, music (9.2), map data and weather. Show the "cropped, resized" modification note required by CC BY/BY-SA.
+
+#### 4. UI
+
+- **`src/pages/FoodPage.tsx`** (lazy, More → Fun, icon `food`):
+  - `PageHeader`;
+  - a search box (`type="search"`, label) matching English, transliteration (diacritics- and `’`-insensitive) and Georgian;
+  - filter chips (Vegetarian, Vegan, No nuts) with `aria-pressed`;
+  - **sticky category chips** (buttons that scroll to and focus the section heading, not hash anchors) under the header;
+  - category sections of cards. Each card is a link to `#/food/<id>` with image, `nameKa` (`lang="ka"`), transliteration, English name and diet badges (🌱 vegetarian, 🌿 vegan, 🥜 nuts, 🌶 spicy level, all text-labelled);
+  - a result count with `aria-live="polite"` and an empty state with "Clear filters".
+- **`src/pages/FoodDetailPage.tsx`:**
+  - a back link;
+  - the hero image with credit;
+  - names, region, description, ingredients, diet badges and note, how to eat or order, fun fact;
+  - **related facts** rendered from FACTS by id (title, text and source link, not copied);
+  - an **"Ordering phrases"** block using `WordCardBody` for `ORDERING_PHRASE_IDS`;
+  - sources.
+- **`src/lib/food/selectors.ts`** (pure): `normalize`, `searchDishes`, `filterDishes`, `groupByCategory`.
+- **Fact pop-ups are blocked on `/food` and `/food/*`.** The detail page already shows the linked facts, so pop-ups would duplicate them. The list has a search box, and blocking matches the existing rule for input-heavy pages (`/currency`, `/todo`).
+- **New icons:** `food`, `music`, `play`, `pause`, `skip`, `credits`.
+
+#### 5. Tests (9.1)
+
+- **Data:** unique slug ids; 35–40 dishes; every category non-empty; required fields; Mkhedruli-only `nameKa`; https sources; `relatedFactIds` exist in FACTS; `ORDERING_PHRASE_IDS` exist and are `WordFact`s; `vegan ⇒ vegetarian`; `image` keys exist in `dishImages` with full credits and an allowed licence; files on disk ≤ 60 kB.
+- **Selectors:** search across the 3 scripts (e.g. "khinkali", "ხინკალი", "dumpling"), filter combinations, grouping order.
+- **Routing:** `matchRoute`/`basePath`; navigation; service-worker `classify` for `food/*` images.
+
+#### 6. Assistant
+
+- The current prompt is ~2.5k tokens of facts. A compact dish list (`nameEn (transliteration): ≤ 50-char one-liner`, ~36 × 60 chars ≈ 2.2k chars ≈ 600 tokens) fits.
+- Food questions are a core use case, and grounding the 8B model in our verified list reduces made-up dishes.
+- Add it as a **"Georgian dishes we know"** block in `worker/src/prompt.ts`, built from `dishes.ts` (no images). Capped by a `DISH_LIST_MAX_CHARS = 2500` constant with a test.
+- Add `../src/data/dishes.ts` to the Worker tsconfig.
+- Verify live: "What's kubdari?" and "Is lobiani vegetarian?".
+
+#### 9.1 acceptance
+
+- `#/food` lists ≥ 35 dishes with working search and filters.
+- `#/food/khinkali` deep-links, the browser back button returns to the list with that card focused, and an unknown id shows "not found".
+- Photos are licensed and credited, with no file over 60 kB.
+- `#/credits` works.
+- Lighthouse ≥ 90 / 100, axe 0 in light and dark (including filtered and detail states), no overflow at 375 px, CLS 0.
+- Offline: list and detail open, viewed photos show, others show the illustration.
+
+---
+
+### Phase 9.2 — Background music → `v1.10.0`
+
+PRs:
+
+1. `feat/track-data`
+2. `feat/music-engine`
+3. `feat/music-ui`
+4. `feat/speech-ducking`
+5. `feat/music-page` (embeds)
+6. `docs/phase-9.2-status`
+
+#### 1. Track data and scripts
+
+- **`src/data/tracks.ts`:**
+  ```ts
+  interface Track {
+    id: string;
+    title: string;
+    titleKa?: string;
+    artist: string;
+    era: 'traditional' | 'modern';
+    durationS: number;
+    src: string; // https MP3 on upload.wikimedia.org or archive.org
+    startS?: number; // play a segment of a long CC BY concert file (never used for ND tracks)
+    endS?: number;
+    gainDb: number; // measured, applied as volume attenuation
+    license:
+      'PD' | 'CC0' | 'CC BY' | 'CC BY-SA' | 'CC BY-NC' | 'CC BY-NC-SA' | 'CC BY-NC-ND' | 'FAL';
+    licenseUrl: string;
+    sourceUrl: string;
+    attribution: string;
+  }
+  ```
+  (BY-NC-SA and FAL are included because they're share-alike variants of allowed terms; this is recorded in PLAN.md.)
+- **`scripts/analyze-tracks.ts`** (`npm run analyze:tracks`, manual):
+  - for each candidate, checks the URL with a HEAD and range request;
+  - reads the duration with ffprobe;
+  - measures loudness with `ffmpeg -af loudnorm=print_format=json` (over the segment, if any);
+  - writes `durationS` and `gainDb = clamp(TARGET_LUFS − measured, −12, 0)`. Only attenuation, so `audio.volume` can apply it without Web Audio or CORS.
+  - **No transcoding** (ND-safe and nothing to host).
+- **Curation:** I check each item's licence on its page, prefer the MP3 copy (archive.org `_vbr.mp3`/`.mp3`; Commons `transcoded/…/.mp3`), and listen to a sample of each.
+  - Latsabidze is capped at ~10 tracks.
+  - Unverifiable uploader rights mean the item is excluded.
+
+#### 2. Engine: `src/lib/music/`, framework-free and lazy-loaded except a tiny core
+
+- **`settings.ts`:** a versioned `music:settings` record `{ version: 1, enabled, volume }` via `loadVersioned`/`saveVersioned`.
+  - Default `enabled: true`. When `navigator.connection.saveData` is set or `effectiveType` is `2g`/`slow-2g`, the default is `false` with a one-line note.
+  - An explicit user choice is always kept.
+- **`shuffleBag.ts`:** a versioned `music:bag` record `{ version: 1, remaining: string[], lastArtist, recentEras }` with an injected RNG.
+  - Picks from `remaining`, preferring a different artist and avoiding three of the same era in a row.
+  - Refills when empty, and the new cycle's first pick avoids the previous artist.
+  - The bag survives reloads. Unknown or removed ids are dropped and new ones added.
+- **`machine.ts`** (pure state machine):
+  - states `idle-waiting-gesture` → `loading` → `playing` ⇄ `paused-user` (muted), plus `ducked`, `paused-hidden` and `unavailable` (offline or repeated failures);
+  - events: `GESTURE`, `READY`, `ENDED`, `ERROR`, `TOGGLE`, `NEXT`, `SPEECH_START`/`SPEECH_END`, `HIDDEN`/`VISIBLE`, `ONLINE`/`OFFLINE`;
+  - invariant: **never play once the user has muted.**
+- **`player.ts`:** owns one `<audio>` element created in the App shell (`MusicHost`).
+  - `volume = settings.volume × 10^(gainDb/20)`, multiplied by a duck factor (0.2 while TTS speaks, 0 while the mic listens).
+  - Segment playback seeks to `startS` and stops at `endS`.
+  - `error`/`stalled` (after a timeout) → log in dev and skip. Three consecutive failures → `unavailable` with "Music needs a connection".
+  - Preloads only the **next track's metadata** (a second `Audio` with `preload="metadata"`).
+  - Media Session: metadata plus play/pause/next handlers.
+- **Gesture gating with iOS in mind:**
+  - The shell adds one capture-phase `pointerdown`/`keydown` listener.
+  - On the first gesture, if enabled, it synchronously "unlocks" the `<audio>` element by playing a ~100-byte inline silent clip inside the gesture.
+  - It then lazy-imports the engine chunk and starts the first track.
+  - Until then, only the header hint "♪ Music ready — tap anywhere" shows.
+  - No audio is fetched before that first gesture.
+
+#### 3. UI
+
+- **`components/music/MusicControl.tsx`**, in the header on the right, on mobile and desktop:
+  - a play/pause (mute) icon button with a label (`aria-pressed`) and a "next" button;
+  - a "now playing" disclosure button (`aria-expanded`) that opens an in-flow panel, not a modal: title, artist, era tag, licence + source link, and a volume slider (`<input type="range">` with a label);
+  - track changes are announced in a visually hidden `aria-live="polite"` region; focus is never moved;
+  - it doesn't take a tab-bar slot.
+- **`#/music`** (More → Fun):
+  - the full credits list for the background library;
+  - an **"Modern Georgian music"** section with official YouTube playlist embeds (tap to load, `youtube-nocookie`, the same pattern as `WebcamCard`), with playlist ids chosen and verified during the phase;
+  - starting an embed pauses the background music.
+- `#/credits` gains the music section.
+
+#### 4. Coexistence
+
+- **`src/lib/speech/activity.ts`:** a tiny store `{ listening, speaking }`.
+  - `AssistantPage` sets `listening` in `toggleListening`/`onEnd`/`onError`.
+  - `synthesis.ts` sets `speaking` from `utterance.onstart`/`onend`/`onerror`, which also covers the WordCard "Hear it" button.
+  - The music store subscribes: **pause while listening** (the mic would pick up the music), **duck to 20% while speaking**, and resume afterwards.
+- **Game:** keeps playing.
+- **Hidden tab:** pauses on `visibilitychange` → hidden and resumes on visible (only if it was playing).
+- **Service worker:** audio is cross-origin, so it is never cached (unchanged routing). Offline → `unavailable`.
+
+#### 5. Tests (9.2)
+
+- **Shuffle bag:** no repeats within a cycle (exhaustive over 5 cycles), persistence across reload (store round-trip), no back-to-back artist, era alternation bound, ids added or removed between versions.
+- **Settings:** default-on, Save-Data default-off, an explicit choice persists, corrupt or future records.
+- **Machine:** no start before a gesture; gesture + enabled → loading; gesture + muted → stays silent; mute while loading never plays; error → skip; three errors → unavailable; speech events duck or pause and resume to the prior state; hidden/visible.
+- **Track data:** allowed licences only, https `src`/`sourceUrl`/`licenseUrl`, `durationS > 0`, `gainDb ∈ [−12, 0]`, no `startS`/`endS` on ND tracks, unique ids, **≥ 40 tracks and ≥ 9,000 s total**, era share reported and modern ≥ 20%.
+
+#### 6. Performance
+
+- Music modules are lazy chunks.
+- The main bundle gains only `MusicControl` (placeholder state) and the gesture listener, under 3 kB gzipped.
+- Lighthouse runs without a gesture, so no audio loads and the scores are unchanged.
+
+#### 9.2 acceptance
+
+- First visit: the hint shows. The first tap starts music, and switching pages doesn't interrupt it.
+- Mute is remembered across reloads; a muted returning visitor hears nothing.
+- Next track skips; the shuffle doesn't repeat within a session.
+- The lock screen shows the title and controls.
+- The assistant's mic pauses the music and TTS ducks it; the Game page keeps playing; a hidden tab pauses it.
+- A broken URL is skipped and the player never sticks.
+- Credits are complete.
+- Quality bar met.
+
+---
+
+### Cross-cutting
+
+- **New dev dependency:** `sharp` (image pipeline only). No runtime dependencies.
+- **New conventions** in CLAUDE.md:
+  - **Images:** Commons only, an allowed-licence list, generated credits, ≤ 60 kB, `<picture>` with width/height, runtime-cached, never hotlinked.
+  - **Audio:** an allowed-licence list including NC/ND, ND unmodified, stream from source, gesture-gated, never play after mute.
+  - **Licensing:** every third-party asset has its credits recorded in data and shown on `#/credits`.
+- **Every phase:** lint, typecheck, test and build (+ Worker); after merge, live verification (curl, the headless audit script, Lighthouse); update `PLAN.md`, `CLAUDE.md` and `docs/CODEBASE_REPORT.md`; tag; report the URL + bullets; **STOP**.
+
+### Verification
+
+- **Unit:** `npm test` (the new data, selector, router, service-worker, music and speech tests); `cd worker && npm test` (dish-list budget).
+- **Headless (puppeteer, 375 px + desktop, light and dark, axe):**
+  - `#/food` search and filters; `#/food/khinkali` → back focuses the card; `#/food/nope`; `#/credits`.
+  - Music: hint before the gesture; a click starts it (audio element `!paused`, `currentTime` advancing); mute + reload stays silent; next; a blocked track URL is skipped.
+  - A faked `speechSynthesis` start/end ducks and restores the volume.
+  - `visibilitychange` pauses and resumes playback.
+- **Offline:** the 8.7 offline script extended to Food, with viewed and unviewed images.
+- **Lighthouse** on all routes, live.
+
+### Risks
+
+| Risk                                                | Mitigation                                                                                     |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Uploader rights on archive.org items are unclear    | Only include items with a credible rights holder; exclude the rest; document each in tracks.ts |
+| Source files are removed or renamed                 | `analyze:tracks` re-check script; skip-on-error; three failures → unavailable                  |
+| iOS blocks play after an async import               | Synchronous silent unlock inside the gesture                                                   |
+| Mobile data use (music on by default while roaming) | Save-Data/2g → off; ~1 MB per minute noted in the now-playing panel; one tap to mute           |
+| Mislabeled Commons photos                           | Pinned files and manual visual review; illustration fallback                                   |
+| Dish accuracy (diet, origins)                       | Two sources where possible; `dietNote` for uncertainty; tests for vegan ⇒ vegetarian           |
+| Prompt growth                                       | Capped dish block (≈600 tokens) with a test                                                    |
+| Precache bloat                                      | `food/` excluded; runtime image cache                                                          |
+
+### Manual steps for Ofek
+
+- **9.1:** none, apart from reviewing the dish list.
+- **9.2:**
+  - Optionally email the Tbilisi Conservatoire's International Research Center for Traditional Polyphony and AudioLabs Erlangen to ask permission for the Erkomaishvili recordings. I'll draft the email; you send it.
+  - Test on your iPhone: first-tap start, lock-screen controls, and that locking pauses the music.
