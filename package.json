@@ -19,7 +19,8 @@
     "fetch:pistes": "node scripts/fetch-pistes.ts",
     "fetch:rates": "node scripts/fetch-rates.ts",
     "fetch:dish-images": "node scripts/fetch-dish-images.ts",
-    "analyze:tracks": "node scripts/analyze-tracks.ts"
+    "analyze:tracks": "node scripts/analyze-tracks.ts",
+    "og-image": "node scripts/og-image.mjs"
   },
   "dependencies": {
     "preact": "^11.0.1"
@@ -33,6 +34,7 @@
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "globals": "^17.13.0",
     "prettier": "^3.9.10",
+    "puppeteer-core": "^23.11.1",
     "sharp": "^0.35.5",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.0",
