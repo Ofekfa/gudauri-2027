@@ -6,26 +6,36 @@ const isTypingTarget = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
-/** Arrow keys anywhere on the page and swipes on the stage (same as Fun facts). */
-export function useCarousel(go: (dir: SwipeDirection) => void, enabled: boolean) {
+/**
+ * Swipes on the stage plus arrow keys (same as Fun facts). Keys work anywhere
+ * on the page by default; with `keys: 'element'` only while focus is inside the
+ * element that gets the returned `onKeyDown` (e.g. one card among many).
+ */
+export function useCarousel(
+  go: (dir: SwipeDirection) => void,
+  enabled: boolean,
+  keys: 'document' | 'element' = 'document',
+) {
   const goRef = useRef(go);
   goRef.current = go;
   const start = useRef<{ x: number; y: number } | null>(null);
 
+  const onKey = (event: KeyboardEvent) => {
+    if (event.altKey || event.ctrlKey || event.metaKey || isTypingTarget(event.target)) return;
+    const dir = keyToDirection(event.key);
+    if (!dir) return;
+    event.preventDefault();
+    goRef.current(dir);
+  };
+
   useEffect(() => {
-    if (!enabled) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.altKey || event.ctrlKey || event.metaKey || isTypingTarget(event.target)) return;
-      const dir = keyToDirection(event.key);
-      if (!dir) return;
-      event.preventDefault();
-      goRef.current(dir);
-    };
+    if (!enabled || keys !== 'document') return;
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [enabled]);
+  }, [enabled, keys]);
 
   return {
+    onKeyDown: enabled && keys === 'element' ? onKey : undefined,
     onPointerDown: (e: PointerEvent) => {
       start.current = { x: e.clientX, y: e.clientY };
     },

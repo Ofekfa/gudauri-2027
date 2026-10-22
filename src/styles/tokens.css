@@ -65,6 +65,8 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
   --space-7: 3rem;
+  /* Smallest hit area for touch controls (WCAG 2.5.5). */
+  --tap-target: 44px;
   --radius-sm: 0.5rem;
   --radius-md: 1rem;
   --radius-lg: 1.5rem;
