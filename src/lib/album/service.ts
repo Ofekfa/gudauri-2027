@@ -3,12 +3,19 @@
  * optimistic changes in between. A module singleton, so uploads carry on
  * while you browse other pages.
  */
-import { findFrame } from '../../data/album';
 import { appStore } from '../storage/safeStorage';
 import { syncSettings } from '../sync/settings';
 import { toasts } from '../toast/toastStore';
+import {
+  applyMomentOps,
+  keyAfter,
+  mergeMoments,
+  PENDING_MOMENT_PREFIX,
+  type Moment,
+  type MomentOp,
+} from './moments';
 import { processImage, UnsupportedImageError } from './pipeline';
-import type { AlbumListing, AlbumPhoto, ImageSize } from './protocol';
+import type { AlbumListing, AlbumPhoto, CustomMoment, ImageSize, MomentInput } from './protocol';
 import {
   indexedDbQueueStore,
   createUploadQueue,
@@ -16,7 +23,7 @@ import {
   type QueueItem,
   type QueueView,
 } from './queue';
-import { createRemoteAlbumRepository } from './repository';
+import { createRemoteAlbumRepository, MOMENT_GONE } from './repository';
 import { clearAlbumToken, getAlbumToken } from './token';
 import { createUploader } from './uploader';
 
@@ -32,15 +39,18 @@ export interface AlbumSnapshot {
   queue: QueueView;
   /** Local previews (object URLs) of photos not yet uploaded. */
   previews: Record<string, string>;
+  /** Moment changes made here that the server hasn't confirmed yet (optimistic). */
+  momentOps: MomentOp[];
 }
 
 const repo = createRemoteAlbumRepository();
-const EMPTY: AlbumListing = { frames: {}, photos: [] };
+const EMPTY: AlbumListing = { frames: {}, photos: [], moments: [] };
 let snapshot: AlbumSnapshot = {
   listing: EMPTY,
   status: 'idle',
   queue: { items: [], progress: {} },
   previews: {},
+  momentOps: [],
 };
 const listeners = new Set<(s: AlbumSnapshot) => void>();
 
@@ -77,6 +87,8 @@ queue.onEvent((event) => {
         : { ...l, photos: [...l.photos, event.photo] },
     );
   } else if (event.type === 'failed') {
+    // Someone deleted the moment: show it gone here too, without waiting for the next poll.
+    if (event.item.error === MOMENT_GONE) void refreshAlbum();
     toasts.show({
       emoji: '⚠️',
       message: `Upload failed. ${event.item.error ?? 'A photo couldn’t be added.'}`,
@@ -115,12 +127,29 @@ export async function refreshAlbum(): Promise<void> {
       }
     }
     update({ listing, status: 'ready', previews });
+    // Photos still waiting for a moment someone deleted fail clearly, not silently.
+    const known = new Set(momentsOf(snapshot).map((m) => m.id));
+    void queue.failMissing((id) => known.has(id), MOMENT_GONE);
   } catch {
     update({ status: snapshot.status === 'ready' ? 'ready' : 'error' });
   }
 }
 
 export const getAlbum = () => snapshot;
+
+let mergedCache: { moments: CustomMoment[]; ops: MomentOp[]; merged: Moment[] } | null = null;
+/** Every moment in story order: predefined, ours, and our unconfirmed changes. */
+export function momentsOf(s: AlbumSnapshot): Moment[] {
+  if (mergedCache?.moments !== s.listing.moments || mergedCache.ops !== s.momentOps)
+    mergedCache = {
+      moments: s.listing.moments,
+      ops: s.momentOps,
+      merged: mergeMoments(applyMomentOps(s.listing.moments, s.momentOps)),
+    };
+  return mergedCache.merged;
+}
+
+export const isPendingMoment = (id: string) => id.startsWith(PENDING_MOMENT_PREFIX);
 export function subscribeAlbum(listener: (s: AlbumSnapshot) => void) {
   listeners.add(listener);
   return () => void listeners.delete(listener);
@@ -133,8 +162,8 @@ export const remoteImageUrl = (photoId: string, size: ImageSize) => repo.imageUr
 /** Processes and queues photos for a frame; shows "Added" with Undo. */
 export async function addPhotos(frameId: string, files: readonly File[]): Promise<void> {
   const me = syncSettings.get().me;
-  const frame = findFrame(frameId);
-  if (!me || !frame || files.length === 0) return;
+  const frame = momentsOf(snapshot).find((m) => m.id === frameId);
+  if (!me || !frame || isPendingMoment(frameId) || files.length === 0) return;
   void startAlbum();
   const items: QueueItem[] = [];
   for (const file of files) {
@@ -237,4 +266,95 @@ export function visiblePhotos(s: AlbumSnapshot): AlbumPhoto[] {
     .filter((i) => !known.has(i.id))
     .map((i): AlbumPhoto => ({ ...metaOf(i), frameId: i.frameId, version: 0 }));
   return [...s.listing.photos, ...pending];
+}
+
+// Moments -------------------------------------------------------------------
+
+const withOp = (op: MomentOp) => update({ momentOps: [...snapshot.momentOps, op] });
+const withoutOp = (op: MomentOp) =>
+  update({ momentOps: snapshot.momentOps.filter((o) => o !== op) });
+const putMoment = (moment: CustomMoment) =>
+  setListing((l) => ({
+    ...l,
+    moments: [...l.moments.filter((m) => m.id !== moment.id), moment],
+  }));
+const momentFailed = (message: string) => toasts.show({ emoji: '⚠️', message });
+
+/**
+ * Adds one of our own moments. It shows at once (optimistic) and is replaced
+ * by the server's copy; on failure it disappears again with a toast.
+ * Resolves to the new moment's id, or null.
+ */
+export async function createMoment(input: MomentInput): Promise<string | null> {
+  const me = syncSettings.get().me;
+  if (!me) return null;
+  const draft: CustomMoment = {
+    id: `${PENDING_MOMENT_PREFIX}${crypto.randomUUID()}`,
+    title: input.title,
+    emoji: input.emoji,
+    ...(input.prompt ? { prompt: input.prompt } : {}),
+    orderKey: keyAfter(momentsOf(snapshot), input.after) ?? 'z',
+    createdBy: me,
+    createdAt: new Date().toISOString(),
+    custom: true,
+    version: 0,
+  };
+  const op: MomentOp = { kind: 'create', moment: draft };
+  withOp(op);
+  const auth = await getAlbumToken();
+  const res = 'token' in auth ? await repo.createMoment(auth.token, input).catch(() => null) : null;
+  if (res?.ok) putMoment(res.moment);
+  withoutOp(op);
+  if (!res?.ok) {
+    momentFailed(`Couldn’t add “${input.title}”. ${res?.error ?? 'Check your connection.'}`);
+    return null;
+  }
+  return res.moment.id;
+}
+
+/** Renames, re-emojis or moves one of our moments (only the fields given). */
+export async function editMoment(id: string, patch: Partial<MomentInput>): Promise<boolean> {
+  const changes: Partial<CustomMoment> = {
+    ...(patch.title !== undefined ? { title: patch.title } : {}),
+    ...(patch.emoji !== undefined ? { emoji: patch.emoji } : {}),
+    ...(patch.prompt !== undefined ? { prompt: patch.prompt } : {}),
+  };
+  if (patch.after !== undefined) {
+    const key = keyAfter(momentsOf(snapshot), patch.after, id);
+    if (key) changes.orderKey = key;
+  }
+  const op: MomentOp = { kind: 'edit', id, changes };
+  withOp(op);
+  const auth = await getAlbumToken();
+  const res =
+    'token' in auth ? await repo.editMoment(auth.token, id, patch).catch(() => null) : null;
+  if (res?.ok) putMoment(res.moment);
+  withoutOp(op);
+  if (res?.ok) return true;
+  if (res?.status === 404) {
+    momentFailed('Someone just deleted this moment.');
+    void refreshAlbum();
+  } else momentFailed(`Couldn’t save the moment. ${res?.error ?? 'Check your connection.'}`);
+  return false;
+}
+
+/** Deletes one of our moments and all its photos, for everyone. */
+export async function deleteMoment(id: string): Promise<boolean> {
+  const op: MomentOp = { kind: 'delete', id };
+  withOp(op);
+  const auth = await getAlbumToken();
+  const ok = 'token' in auth ? await repo.deleteMoment(auth.token, id).catch(() => false) : false;
+  if (ok) {
+    setListing((l) => ({
+      ...l,
+      moments: l.moments.filter((m) => m.id !== id),
+      photos: l.photos.filter((p) => p.frameId !== id),
+    }));
+    // Photos still queued for it here would only fail; drop them with it.
+    for (const item of snapshot.queue.items.filter((i) => i.frameId === id))
+      await queue.cancel(item.id);
+  }
+  withoutOp(op);
+  if (!ok) momentFailed('Couldn’t delete the moment. Try again when you’re online.');
+  return ok;
 }

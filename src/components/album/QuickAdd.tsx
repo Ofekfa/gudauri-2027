@@ -1,7 +1,6 @@
 import { useState } from 'preact/hooks';
-import { ALBUM_FRAMES, findFrame } from '../../data/album';
 import { photosByFrame, suggestFrame } from '../../lib/album/selectors';
-import { visiblePhotos } from '../../lib/album/service';
+import { isPendingMoment, momentsOf, visiblePhotos } from '../../lib/album/service';
 import { useAlbum } from '../../lib/album/useAlbum';
 import { href } from '../../lib/router/hashRouter';
 import { isJoined } from '../../lib/sync/settings';
@@ -13,8 +12,9 @@ export default function QuickAdd() {
   const album = useAlbum();
   const settings = useSyncSettings();
   const [chosen, setChosen] = useState<string | null>(null);
-  const suggested = suggestFrame(Date.now(), photosByFrame(visiblePhotos(album)));
-  const frame = findFrame(chosen ?? suggested) ?? ALBUM_FRAMES[0]!;
+  const moments = momentsOf(album).filter((m) => !isPendingMoment(m.id));
+  const suggested = suggestFrame(Date.now(), photosByFrame(visiblePhotos(album), moments), moments);
+  const frame = moments.find((m) => m.id === (chosen ?? suggested)) ?? moments[0]!;
 
   return (
     <section class="quick-add card" aria-labelledby="quick-add-title">
@@ -30,7 +30,7 @@ export default function QuickAdd() {
               value={frame.id}
               onChange={(e) => setChosen(e.currentTarget.value)}
             >
-              {ALBUM_FRAMES.map((f) => (
+              {moments.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.emoji} {f.title}
                 </option>

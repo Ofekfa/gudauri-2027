@@ -1,13 +1,20 @@
 import { useState } from 'preact/hooks';
 import { AlbumJoin } from '../components/album/AlbumJoin';
 import { FrameCard } from '../components/album/FrameCard';
+import { MomentForm } from '../components/album/MomentForm';
 import { ProgressSummary } from '../components/common/ProgressSummary';
 import { PageHeader } from '../components/PageHeader';
-import { ALBUM_FRAMES } from '../data/album';
 import { trip } from '../data/trip';
 import { AVERAGE_PHOTO_BYTES, downloadAlbum } from '../lib/album/download';
 import { albumProgress, pendingLabel, photosByFrame } from '../lib/album/selectors';
-import { remoteImageUrl, visiblePhotos } from '../lib/album/service';
+import { defaultAfter } from '../lib/album/moments';
+import {
+  createMoment,
+  isPendingMoment,
+  momentsOf,
+  remoteImageUrl,
+  visiblePhotos,
+} from '../lib/album/service';
 import { useAlbum } from '../lib/album/useAlbum';
 import { href } from '../lib/router/hashRouter';
 import { isJoined } from '../lib/sync/settings';
@@ -20,10 +27,12 @@ export default function AlbumPage() {
   const album = useAlbum();
   const settings = useSyncSettings();
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   const joined = isJoined(settings);
+  const moments = momentsOf(album);
   const photos = visiblePhotos(album);
-  const byFrame = photosByFrame(photos);
-  const progress = albumProgress(byFrame);
+  const byFrame = photosByFrame(photos, moments);
+  const progress = albumProgress(byFrame, moments);
   const uploaded = album.listing.photos;
   const me = trip.travelers.find((t) => t.id === settings.me);
 
@@ -34,6 +43,7 @@ export default function AlbumPage() {
         uploaded,
         (id) => remoteImageUrl(id, 'full'),
         (done, total) => setDownloading(`${done} / ${total}`),
+        moments,
       );
     } catch {
       toasts.show({
@@ -86,19 +96,47 @@ export default function AlbumPage() {
         )}
       </div>
       <ol class="album-grid" aria-label="Moments in story order">
-        {ALBUM_FRAMES.map((frame, i) => (
+        {moments.map((frame, i) => (
           <FrameCard
             key={frame.id}
             frame={frame}
             number={i + 1}
             photos={byFrame.get(frame.id) ?? []}
             state={album.listing.frames[frame.id]}
-            pendingLabel={pendingLabel(
-              album.queue.items.filter((q) => q.frameId === frame.id).map((q) => q.state),
-            )}
+            pendingLabel={
+              isPendingMoment(frame.id)
+                ? 'Saving…'
+                : pendingLabel(
+                    album.queue.items.filter((q) => q.frameId === frame.id).map((q) => q.state),
+                  )
+            }
             canAdd={joined}
           />
         ))}
+        {joined && (
+          <li class="album-frame album-frame--new card">
+            {adding ? (
+              <>
+                <h2 class="album-frame__title">New moment</h2>
+                <MomentForm
+                  idPrefix="new-moment"
+                  moments={moments}
+                  initial={{ title: '', emoji: '🥐', prompt: '', after: defaultAfter(moments) }}
+                  submitLabel="Add moment"
+                  onSubmit={async (input) => {
+                    void createMoment(input);
+                    return true;
+                  }}
+                  onCancel={() => setAdding(false)}
+                />
+              </>
+            ) : (
+              <button type="button" class="album-frame__add" onClick={() => setAdding(true)}>
+                <span aria-hidden="true">＋</span> Add moment
+              </button>
+            )}
+          </li>
+        )}
       </ol>
     </>
   );

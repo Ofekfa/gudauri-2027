@@ -14,6 +14,7 @@ on:
       - 'src/lib/currency/**'
       - 'src/lib/album/protocol.ts'
       - 'src/lib/album/jpeg.ts'
+      - 'src/lib/album/moments.ts'
       - 'src/lib/sync/protocol.ts'
       - 'src/lib/time/countdown.ts'
       - '.github/workflows/worker-deploy.yml'

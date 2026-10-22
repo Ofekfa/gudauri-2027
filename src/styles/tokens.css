@@ -27,6 +27,8 @@
   --color-primary-soft: #e1eefc;
   --color-accent: #9b1b40; /* Saperavi wine */
   --color-accent-soft: #fbe6ec;
+  /* Text on a solid accent background. */
+  --color-accent-ink: #ffffff;
   --color-sun: #ffcf5c;
   --map-snow: #f7fbff;
   --map-ridge: #dcebf7;
@@ -97,6 +99,7 @@
     --color-primary-soft: #183757;
     --color-accent: #ff8fab;
     --color-accent-soft: #3a1a29;
+    --color-accent-ink: #0a1626;
     --color-sun: #ffd166;
     --map-snow: #12263d;
     --map-ridge: #1a3350;

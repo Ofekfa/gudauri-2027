@@ -5,19 +5,25 @@
 import { findFrame } from '../../../src/data/album';
 import { trip, type TravelerId } from '../../../src/data/trip';
 import { isJpeg, stripJpegMetadata } from '../../../src/lib/album/jpeg';
+import { isPredefined } from '../../../src/lib/album/moments';
 import {
   cleanCaption,
+  MAX_CUSTOM_MOMENTS,
   MAX_FULL_BYTES,
   MAX_THUMB_BYTES,
   MAX_UPLOAD_BYTES,
+  MOMENT_ID,
+  parseMomentInput,
   parseUploadMeta,
   PHOTO_ID,
   type AlbumFrameState,
   type AlbumListing,
   type AlbumPhoto,
+  type CustomMoment,
   type ImageSize,
+  type MomentInput,
 } from '../../../src/lib/album/protocol';
-import type { AddResult, EditResult } from '../album/logic';
+import type { AddResult, EditResult, MomentResult } from '../album/logic';
 import { signToken, tokenExpiry, verifyToken, type AlbumToken } from '../album/token';
 import type { Env } from '../env';
 import { errorJson, json } from '../http';
@@ -43,6 +49,14 @@ export interface AlbumStub {
   putImages(photoId: string, full: Uint8Array, thumb: Uint8Array): Promise<void>;
   getImage(photoId: string, size: ImageSize): Promise<Uint8Array | null>;
   deleteImages(photoId: string): Promise<void>;
+  deleteAllImages(): Promise<void>;
+  getMoment(id: string): Promise<CustomMoment | null>;
+  createMoment(
+    input: MomentInput,
+    meta: { id: string; createdBy: TravelerId; createdAt: string },
+  ): Promise<MomentResult>;
+  updateMoment(id: string, patch: Partial<MomentInput>): Promise<MomentResult>;
+  deleteMoment(id: string): Promise<string[] | null>;
 }
 
 const TRAVELERS = trip.travelers.map((t) => t.id);
@@ -84,6 +98,24 @@ async function readJson(request: Request, maxBytes: number): Promise<unknown> {
 }
 
 const SMALL_BODY = 4_000;
+const MOMENT_ID_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
+const MOMENT_ID_LENGTH = 10;
+const GONE = 'This moment was deleted';
+
+/** "m-" + 10 random base-36 characters (never a predefined slug). */
+function newMomentId(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(MOMENT_ID_LENGTH));
+  return `m-${[...bytes].map((b) => MOMENT_ID_CHARS[b % MOMENT_ID_CHARS.length]).join('')}`;
+}
+
+/** A predefined frame or a stored custom moment; 410 for a custom moment that's gone. */
+async function checkFrame(env: Env, frameId: string, cors: HeadersInit): Promise<Response | null> {
+  if (findFrame(frameId)) return null;
+  if (MOMENT_ID.test(frameId) && (await index(env).getMoment(frameId))) return null;
+  return MOMENT_ID.test(frameId)
+    ? errorJson(410, GONE, cors)
+    : errorJson(400, 'Unknown frame', cors);
+}
 
 export const albumSessionRoute: Route = {
   method: 'POST',
@@ -139,7 +171,8 @@ export const albumAddRoute: Route = {
     const auth = await authorise(ctx);
     if (auth instanceof Response) return auth;
     const { request, env, cors, params } = ctx;
-    if (!findFrame(params.frameId!)) return errorJson(400, 'Unknown frame', cors);
+    const badFrame = await checkFrame(env, params.frameId!, cors);
+    if (badFrame) return badFrame;
     if (Number(request.headers.get('Content-Length') ?? '0') > MAX_UPLOAD_BYTES)
       return errorJson(413, 'Photo too large', cors);
     let form: FormData;
@@ -176,9 +209,11 @@ export const albumAddRoute: Route = {
       stripJpegMetadata(thumbBytes),
     );
     const result = await store.addPhoto({ ...meta, frameId, version: 1 });
-    if (result.status === 'full') {
+    if (result.status === 'full' || result.status === 'gone') {
       await frameStore(env, frameId).deleteImages(meta.id);
-      return errorJson(409, 'This frame is full', cors);
+      return result.status === 'full'
+        ? errorJson(409, 'This frame is full', cors)
+        : errorJson(410, GONE, cors);
     }
     return json(result.status === 'created' ? 201 : 200, result.photo, cors);
   },
@@ -237,7 +272,8 @@ export const albumCoverRoute: Route = {
     const auth = await authorise(ctx);
     if (auth instanceof Response) return auth;
     const { request, env, cors, params } = ctx;
-    if (!findFrame(params.frameId!)) return errorJson(400, 'Unknown frame', cors);
+    const badFrame = await checkFrame(env, params.frameId!, cors);
+    if (badFrame) return badFrame;
     const version = ifMatch(request);
     if (version === 'bad') return errorJson(400, 'Bad If-Match', cors);
     let photoId: unknown;
@@ -283,7 +319,91 @@ export const albumImageRoute: Route = {
   },
 };
 
+const MOMENT_ERRORS = {
+  missing: [404, 'No such moment'],
+  'bad-place': [400, 'Pick a place in the album'],
+  full: [409, `Up to ${MAX_CUSTOM_MOMENTS} of our own moments`],
+} as const;
+
+function momentReply(result: MomentResult, cors: HeadersInit): Response {
+  if (result.status === 'created') return json(201, result.moment, cors);
+  if (result.status === 'ok') return json(200, result.moment, cors);
+  const [status, message] = MOMENT_ERRORS[result.status];
+  return errorJson(status, message, cors);
+}
+
+/** Only our own moments can change; predefined ones are part of the site. */
+function customOnly(id: string, cors: HeadersInit): Response | null {
+  if (isPredefined(id)) return errorJson(403, 'Built-in moments can’t be changed', cors);
+  if (!MOMENT_ID.test(id)) return errorJson(404, 'No such moment', cors);
+  return null;
+}
+
+async function momentBody(request: Request, partial: boolean) {
+  try {
+    return parseMomentInput(await readJson(request, SMALL_BODY), partial);
+  } catch {
+    return { ok: false as const, error: 'Invalid request' };
+  }
+}
+
+export const albumMomentCreateRoute: Route = {
+  method: 'POST',
+  path: '/album/moments',
+  rateLimit: 'RL_DATA',
+  async handler(ctx) {
+    const auth = await authorise(ctx);
+    if (auth instanceof Response) return auth;
+    const { request, env, cors, now } = ctx;
+    const input = await momentBody(request, false);
+    if (!input.ok) return errorJson(400, input.error, cors);
+    const result = await index(env).createMoment(input.value as MomentInput, {
+      id: newMomentId(),
+      createdBy: auth.who,
+      createdAt: now.toISOString(),
+    });
+    return momentReply(result, cors);
+  },
+};
+
+export const albumMomentEditRoute: Route = {
+  method: 'PATCH',
+  path: '/album/moments/:momentId',
+  rateLimit: 'RL_DATA',
+  async handler(ctx) {
+    const auth = await authorise(ctx);
+    if (auth instanceof Response) return auth;
+    const { request, env, cors, params } = ctx;
+    const refused = customOnly(params.momentId!, cors);
+    if (refused) return refused;
+    const patch = await momentBody(request, true);
+    if (!patch.ok) return errorJson(400, patch.error, cors);
+    return momentReply(await index(env).updateMoment(params.momentId!, patch.value), cors);
+  },
+};
+
+/** Deletes the moment with all its photos, for everyone (any of us may). */
+export const albumMomentDeleteRoute: Route = {
+  method: 'DELETE',
+  path: '/album/moments/:momentId',
+  rateLimit: 'RL_DATA',
+  async handler(ctx) {
+    const auth = await authorise(ctx);
+    if (auth instanceof Response) return auth;
+    const { env, cors, params } = ctx;
+    const refused = customOnly(params.momentId!, cors);
+    if (refused) return refused;
+    const removed = await index(env).deleteMoment(params.momentId!);
+    if (!removed) return errorJson(404, 'No such moment', cors);
+    await frameStore(env, params.momentId!).deleteAllImages();
+    return new Response(null, { status: 204, headers: cors });
+  },
+};
+
 export const albumRoutes = [
+  albumMomentCreateRoute,
+  albumMomentEditRoute,
+  albumMomentDeleteRoute,
   albumSessionRoute,
   albumListRoute,
   albumAddRoute,

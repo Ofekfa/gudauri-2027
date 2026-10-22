@@ -226,6 +226,14 @@ export function createUploadQueue(deps: QueueDeps) {
         });
       await pump();
     },
+    /** Fails photos waiting for a moment that no longer exists (deleted on another phone). */
+    async failMissing(isKnown: (frameId: string) => boolean, reason: string) {
+      for (const item of items.filter(
+        (i) => i.state !== 'failed' && !running.has(i.id) && !isKnown(i.frameId),
+      ))
+        await fail(item, reason);
+      schedule();
+    },
     /** Removes a photo that hasn't finished uploading. Returns false if it's mid-upload (the caller deletes it once it lands). */
     async cancel(id: string): Promise<boolean> {
       const uploading = running.has(id);

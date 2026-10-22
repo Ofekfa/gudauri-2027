@@ -17,13 +17,19 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **ever
   - `token.ts`: HMAC-SHA256, constant-time verify, expiry max(15 Mar 2027, now + 30 days);
   - `logic.ts`: rules over a storage interface; in memory for tests;
   - `AlbumStore.ts`: Durable Object (SQLite, migration `v2`, binding `ALBUM`); the `index` instance holds photos and frames, `frame:<id>` instances hold image BLOBs.
-- `worker/src/routes/album.ts`: session (`RL_AUTH` 5/min), list, add (multipart, idempotent, JPEG-only, EXIF re-stripped, 30 per frame), caption and cover (`If-Match` → 409 with `current`), delete, and the public image route.
+- `worker/src/routes/album.ts`:
+  - session (`RL_AUTH` 5/min);
+  - list (now including `moments`);
+  - add (multipart, idempotent, JPEG-only, EXIF re-stripped, 30 per frame; 410 for a deleted custom moment);
+  - caption and cover (`If-Match` → 409 with `current`);
+  - delete, and the public image route;
+  - custom moments (`v1.13.0`): `POST /album/moments`, `PATCH`/`DELETE /album/moments/:id`. They validate length, emoji and place, refuse predefined ids (403), cap at 30, and a delete cascades to photos and images.
 - CORS allows `If-Match`.
 
 **Site:**
 
 - `src/data/album.ts`: 22 frames.
-- `src/lib/album/`: `protocol`, `jpeg`, `pipeline`, `queue`, `repository`, `token`, `selectors`, `zip`, `download`, `service`, `useAlbum`.
+- `src/lib/album/`: `protocol`, `jpeg`, `moments` (custom moments: order keys, merge, optimistic ops), `pipeline`, `queue`, `repository`, `token`, `uploader`, `cardCarousel`, `selectors`, `zip`, `download`, `service`, `useAlbum`.
 - Pages: `AlbumPage`, `AlbumFramePage`, `AlbumStoryPage`.
 - Components in `components/album/`: `FrameCard`, `AddPhotoButtons`, `AlbumJoin`, `QuickAdd` (Home, lazy, during the trip), `AlbumQueueHost`, `useCarousel`.
 - `components/common/JoinGroupForm.tsx` is shared with `SyncPanel`. Fact pop-ups are off on `/album`.
