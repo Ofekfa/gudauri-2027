@@ -21,6 +21,7 @@
 | 8.7   | Offline mode (service worker) + baked fallback rate                      | ✅ Done | v1.8.0  |
 | 9.1   | Georgian food page                                                       | ⏳ Next | v1.9.0  |
 | 9.2   | Background Georgian music                                                | ✅ Done | v1.10.0 |
+| 10.1  | Shared lists across our phones (sync)                                    | ⏳ Next | v1.11.0 |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/
 
@@ -1059,3 +1060,20 @@ PRs:
 - **9.2:**
   - Optionally email the Tbilisi Conservatoire's International Research Center for Traditional Polyphony and AudioLabs Erlangen to ask permission for the Erkomaishvili recordings. I'll draft the email; you send it.
   - Test on your iPhone: first-tap start, lock-screen controls, and that locking pauses the music.
+
+# Round 4
+
+## Phase 10.1 — Shared lists across our phones → `v1.11.0`
+
+Packing lists and to-dos lived only on each phone. Decisions (Ofek, 2026-10-22): **one shared group code**, **everyone can edit every list**, **packing and to-dos** sync.
+
+- **Server:** a Durable Object (`ListsStore`, SQLite-backed, Workers Free plan) on the existing Worker stores each list item as a record `{ doc, key, value | tombstone, by, rev }`. **`POST /sync`** `{ doc, since, by, changes[] }` applies the changes (the last to arrive wins per item; deletes are tombstones) and returns every record changed since `since` plus the new revision.
+  - Auth: `Authorization: Bearer <group code>` compared in constant time with the Worker secret **`GROUP_CODE`** (Ofek sets it with `wrangler secret put`; never in chat or git). Without the secret, `501` and the site works as before.
+  - `RL_DATA` rate limit; size and count caps; incoming values are validated again on every phone.
+- **Client** (`src/lib/sync/`): state ↔ records adapters for packing and to-dos; a persisted base snapshot per doc. Each sync sends the diff since the last sync and merges the server's changes without losing edits made while a request was in flight.
+  - **When it syncs:** on load, after edits (debounced), every 15 s while visible, and on return to the tab. Works offline and catches up later.
+- **UI:** a "Sync" panel on Packing and To-do (join with the code, pick whose phone this is, status: synced X ago / offline / wrong code). Items changed by someone else show who changed them.
+- **First sync** merges each phone's existing lists; nothing is lost.
+- **Privacy:** list contents are stored in our Cloudflare account and reachable only with the code.
+- **Tests:** record diff/merge, adapters, client merge during an in-flight sync, Durable Object merge rules, route auth/validation.
+- **Manual step for Ofek:** choose a long passphrase, run `npx wrangler secret put GROUP_CODE` in `worker/`, and share the code privately with Ron, Roy and Maya.
