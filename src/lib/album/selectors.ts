@@ -2,7 +2,7 @@ import { ALBUM_FRAMES, PLANNED_FRAMES, type AlbumFrame } from '../../data/album'
 import { trip } from '../../data/trip';
 import { localDateIn } from '../time/countdown';
 import type { AlbumFrameState, AlbumPhoto } from './protocol';
-import type { QueueState } from './queue';
+import type { QueueItem, QueueState } from './queue';
 
 /** Photos per frame, oldest first (ties by id), for every frame. */
 export function photosByFrame(photos: readonly AlbumPhoto[]): Map<string, AlbumPhoto[]> {
@@ -89,8 +89,31 @@ export function pendingLabel(states: readonly QueueState[]): string | null {
   const active = states.length - failed - waiting;
   const parts = [
     active && `Uploading ${active}…`,
-    waiting && `${waiting} waiting for signal`,
-    failed && `${failed} couldn’t be added`,
+    waiting && `${waiting} waiting for connection`,
+    failed && `${failed} failed, open to retry`,
   ].filter(Boolean);
   return parts.length ? parts.join(' · ') : null;
+}
+
+export const UPLOAD_FAILED = 'Upload failed — tap to retry';
+
+/**
+ * The status line under a photo still on this phone. A percentage only once
+ * bytes are actually moving (browsers may not report upload progress at all).
+ */
+export function uploadStatus(
+  item: Pick<QueueItem, 'state' | 'attempts'>,
+  progress: number | undefined,
+): string {
+  switch (item.state) {
+    case 'failed':
+      return UPLOAD_FAILED;
+    case 'waiting-offline':
+      return 'Waiting for connection…';
+    case 'queued':
+      return item.attempts > 0 ? 'Retrying soon…' : 'Waiting to upload…';
+    case 'uploading':
+      if (progress === undefined) return 'Sending…';
+      return progress >= 1 ? 'Saving…' : `Uploading ${Math.round(progress * 100)}%`;
+  }
 }

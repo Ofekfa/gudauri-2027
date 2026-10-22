@@ -4,11 +4,14 @@ import { ALBUM_FRAMES } from '../../data/album';
 import { encodeWithin, fitWithin, FULL_EDGE } from './pipeline';
 import type { AlbumPhoto } from './protocol';
 import {
+  ATTEMPT_TIMEOUT_MS,
   backoffMs,
   createUploadQueue,
+  MAX_ATTEMPTS,
   memoryQueueStore,
   type QueueEvent,
   type QueueItem,
+  type QueueState,
 } from './queue';
 import type { UploadOutcome } from './repository';
 import {
@@ -18,6 +21,7 @@ import {
   photosByFrame,
   storySlides,
   suggestFrame,
+  uploadStatus,
   viewerIndex,
 } from './selectors';
 import { crc32, createZip, zipName } from './zip';
@@ -86,8 +90,19 @@ describe('album selectors', () => {
     expect(pendingLabel([])).toBeNull();
     expect(pendingLabel(['queued', 'uploading'])).toBe('Uploading 2…');
     expect(pendingLabel(['waiting-offline', 'failed'])).toBe(
-      '1 waiting for signal · 1 couldn’t be added',
+      '1 waiting for connection · 1 failed, open to retry',
     );
+  });
+
+  it('never shows a bare 0% for a photo that isn’t sending', () => {
+    const at = (state: QueueState, attempts = 0) => ({ state, attempts });
+    expect(uploadStatus(at('queued'), undefined)).toBe('Waiting to upload…');
+    expect(uploadStatus(at('queued', 2), undefined)).toBe('Retrying soon…');
+    expect(uploadStatus(at('waiting-offline'), undefined)).toBe('Waiting for connection…');
+    expect(uploadStatus(at('uploading'), undefined)).toBe('Sending…');
+    expect(uploadStatus(at('uploading'), 0.42)).toBe('Uploading 42%');
+    expect(uploadStatus(at('uploading'), 1)).toBe('Saving…');
+    expect(uploadStatus(at('failed', 5), undefined)).toBe('Upload failed — tap to retry');
   });
 
   it('finds the viewer index, defaulting to the first photo', () => {
@@ -295,5 +310,60 @@ describe('upload queue', () => {
       photo: expect.objectContaining({ id: 'photo-slow' }),
     });
     expect(q.queue.getView().items).toEqual([]);
+  });
+
+  it('gives up after MAX_ATTEMPTS online tries and says why', async () => {
+    const q = setup(() => ({ kind: 'retry', status: 503 }));
+    await q.queue.start();
+    await q.queue.enqueue([item('photo-1')]);
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    expect(q.calls).toHaveLength(MAX_ATTEMPTS);
+    expect(q.queue.getView().items[0]).toMatchObject({
+      state: 'failed',
+      error: 'The server had a problem (503).',
+    });
+    expect(q.events.map((e) => e.type)).toEqual(['failed']);
+    expect(q.queue.pending()).toBe(false);
+  });
+
+  it('times out an attempt that never settles, and retries it', async () => {
+    let tries = 0;
+    const q = setup((id) => (++tries === 1 ? new Promise<UploadOutcome>(() => {}) : done(id)));
+    await q.queue.start();
+    void q.queue.enqueue([item('photo-1')]);
+    await vi.advanceTimersByTimeAsync(ATTEMPT_TIMEOUT_MS - 1);
+    expect(q.queue.getView().items[0]!.state).toBe('uploading');
+    await vi.advanceTimersByTimeAsync(1);
+    expect(q.queue.getView().items[0]).toMatchObject({ state: 'queued', attempts: 1 });
+    await vi.runAllTimersAsync();
+    expect(tries).toBe(2);
+    expect(q.queue.getView().items).toEqual([]);
+  });
+
+  it('treats a thrown error as a retry instead of sticking at “uploading”', async () => {
+    let tries = 0;
+    const q = setup((id) => {
+      if (++tries === 1) throw new Error('boom');
+      return done(id);
+    });
+    await q.queue.start();
+    await q.queue.enqueue([item('photo-1')]);
+    expect(q.queue.getView().items[0]).toMatchObject({ state: 'queued', attempts: 1 });
+    await vi.runAllTimersAsync();
+    expect(q.queue.getView().items).toEqual([]);
+  });
+
+  it('doesn’t use up attempts while the connection is gone', async () => {
+    const online = { value: true };
+    const q = setup(() => {
+      online.value = false;
+      return { kind: 'retry', status: 0 };
+    }, online);
+    await q.queue.start();
+    await q.queue.enqueue([item('photo-1')]);
+    expect(q.queue.getView().items[0]).toMatchObject({ state: 'waiting-offline', attempts: 0 });
+    await vi.advanceTimersByTimeAsync(60 * 60_000);
+    expect(q.calls).toHaveLength(1);
+    expect(q.queue.getView().items[0]!.state).toBe('waiting-offline');
   });
 });

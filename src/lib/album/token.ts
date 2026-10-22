@@ -80,7 +80,7 @@ export async function getAlbumToken(
   }
   if (res.status === 501) return { error: 'not-set-up' };
   if (!res.ok) return valid ? { token: saved.token! } : { error: 'offline' };
-  const body = (await res.json()) as { token?: unknown; expiresAt?: unknown };
+  const body = (await res.json().catch(() => ({}))) as { token?: unknown; expiresAt?: unknown };
   if (typeof body.token !== 'string' || typeof body.expiresAt !== 'string')
     return { error: 'offline' };
   saveVersioned(store, spec, {

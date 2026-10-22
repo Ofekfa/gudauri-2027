@@ -17,7 +17,8 @@ import {
   type QueueView,
 } from './queue';
 import { createRemoteAlbumRepository } from './repository';
-import { getAlbumToken } from './token';
+import { clearAlbumToken, getAlbumToken } from './token';
+import { createUploader } from './uploader';
 
 /** Set while photos wait to upload, so the app shell resumes them after a reload. */
 export const PENDING_FLAG_KEY = 'album:pending';
@@ -52,11 +53,7 @@ const setListing = (fn: (l: AlbumListing) => AlbumListing) =>
 
 const queue = createUploadQueue({
   store: indexedDbQueueStore(),
-  async upload(item, onProgress) {
-    const auth = await getAlbumToken();
-    if ('error' in auth) return { kind: 'retry', status: 401 };
-    return repo.upload(auth.token, item.frameId, metaOf(item), item.full, item.thumb, onProgress);
-  },
+  upload: createUploader({ getToken: () => getAlbumToken(), clearToken: clearAlbumToken, repo }),
   isOnline: () => navigator.onLine,
   now: () => Date.now(),
   setTimer: (fn, ms) => setTimeout(fn, ms),
@@ -80,7 +77,10 @@ queue.onEvent((event) => {
         : { ...l, photos: [...l.photos, event.photo] },
     );
   } else if (event.type === 'failed') {
-    toasts.show({ emoji: '⚠️', message: event.item.error ?? 'A photo couldn’t be added.' });
+    toasts.show({
+      emoji: '⚠️',
+      message: `Upload failed. ${event.item.error ?? 'A photo couldn’t be added.'}`,
+    });
   } else {
     void removeRemote(event.photo.id);
   }

@@ -88,6 +88,8 @@ async function render(
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, 'image/jpeg', quality),
   );
+  // iOS caps the memory all canvases may hold; free this one now, not at GC.
+  canvas.width = canvas.height = 0;
   if (!blob || blob.type !== 'image/jpeg') throw new UnsupportedImageError();
   const clean = stripJpegMetadata(new Uint8Array(await blob.arrayBuffer()));
   return { blob: new Blob([clean as BlobPart], { type: 'image/jpeg' }), ...size };

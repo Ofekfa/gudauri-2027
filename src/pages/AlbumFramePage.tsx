@@ -6,7 +6,13 @@ import { PageHeader } from '../components/PageHeader';
 import { AvatarFace } from '../avatars/Avatar';
 import { findFrame, MAX_CAPTION_CHARS } from '../data/album';
 import { trip } from '../data/trip';
-import { coverFor, photosByFrame, viewerIndex } from '../lib/album/selectors';
+import {
+  coverFor,
+  photosByFrame,
+  UPLOAD_FAILED,
+  uploadStatus,
+  viewerIndex,
+} from '../lib/album/selectors';
 import {
   deletePhoto,
   editCaption,
@@ -141,18 +147,23 @@ export default function AlbumFramePage({ params }: ParamPageProps) {
                 <p class="album-viewer__meta">
                   {uploader && <AvatarFace id={uploader.id} size={20} decorative />}
                   {uploader?.name} · {when?.date.replace(/ \d{4}$/, '')}, {when?.time}
-                  {queued && (
+                  {queued && queued.state !== 'failed' && (
                     <span class="album-viewer__pending">
                       {' '}
-                      ·{' '}
-                      {queued.state === 'failed'
-                        ? queued.error
-                        : queued.state === 'waiting-offline'
-                          ? 'Waiting for signal'
-                          : `Uploading ${Math.round((album.queue.progress[queued.id] ?? 0) * 100)}%`}
+                      · {uploadStatus(queued, album.queue.progress[queued.id])}
                     </span>
                   )}
                 </p>
+                {queued?.state === 'failed' && (
+                  <button
+                    type="button"
+                    class="album-viewer__retry"
+                    onClick={() => void retryUpload(queued.id)}
+                  >
+                    <span class="album-viewer__retry-title">⚠️ {UPLOAD_FAILED}</span>
+                    {queued.error && <span class="album-viewer__retry-reason">{queued.error}</span>}
+                  </button>
+                )}
               </figcaption>
             </figure>
 
@@ -182,11 +193,6 @@ export default function AlbumFramePage({ params }: ParamPageProps) {
 
             {joined && (
               <div class="button-row album-viewer__actions">
-                {queued?.state === 'failed' && (
-                  <button type="button" class="button" onClick={() => void retryUpload(queued.id)}>
-                    Try again
-                  </button>
-                )}
                 {!queued && !editing && (
                   <button
                     type="button"
