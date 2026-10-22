@@ -1,6 +1,6 @@
 # Gudauri 2027 — Codebase Report
 
-_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.6 (`v1.7.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
+_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.7 (`v1.8.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
 
 ## Changelog since v1.0.0
 
@@ -52,6 +52,22 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **upda
 - Lesson: in-place `npm install` can drop optional platform bindings from a lockfile (npm/cli#4828). Regenerate it from scratch if CI reports "Cannot find native binding".
 
 **Tests:** 107 site + 22 Worker.
+
+### Phase 8.7 — Offline mode + fallback rate (`v1.8.0`)
+
+**Fallback rate:** `scripts/fetch-rates.ts` (`npm run fetch:rates`, run in `deploy.yml` before the build) writes `src/data/fallbackRates.ts` from NBG via the shared `parseNbgResponse`, keeping the old file on failure. `src/lib/currency/fallback.ts` (`bakedPayload`, always stale). `useRates` has status `approximate` (replaces `unavailable`); the Currency page shows a permanent "Approximate: official rate from …" note.
+
+**Service worker**
+
+- `src/sw/routing.ts`: `classify` (shell / precache / network), `cacheNameFor`, `staleCaches`, `SKIP_WAITING`.
+- `src/sw/sw.ts`: install precache (`cache: 'reload'`), activate cleanup + `clients.claim()`, message `SKIP_WAITING`, fetch handler. Own `src/sw/tsconfig.json` (WebWorker); excluded from the app tsconfig.
+- `build/serviceWorkerPlugin.ts`: emits `sw.js`, injects the precache list (built files + `public/` minus `404.html`, `og-image.png`, font licence) and a SHA-256 content version; fails the build on shared chunks or missing placeholders.
+- `src/lib/pwa/register.ts`: production-only registration, update offer when a waiting worker exists and the page is controlled, reload only after Refresh, update check on returning to the foreground. Wired in `main.tsx` with a sticky toast (`durationMs: null`, new in the toast store).
+- `public/manifest.webmanifest` + `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`.
+
+**Other:** `useHashPath` re-reads the hash after subscribing (race fix). Assistant offline message mentions that the rest of the site works offline. README: offline/install section with iOS caveats.
+
+**Tests:** 194 site + 51 Worker.
 
 ### Phase 8.6 — Assistant live context + polish (`v1.7.0`)
 
