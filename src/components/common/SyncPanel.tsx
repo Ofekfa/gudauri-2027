@@ -89,7 +89,7 @@ export function SyncPanel({ view, what }: { view: ListSyncView; what: string }) 
     return (
       <details class="sync-panel card">
         <summary class="sync-panel__summary">
-          <span aria-hidden="true">🔄</span> Share {what} with Ron, Roy &amp; Maya
+          <span aria-hidden="true">🔄</span> Share {what} with Ron, Roi &amp; Maya
         </summary>
         <p class="sync-panel__intro">
           Everyone sees and edits the same {what}, on every phone. What’s on this phone now is
