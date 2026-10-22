@@ -1,6 +1,6 @@
 # CLAUDE.md — Gudauri 2027
 
-Companion site for a 4-person ski trip. Static Preact + TypeScript app on GitHub Pages; an optional Cloudflare Worker (`/worker`, Phase 6) proxies the AI assistant. The full plan and phase status live in `PLAN.md`.
+Companion site for a 4-person ski trip. Static Preact + TypeScript app on GitHub Pages; a Cloudflare Worker (`/worker`) proxies the AI assistant and serves cached live data (`/itinerary`, `/weather`, `/rates`). The full plan and phase status live in `PLAN.md`.
 
 ## Commands
 
@@ -24,7 +24,7 @@ Run lint, typecheck, test and build (and the Worker's tests if you touched it or
 - `src/data/` holds **all trip facts and content data**. `trip.ts` is the single source of truth: times are ISO 8601 with explicit offsets.
 - `src/lib/` holds pure, framework-light logic with unit tests (`*.test.ts` next to the file): time, router, storage (`safeStorage`, `versioned`), list helpers (`lib/list`), packing, facts, map, speech and toast.
 - `src/components/common/` has reusable list UI (`ProfileSwitcher`, `ProgressSummary`, `BackupPanel`) shared by per-traveler lists.
-- `worker/` is the Cloudflare Worker: a route table (`router.ts`) with a shared origin/CORS/method/rate-limit pipeline, and `cache.ts` (`getOrRefresh`: TTL + stale-on-error, KV-backed). It bundles `src/data/**` and some `src/lib/**`, so **changes there redeploy the Worker** through `.github/workflows/worker-deploy.yml`.
+- `worker/` is the Cloudflare Worker: a route table (`router.ts`) with a shared origin/CORS/method/rate-limit pipeline, and `cache.ts` (`getOrRefresh`: TTL + stale-on-error, KV-backed). It bundles `src/data/**` and some `src/lib/**` (currency, itinerary, weather), so **changes there redeploy the Worker** through `.github/workflows/worker-deploy.yml`. Data routes export `load*` functions that `liveContext.ts` reuses for the assistant's live-data block. Keep that code shared and pure: never import browser-only modules (storage, Preact) into anything the Worker bundles.
 - `src/navigation.ts` has route metadata only (titles, icons, tab-bar placement). `src/app.tsx` maps paths to page components.
 - `src/components/` has reusable UI; `src/pages/` has one component per route.
 - `src/styles/tokens.css` has design tokens (light + dark). Components use tokens only, never raw colors.
@@ -53,7 +53,7 @@ Run lint, typecheck, test and build (and the Worker's tests if you touched it or
 
 ## Quality bar (checked in Phase 7)
 
-- Lighthouse mobile on every route: performance ≥ 90 and accessibility = 100 (currently 98–100 / 100). Run `npx lighthouse "<url>/#/route"`.
+- Lighthouse mobile on every route: performance ≥ 90 and accessibility = 100 (currently 97–100 / 100, best practices 100). Run `npx lighthouse "<url>/#/route"`.
 - axe-core: 0 violations on all routes, in light and dark mode and in interactive states.
 - No horizontal overflow at 375 px. The game holds 60 fps at 4× CPU throttle.
 - Layout shift = 0: lazy pages must not move existing content (the main area reserves viewport height).
