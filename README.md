@@ -22,6 +22,18 @@ Mobile-first, with light and dark mode, and keyboard and screen-reader friendly.
 
 **Live site:** https://ofekfa.github.io/gudauri-2027/
 
+## Offline and "Add to Home Screen"
+
+After one visit with a connection, the whole site works with **no signal**. A small service worker (`src/sw/`, built by `build/serviceWorkerPlugin.ts`) precaches every page, the fonts and the icons.
+
+- **What stays live:** the itinerary, weather and exchange rates show the last copy saved on the phone, labelled "Offline" or "Approximate" with its date. The assistant and live cams need a connection.
+- **Updates:** after a deploy, a "New version available" toast appears; tap **Refresh**.
+- **Install:** on iPhone, open the site in Safari → Share → **Add to Home Screen**. On Android/Chrome, use **Install app**.
+- **iOS caveats:**
+  - A home-screen app has its own storage, separate from Safari. Packing lists and to-dos don't carry over, so use the **Backup** buttons to move them.
+  - Safari may delete a website's storage and offline cache after ~7 days without use. Open the site once before the trip (or add it to the home screen, which iOS treats as an app).
+  - Lists are stored per device and never synced; keep a backup file.
+
 ## Local setup
 
 Requires Node 22+.

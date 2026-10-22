@@ -15,7 +15,8 @@ export interface Toast {
 }
 
 export interface ToastOptions extends Omit<Toast, 'id'> {
-  durationMs?: number;
+  /** `null` keeps the toast until it's dismissed or its action is used. */
+  durationMs?: number | null;
 }
 
 export const DEFAULT_TOAST_MS = 5_000;
@@ -49,10 +50,12 @@ export function createToastStore(
     const id = nextId++;
     toasts = [...toasts, { ...toast, id }];
     while (toasts.length > MAX_VISIBLE_TOASTS) dismissSilently(toasts[0]!.id);
-    handles.set(
-      id,
-      timers.setTimeout(() => dismiss(id), durationMs),
-    );
+    if (durationMs !== null) {
+      handles.set(
+        id,
+        timers.setTimeout(() => dismiss(id), durationMs),
+      );
+    }
     emit();
     return id;
   }
