@@ -23,7 +23,7 @@
 | 9.2   | Background Georgian music                                                | ✅ Done | v1.10.0 |
 | 10.1  | Shared lists across our phones (sync)                                    | ✅ Done | v1.11.0 |
 | 10.2  | Avatar hair colours (Ron brown, Ofek light brown)                        | ✅ Done | v1.11.1 |
-| 10.3  | Album: our trip in photos                                                | ⏳ Next | v1.12.0 |
+| 10.3  | Album: our trip in photos                                                | ✅ Done | v1.12.0 |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/
 
@@ -37,6 +37,10 @@
 - Between phases 2 and 3: avatar tweaks per feedback (Maya brown eyes + glasses, Roy undercut, Ofek warmer skin), tagged as part of v0.3.0.
 - Phase 10.2 (`v1.11.1`): hair colours per feedback: Ron brown (was black), Ofek light/ash brown (was blond). `og-image.png` regenerated with `npm run og-image`.
 - `v1.11.2`: Roy's name is spelled **Roi** everywhere it's shown (his id stays `roy`, so stored lists, scores and sync keep working).
+- Phase 10.3 (`v1.12.0`):
+  - Album images also send `Access-Control-Allow-Origin: *`, so "Download all" can `fetch` them. They're public anyway, and no credentials are involved.
+  - Viewed photos rely on the browser's HTTP cache (`immutable`) rather than a separate Cache Storage, and the service worker doesn't precache them.
+  - "Added by" is whoever joined on this phone; there's no separate per-photo picker.
 - Phase 3: a generic toast system (`src/lib/toast`) landed early because undo-delete needs it; Phase 4 fact pop-ups reuse it. Import confirmation is inline rather than a browser dialog. The starter template marks everything "Already have" by default.
 - Phase 4: 55 facts (target 40+). A fact-check pass corrected the Kobi gondola year (2019), Khachapuri Index start (2011), speed-skiing record (255.5 km/h, 2023) and Military Road details. Unsupported details were dropped. Pop-ups are also paused on the Facts page, and the fact data loads lazily.
 - Between phases 4 and 5: the Fun facts page became a one-at-a-time viewer (← → keys, swipe, Previous/Next) per feedback.
@@ -1128,3 +1132,15 @@ A page of frames, one per moment of the trip in story order; any of us adds phot
 - **Routing:** the client router supports two detail segments (`#/album/<frame>/<photo>`); the Worker router supports `:params` and PATCH/PUT/DELETE.
 
 **Manual step for Ofek:** `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))" | npx wrangler secret put ALBUM_SIGNING_KEY` in `worker/`.
+
+**Status (2026-10-22):** shipped as `v1.12.0` in PRs #87–#90.
+
+- **Local end-to-end check** (`wrangler dev` + preview, emulated iPhone 13, real canvas pipeline):
+  - **privacy:** a GPS-tagged photo with EXIF orientation 6 arrives upright with no EXIF, GPS or camera make;
+  - **adding:** the tile appears at once; gallery multi-select works; Undo removes exactly that photo;
+  - **offline:** an offline photo waits ("1 waiting for signal") and uploads after a reload on Home;
+  - **viewing:** a phone that hasn't joined can view but not add;
+  - **viewer:** caption, cover and delete (the cover resets) work; story mode works; Quick add suggests tonight's dinner;
+  - axe 0 in light and dark; CLS 0; no overflow at 375 px.
+- **Live:** viewing works. `POST /album/session` answers `501` until Ofek sets `ALBUM_SIGNING_KEY`, so adding is off until then.
+- **Not checked:** real iPhone and Android phones (camera, HEIC → JPEG, upload on mountain signal) still need Ofek's test.
