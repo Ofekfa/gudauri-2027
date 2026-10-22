@@ -66,7 +66,7 @@ const shiftDay = (day: string, n: number) =>
 /** Calendar text is data: one line, no control characters, length-capped. */
 export function cleanText(text: string): string {
   const flat = text
-    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .replace(/\p{Cc}+/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
   return flat.length > LIVE_TEXT_MAX_CHARS ? `${flat.slice(0, LIVE_TEXT_MAX_CHARS - 1)}…` : flat;
