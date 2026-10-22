@@ -2561,12 +2561,16 @@ main:focus {
 }
 .snowfall span {
   position: absolute;
-  top: -10px;
+  /* Just above the viewport, so even the biggest flake enters from off-screen. */
+  top: -16px;
   border-radius: 50%;
   background: var(--snowflake);
   box-shadow: 0 0 4px var(--snowflake-glow);
   animation: snowfall linear infinite;
   will-change: transform;
+}
+.snowfall--paused span {
+  animation-play-state: paused;
 }
 @keyframes snowfall {
   to {
