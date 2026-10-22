@@ -95,6 +95,15 @@ export const SECTIONS: SectionItem[] = [
     inTabBar: false,
   },
   {
+    path: '/album',
+    group: 'fun',
+    title: 'Trip album',
+    navLabel: 'Album',
+    icon: 'camera',
+    blurb: 'Our photos, one moment of the trip at a time.',
+    inTabBar: false,
+  },
+  {
     path: '/music',
     group: 'fun',
     title: 'Georgian music',

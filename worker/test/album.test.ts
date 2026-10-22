@@ -188,6 +188,16 @@ describe('POST /album/session', () => {
 });
 
 describe('album photos', () => {
+  it('allows If-Match in preflight for caption and cover edits', async () => {
+    const { call } = setup();
+    const res = await call('/album/photos/photo-0001', {
+      method: 'OPTIONS',
+      headers: { 'Access-Control-Request-Method': 'PATCH' },
+    });
+    expect(res.headers.get('Access-Control-Allow-Headers')).toContain('If-Match');
+    expect(res.headers.get('Access-Control-Allow-Methods')).toContain('PATCH');
+  });
+
   it('lets anyone view, but only token holders change', async () => {
     const { call, upload } = setup();
     expect((await call('/album')).status).toBe(200);
@@ -210,7 +220,7 @@ describe('album photos', () => {
     expect(img.headers.get('Content-Type')).toBe('image/jpeg');
     expect(img.headers.get('Cache-Control')).toContain('immutable');
     expect(img.headers.get('X-Robots-Tag')).toBe('noindex');
-    expect(img.headers.get('Access-Control-Allow-Origin')).toBeNull();
+    expect(img.headers.get('Access-Control-Allow-Origin')).toBe('*');
   });
 
   it('validates uploads: frame, type, size and the per-frame cap', async () => {

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'preact/hooks';
-import { trip, type TravelerId } from '../../data/trip';
 import { isJoined, syncSettings } from '../../lib/sync/settings';
 import type { ListSyncView } from '../../lib/sync/useListSync';
 import { formatAgo } from '../../lib/time/format';
 import { WORKER_URL } from '../../lib/worker/config';
+import { JoinGroupForm } from './JoinGroupForm';
 
 const REFRESH_LABEL_MS = 15_000;
 
@@ -32,8 +32,6 @@ function statusText(view: ListSyncView, now: number): string {
  */
 export function SyncPanel({ view, what }: { view: ListSyncView; what: string }) {
   const [now, setNow] = useState(Date.now());
-  const [code, setCode] = useState('');
-  const [me, setMe] = useState<TravelerId | null>(view.settings.me);
   const joined = isJoined(view.settings);
 
   useEffect(() => {
@@ -43,47 +41,7 @@ export function SyncPanel({ view, what }: { view: ListSyncView; what: string }) 
 
   if (!WORKER_URL) return null;
 
-  const form = (
-    <form
-      class="sync-panel__form"
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (code.trim() && me) syncSettings.join(code, me);
-      }}
-    >
-      <label class="sync-panel__field" htmlFor="sync-code">
-        Group code
-        <input
-          id="sync-code"
-          type="password"
-          autoComplete="off"
-          autoCapitalize="none"
-          spellcheck={false}
-          value={code}
-          onInput={(e) => setCode(e.currentTarget.value)}
-        />
-      </label>
-      <fieldset class="sync-panel__who">
-        <legend>Whose phone is this?</legend>
-        <div class="filters__group">
-          {trip.travelers.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              class="chip-button chip-button--small"
-              aria-pressed={me === t.id}
-              onClick={() => setMe(t.id)}
-            >
-              {t.name}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-      <button type="submit" class="button button--primary" disabled={!code.trim() || !me}>
-        Join
-      </button>
-    </form>
-  );
+  const form = <JoinGroupForm idPrefix="sync" initialMe={view.settings.me} />;
 
   if (!joined) {
     return (

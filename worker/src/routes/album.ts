@@ -276,6 +276,8 @@ export const albumImageRoute: Route = {
         ETag: `"${photo!.id}-${size}"`,
         'X-Robots-Tag': 'noindex',
         'X-Content-Type-Options': 'nosniff',
+        // Public photos: lets the site fetch them for "Download all" (no credentials).
+        'Access-Control-Allow-Origin': '*',
       },
     });
   },

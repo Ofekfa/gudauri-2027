@@ -13,7 +13,8 @@ export function corsHeaders(origin: string, method: string): HeadersInit {
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': `${method}, OPTIONS`,
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    // If-Match carries album edit versions.
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, If-Match',
     'Access-Control-Max-Age': PREFLIGHT_MAX_AGE_S,
     Vary: 'Origin',
   };
