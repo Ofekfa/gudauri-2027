@@ -1,6 +1,6 @@
 # Gudauri 2027 — Codebase Report
 
-_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.3 (`v1.4.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
+_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **updated after Phase 8.4 (`v1.5.0`)**, see the changelog below. Every statement was checked against the files. Items marked **(unverified)** are informed estimates that need checking._
 
 ## Changelog since v1.0.0
 
@@ -52,6 +52,29 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **upda
 - Lesson: in-place `npm install` can drop optional platform bindings from a lockfile (npm/cli#4828). Regenerate it from scratch if CI reports "Cannot find native binding".
 
 **Tests:** 107 site + 22 Worker.
+
+### Phase 8.4 — Itinerary (`v1.5.0`)
+
+**Worker**
+
+- `GET /itinerary` (`worker/src/routes/itinerary.ts`):
+  - Secret `CALENDAR_ICS_URL` (501 until set).
+  - Window 2027-02-23…03-01 in Tbilisi time.
+  - Cache key `itinerary:v1`: TTL 20 min, max stale 7 days. Limiter `RL_DATA`; browser `max-age=60`.
+- `worker/src/itinerary/ics.ts`:
+  - A text pre-filter, then **ical.js** (Worker-only dependency) for TZID, all-day, RRULE, EXDATE and RECURRENCE-ID.
+  - Whitelisted output only; ids are an FNV hash.
+
+**Shared:** `src/lib/itinerary/types.ts` (payload + validator).
+
+**Site**
+
+- `src/lib/itinerary/`: `plan.ts` (days, flight merge/de-dup, Tbilisi-day grouping, now/next), `itineraryClient.ts` (`itinerary:last` offline copy), `useItinerary.ts`.
+- `#/itinerary` is **in the tab bar** (Home · Itinerary · Packing · Game · More); Flights moved to More → Plan.
+- Home: during the trip, `TodayPlan` replaces the countdown's companion card.
+- Icon: `calendar`.
+
+**Tests:** 174 site + 39 Worker.
 
 ### Phase 8.3 — Pre-flight to-do list (`v1.4.0`)
 
