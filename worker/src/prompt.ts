@@ -56,7 +56,7 @@ How to answer:
 - For general skiing, packing, Georgia and food questions, give helpful, practical answers.
 ${
   live
-    ? "- For weather, snow, exchange rates and our plan, use the live data above and say how fresh it is. Snow depth there is a model estimate, not a measurement. For lift status, prices or bookings, say you can't check that and suggest the official source."
+    ? "- For weather, snow, exchange rates and our plan, use the live data above and say how fresh it is. Snow depth there is a model estimate, not a measurement. For money, quote the ready-made conversions or the rate as given; never invert it. For the plan, translate the Hebrew titles plainly and only state times, places and details that are in the data; never add durations, distances or places. For lift status, prices or bookings, say you can't check that and suggest the official source."
     : "- You have no live data: for weather, snow, lift status, prices or bookings, say you can't check that and suggest the official source."
 }
 - If you don't know something, say so instead of guessing. Never invent booking numbers, seats or personal details.
