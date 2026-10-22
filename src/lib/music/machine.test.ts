@@ -22,7 +22,7 @@ describe('music state machine', () => {
     expect(showsGestureHint(on)).toBe(true);
     expect(showsGestureHint(off)).toBe(false);
     const started = run(on, { type: 'GESTURE' });
-    expect(needsTrack(started)).toBe(true);
+    expect(needsTrack(started, 0)).toBe(true);
     expect(run(started, { type: 'READY' }).phase).toBe('playing');
   });
 
@@ -49,21 +49,45 @@ describe('music state machine', () => {
   });
 
   it('turning music on counts as the gesture', () => {
-    expect(needsTrack(run(off, { type: 'TOGGLE' }))).toBe(true);
+    expect(needsTrack(run(off, { type: 'TOGGLE' }), 0)).toBe(true);
   });
 
   it('skips failing tracks and gives up after repeated failures', () => {
     let s = run(on, { type: 'GESTURE' });
     for (let i = 1; i < MAX_FAILURES; i++) {
       s = run(s, { type: 'ERROR' });
-      expect(needsTrack(s)).toBe(true);
+      expect(needsTrack(s, s.trackRequest - 1)).toBe(true);
     }
     s = run(s, { type: 'ERROR' });
     expect(s.phase).toBe('unavailable');
     expect(shouldPlay(s)).toBe(false);
-    expect(needsTrack(run(s, { type: 'ONLINE' }))).toBe(true);
+    expect(needsTrack(run(s, { type: 'ONLINE' }), s.trackRequest)).toBe(true);
     // A success resets the count.
     expect(run(on, { type: 'GESTURE' }, { type: 'ERROR' }, { type: 'READY' }).failures).toBe(0);
+  });
+
+  it('asks for each new track once; pausing and resuming mid-load never re-picks', () => {
+    const loading = run(on, { type: 'GESTURE' });
+    const served = loading.trackRequest;
+    expect(needsTrack(loading, served)).toBe(false);
+    const resumed = run(
+      loading,
+      { type: 'LISTENING', active: true },
+      { type: 'LISTENING', active: false },
+      { type: 'VISIBILITY', hidden: true },
+      { type: 'VISIBILITY', hidden: false },
+      { type: 'SPEAKING', active: true },
+      { type: 'TOGGLE' },
+      { type: 'TOGGLE' },
+    );
+    expect(shouldPlay(resumed)).toBe(true);
+    expect(needsTrack(resumed, served)).toBe(false);
+    expect(needsTrack(run(resumed, { type: 'NEXT' }), served)).toBe(true);
+    expect(needsTrack(run(resumed, { type: 'ENDED' }), served)).toBe(true);
+    // A skip requested while muted is served when music comes back on.
+    const mutedNext = run(resumed, { type: 'TOGGLE' }, { type: 'NEXT' });
+    expect(needsTrack(mutedNext, served)).toBe(false);
+    expect(needsTrack(run(mutedNext, { type: 'TOGGLE' }), served)).toBe(true);
   });
 
   it('pauses while the mic listens and ducks while speech plays, then resumes', () => {

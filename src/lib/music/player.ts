@@ -109,8 +109,11 @@ export function createMusicPlayer({
   }
 
   let retried = false;
+  /** The last trackRequest we started a track for. */
+  let served = 0;
 
   function startTrack() {
+    served = state.trackRequest;
     track = pickNext();
     retried = false;
     audio.src = track.src;
@@ -123,7 +126,7 @@ export function createMusicPlayer({
   }
 
   function sync() {
-    if (needsTrack(state)) startTrack();
+    if (needsTrack(state, served)) startTrack();
     applyVolume();
     if (shouldPlay(state) && audio.src) {
       audio.play().catch((err: unknown) => {
