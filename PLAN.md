@@ -1083,3 +1083,48 @@ Packing lists and to-dos lived only on each phone. Decisions (Ofek, 2026-10-22):
 - **Manual step for Ofek:** choose a long passphrase, run `npx wrangler secret put GROUP_CODE` in `worker/`, and share the code privately with Ron, Roy and Maya.
 
 **Status (2026-10-22):** shipped as `v1.11.0`. The Durable Object deployed on the Workers Free plan. Verified end to end with a local Worker (emulated Durable Object) and two separate browser profiles: join, see the other phone's item with "· Ofek", tick it and see it packed with "· Maya" on the first phone, wrong code rejected. Live `/sync` answers `501` until Ofek sets `GROUP_CODE`.
+
+## Phase 10.3 — Album: our trip in photos → `v1.12.0`
+
+A page of frames, one per moment of the trip in story order; any of us adds photos to any frame in two taps (camera or gallery), and the page fills up into a visual story.
+
+**Decisions (Ofek, 2026-10-22):**
+
+- **Placement:** More → Fun.
+- **Frames:** 5 dinner frames (Wed 24 – Sun 28 Feb, from `trip.ts`) and 3 bonus frames ("The four of us", "Best view", "Funniest moment"); 19 planned + 3 bonus.
+- **Viewing is public:** anyone with the site link can see the photos.
+- **Adding, captions, cover and deleting** need the **group code** (`GROUP_CODE`, shared with the lists). All four of us can delete.
+- **Quick add** on Home during the trip.
+
+**Storage:** Durable Objects SQLite. R2 most likely needs a card, and KV's 1 GB / 1,000 writes per day doesn't fit.
+
+- An `AlbumStore` class (migration `v2`) with an **index** instance (photo metadata, frame covers, versions for ETags) and one **frame** instance per frame for image BLOBs (thumb ≤ 150 kB, full ≤ 1.6 MB, 2 MB row cap).
+- Never in git.
+
+**Access:** `POST /album/session` exchanges the group code (constant-time compare, `RL_AUTH` 5/min) for an HMAC-SHA256 token signed with **`ALBUM_SIGNING_KEY`**, valid until 2027-03-15 at least (renewed silently).
+
+- `GET /album` and images are public. Images are served with `Cache-Control: public, immutable` and `X-Robots-Tag: noindex`.
+- Every change needs the token.
+
+**Routes:**
+
+- `POST /album/session`
+- `GET /album`
+- `POST /album/:frameId/photos` (multipart: meta + full + thumb; idempotent by client id)
+- `PATCH /album/photos/:photoId` (caption, `If-Match`)
+- `DELETE /album/photos/:photoId`
+- `PUT /album/:frameId/cover` (`If-Match`)
+- `GET /album/photos/:photoId/image?size=thumb|full`
+
+**Server validation:** JPEG magic bytes, sizes, known frame, cap of 30 per frame, caption ≤ 120 chars; EXIF re-stripped.
+
+**Client:**
+
+- **Image pipeline:** EXIF orientation applied, canvas re-encode to JPEG (Safari can't encode WebP) at 2048 px / 480 px, ≤ 1.5 MB, metadata stripped and verified.
+- **Upload queue:** IndexedDB, 2 at a time, exponential backoff, offline resume, lives in the app shell, `beforeunload` while pending.
+- **Optimistic tiles** with progress; Undo toast.
+- **Viewer:** frame viewer with swipe/keys reusing the facts carousel helpers.
+- **Story mode;** **Download all** as a ZIP writer with no dependency.
+- **Routing:** the client router supports two detail segments (`#/album/<frame>/<photo>`); the Worker router supports `:params` and PATCH/PUT/DELETE.
+
+**Manual step for Ofek:** `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))" | npx wrangler secret put ALBUM_SIGNING_KEY` in `worker/`.
