@@ -1,3 +1,5 @@
+import type { TravelerId } from '../../data/trip';
+import { ChangedBy } from '../common/ChangedBy';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   CATEGORIES,
@@ -17,6 +19,8 @@ interface PackingItemRowProps {
   onToggleOwnership: () => void;
   onSave: (name: string, category: Category) => void;
   onDelete: () => void;
+  /** Someone else who changed this item last (shared lists). */
+  changedBy?: TravelerId | null;
 }
 
 export function PackingItemRow({
@@ -25,6 +29,7 @@ export function PackingItemRow({
   onToggleOwnership,
   onSave,
   onDelete,
+  changedBy,
 }: PackingItemRowProps) {
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(item.name);
@@ -113,6 +118,7 @@ export function PackingItemRow({
       />
       <label htmlFor={checkboxId} class="pack-item__name">
         {item.name}
+        <ChangedBy who={changedBy} />
       </label>
       <button
         type="button"

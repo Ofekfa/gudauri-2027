@@ -1,3 +1,5 @@
+import type { TravelerId } from '../../data/trip';
+import { ChangedBy } from '../common/ChangedBy';
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { dateInputToDue, dueToDateInput, formatDue, TODO_TIME_ZONE } from '../../lib/todo/due';
@@ -22,9 +24,11 @@ interface TodoRowProps {
   onDelete: () => void;
   /** Extra line under the title (e.g. the live packing count). */
   extra?: ComponentChildren;
+  /** Someone else who changed this item last (shared lists). */
+  changedBy?: TravelerId | null;
 }
 
-export function TodoRow({ item, now, onToggle, onSave, onDelete, extra }: TodoRowProps) {
+export function TodoRow({ item, now, onToggle, onSave, onDelete, extra, changedBy }: TodoRowProps) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(item.title);
   const [note, setNote] = useState(item.note ?? '');
@@ -142,6 +146,7 @@ export function TodoRow({ item, now, onToggle, onSave, onDelete, extra }: TodoRo
       <div class="todo-item__body">
         <label htmlFor={checkboxId} class="pack-item__name todo-item__title">
           {item.title}
+          <ChangedBy who={changedBy} />
         </label>
         <p class="todo-item__meta">
           <span aria-hidden="true">{TODO_CATEGORY_EMOJI[item.category]} </span>
