@@ -3,7 +3,7 @@ import { AvatarFace, AvatarSkier } from '../avatars/Avatar';
 import { PageHeader } from '../components/PageHeader';
 import { CHARACTERS } from '../data/characters';
 import { trip, type TravelerId } from '../data/trip';
-import { SCORE } from '../game/constants';
+import { MAX_LIVES, POWER_UPS, SCORE } from '../game/constants';
 import {
   createGameController,
   type ControllerStatus,
@@ -18,6 +18,29 @@ import { appStore } from '../lib/storage/safeStorage';
 import { syncSettings } from '../lib/sync/settings';
 
 const CHARACTER_KEY = 'game:character';
+/** Set once the start-screen tip about hearts and power-ups was dismissed. */
+const POWER_HINT_KEY = 'game:powerHintSeen';
+
+/** One-time tip on the start screen; remembered on this device. */
+function PowerHint() {
+  const [seen, setSeen] = useState(() => appStore.get(POWER_HINT_KEY) === '1');
+  if (seen) return null;
+  return (
+    <div class="game__tip" role="note">
+      <p>❤️ = extra life · {POWER_UPS.magnet.icon} = pulls items to you</p>
+      <button
+        type="button"
+        class="chip-button chip-button--small"
+        onClick={() => {
+          appStore.set(POWER_HINT_KEY, '1');
+          setSeen(true);
+        }}
+      >
+        Got it
+      </button>
+    </div>
+  );
+}
 
 const nameOf = (id: TravelerId) => trip.travelers.find((t) => t.id === id)!.name;
 const MS_PER_S = 1_000;
@@ -119,7 +142,14 @@ function CharacterPicker({
           <li>Dodge trees, rocks and flags. You have three lives.</li>
           <li>
             Grab khachapuri (+{SCORE.khachapuri}) and snowflakes (+{SCORE.snowflake}). It gets
-            faster the further you go!
+            faster and busier the further you go!
+          </li>
+          <li>
+            Catch a ❤️ for an extra life (up to {MAX_LIVES}). They get rarer as the run goes on.
+          </li>
+          <li>
+            {POWER_UPS.magnet.icon} The magnet pulls nearby khachapuri, snowflakes and hearts to you
+            for {POWER_UPS.magnet.duration} seconds.
           </li>
         </ul>
       </section>
@@ -231,6 +261,7 @@ function Game({
                   <AvatarSkier id={character} size={64} decorative />
                   <h2>Ready, {name}?</h2>
                   <p class="game__hint">Hold left/right on the slope (or use ← →) to steer.</p>
+                  <PowerHint />
                   <button
                     type="button"
                     class="button button--primary"
@@ -269,6 +300,8 @@ function Game({
                   <p class="game__hint">
                     {result.meters} m skied · {result.khachapuri} khachapuri · {result.snowflakes}{' '}
                     snowflakes
+                    {result.hearts > 0 && ` · ${result.hearts} ❤️`}
+                    {result.powerUps > 0 && ` · ${result.powerUps} ${POWER_UPS.magnet.icon}`}
                   </p>
                   <p class="game__hint">
                     {name}’s best: <strong>{Math.max(personalBest, result.score)}</strong>

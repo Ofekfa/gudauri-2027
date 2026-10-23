@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { HIGH_SCORES_PER_CHARACTER, LIVES } from './constants';
+import { botInput } from './bot';
+import { HIGH_SCORES_PER_CHARACTER, LIVES, MAX_LIVES } from './constants';
 import { createGameState, score, startGame, step, type GameInput } from './engine';
+import { createRng } from './random';
 import {
   maxPlausibleScore,
   mergeTables,
@@ -94,6 +96,26 @@ describe('plausibility', () => {
       );
     }
   });
+
+  it('accepts a max-effort run with hearts and the magnet always on', () => {
+    for (const seed of [1, 2]) {
+      const random = createRng(seed);
+      const state = createGameState(360, 640);
+      startGame(state);
+      let input = botInput(state);
+      for (let i = 0; i < 120 * 600; i++) {
+        // Never dies, the magnet never runs out, and hearts at the cap score points.
+        state.lives = MAX_LIVES;
+        state.powerUpTime.fill(10);
+        if (i % 3 === 0) input = botInput(state);
+        step(state, input, 1 / 120, random);
+      }
+      expect(score(state)).toBeLessThanOrEqual(maxPlausibleScore(state.time));
+      expect(submit({ score: score(state), durationMs: Math.round(state.time * 1000) }).ok).toBe(
+        true,
+      );
+    }
+  }, 60_000);
 
   it('rejects scores that are impossible in the reported time (422)', () => {
     expect(submit({ score: maxPlausibleScore(60) + 1 })).toMatchObject({ ok: false, status: 422 });

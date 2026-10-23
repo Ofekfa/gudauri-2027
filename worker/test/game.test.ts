@@ -141,6 +141,15 @@ describe('POST /game/scores', () => {
     expect((await post(token, run({ score: 9_999_999 }))).status).toBe(422);
   });
 
+  it('accepts long runs up to the bound (hearts and the magnet make 10-minute runs possible)', async () => {
+    const { post, run, session } = setup();
+    const token = await session();
+    const tenMinutes = 600_000;
+    const best = maxPlausibleScore(tenMinutes / 1000);
+    expect((await post(token, run({ score: best, durationMs: tenMinutes }))).status).toBe(201);
+    expect((await post(token, run({ score: best + 1, durationMs: tenMinutes }))).status).toBe(422);
+  });
+
   it('is rate limited per IP', async () => {
     const limited = setup({ RL_DATA: { limit: vi.fn().mockResolvedValue({ success: false }) } });
     const token = await limited.session();
