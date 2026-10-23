@@ -31,7 +31,7 @@
 | 10.6a | Ski game retune: faster and harder (profiles + 3 trial presets)          | ✅ Done | v1.15.1 |
 | 10.6c | Score epochs; all game scores reset for the new difficulty               | ✅ Done | v1.15.2 |
 | 10.6b | Lock in Ofek's preset; remove the trial switch                           | ⏳ Next |         |
-| 10.7  | Ski game: shield, slow-mo, double points (approved, queued)              | Queued  |         |
+| 10.7  | Ski game: shield, slow-mo, double points                                 | ✅ Done | v1.16.0 |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/ · **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev · Session handoff: `docs/HANDOFF.md`
 
@@ -1231,7 +1231,11 @@ Ofek (2026-10-23): v1.15.0 felt too slow and too easy. Target: harder than v1.15
 - **Status (2026-10-23):** shipped. Live: 59.5–60 fps at 4× throttle on `fastest` (phone touch and desktop).
 - **Follow-up (10.6b):** once Ofek picks a preset, make it the only profile, remove `presets.ts`, the link switch and the HUD label, and let the score bound use that one profile.
 
-## Phase 10.7 — Ski game: shield, slow-mo, double points (approved, queued)
+## Phase 10.7 — Ski game: shield, slow-mo, double points → `v1.16.0`
+
+**Status (2026-10-23):** shipped (#108). Generic hooks on the power-up tuning: `absorbsCrash`, `slopeSpeedFactor` and `scoreMultiplier`. Spawning makes one roll for "any power-up", then a weighted pick. The `faster` bot median moved from 170 s to 176 s, with ~2 power-ups per run. The score bound now multiplies by 2. Live: 60 fps at 4× throttle on `fastest`, on phone and desktop. The start tip was bumped to version 2 (it shows once more).
+
+Original design:
 
 - **Shield:** absorbs the next crash (no life lost, no slowdown); lasts until hit or 12 s.
 - **Slow-mo:** the slope at 60 % speed for 6 s. Distance points slow accordingly.

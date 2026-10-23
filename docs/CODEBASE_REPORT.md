@@ -4,6 +4,25 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **ever
 
 ## Changelog since v1.0.0
 
+### Phase 10.7 — Shield, slow-mo, double points (`v1.16.0`)
+
+- **`constants.ts`:**
+  - `PowerUpId` adds `shield`, `slowmo` and `double` (with matching `EntityKind`s, role `powerup`);
+  - `PowerUpTuning` gains `hint`, `detail`, `slopeSpeedFactor` and `absorbsCrash`;
+  - `SHIELD_GRACE_SECONDS`; every profile has balance for all four.
+- **`powerUps.ts`:** `slopeSpeed(state)` (re-exported by the engine); behaviour entries for all four.
+- **`engine.ts`:**
+  - the shield absorbs a crash (`shieldBrokeThisStep`);
+  - distance, row spacing and the magnet pull use `slopeSpeed`;
+  - `rollSpecial` picks power-ups weighted by rate.
+- **Rendering and page:**
+  - `sprites.ts`: shield, hourglass and "×2" coin;
+  - `render.ts`: the shield bubble and the slow-mo tint;
+  - controller: the "🛡️ Saved!" feedback;
+  - `GamePage`: the tip as a list (`POWER_HINT_VERSION` 2), How to play from `POWER_UPS`, "N power-ups" in the summary.
+- **`scores.ts`:** the bound multiplier is now 2.
+- **Tests:** 477 site, 103 Worker.
+
 ### Phase 10.6a — Ski game retune (`v1.15.1`)
 
 - **`constants.ts`:** `DifficultyProfile` (speed curve, density, hearts, power-up balance, `magnetRadius`, invulnerability, lives); `PRESETS` (`fast`, `faster` = `DEFAULT_PROFILE`, `fastest`); `MIN_REACTION_SECONDS`.

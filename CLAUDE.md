@@ -57,7 +57,9 @@ Run lint, typecheck, test and build (and the Worker's tests if you touched it or
 
 - **Game mechanics:** `engine.ts` stays pure and deterministic (an injected `Random`; the controller seeds `createRng` per run).
   - Entities have a `role` (`obstacle` / `collectible` / `powerup`) in `ENTITY`; a new collectible is magnet-pulled automatically.
-  - **Power-ups:** tuning in `POWER_UPS` (`constants.ts`) plus behaviour in `src/game/powerUps.ts` and a sprite. Re-pickup refreshes the timer.
+  - **Power-ups:** presentation in `POWER_UPS` (`constants.ts`: icon, label, short `hint` for the tip, `detail` for How to play); duration and spawn rates in each `DifficultyProfile`; a sprite; and behaviour either as a per-step function in `src/game/powerUps.ts` (magnet) or a generic flag (`absorbsCrash` for the shield, `slopeSpeedFactor` for slow-mo via `slopeSpeed()`, `scoreMultiplier` for double points).
+    - Re-pickup refreshes the timer. Use `slopeSpeed(state)`, never `state.speed`, for anything the slope moves.
+    - Adding one: bump `POWER_HINT_VERSION` in `GamePage`, so the tip shows again.
   - **Difficulty:** every number lives in one `DifficultyProfile` (`constants.ts`), read from `state.profile`; never scatter difficulty constants. Density follows time (`pressure()`, `density.fullAfterSeconds`).
   - **Speed:** a two-phase curve (`earlyRamp` to `cruise`, then `lateRamp` to `max`), capped per screen by `MIN_REACTION_SECONDS` (`speedCap`).
   - **Trial presets (temporary):** `PRESETS` plus `#/game?preset=<name>` (`presets.ts`); the score bound takes the most generous one.
