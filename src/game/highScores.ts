@@ -12,6 +12,8 @@ import { backoffMs } from '../lib/net/backoff';
 import type { KeyValueStore } from '../lib/storage/safeStorage';
 import { loadVersioned, saveVersioned, type VersionedSpec } from '../lib/storage/versioned';
 import {
+  epochOf,
+  FIRST_EPOCH,
   isTraveler,
   mergeTables,
   mergeTop,
@@ -25,6 +27,9 @@ export type { ScoreEntry, ScoreTable } from './scores';
 
 const TABLE_KEY = 'game:highScores';
 const PENDING_KEY = 'game:pendingScores';
+/** The score epoch this device last saw (see FIRST_EPOCH in scores.ts). */
+const EPOCH_KEY = 'game:scoreEpoch';
+const HTTP_CONFLICT = 409;
 const TABLE_VERSION = 2;
 const PENDING_VERSION = 1;
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -219,6 +224,25 @@ export const loadPending = (store: KeyValueStore) => loadVersioned(store, pendin
 const savePending = (store: KeyValueStore, state: PendingState) =>
   saveVersioned(store, pendingSpec, state);
 
+export function loadScoreEpoch(store: KeyValueStore): number {
+  const n = Number(store.get(EPOCH_KEY));
+  return Number.isSafeInteger(n) && n >= FIRST_EPOCH ? n : FIRST_EPOCH;
+}
+
+/**
+ * The shared scores were reset: forget this device's records and unsent runs
+ * (and don't re-upload them as a first sync would), then follow the new epoch.
+ */
+function startEpoch(store: KeyValueStore, state: PendingState, epoch: number): void {
+  saveHighScores(store, {});
+  state.items = [];
+  state.attempts = 0;
+  state.nextAttemptAt = 0;
+  state.migrated = true;
+  savePending(store, state);
+  store.set(EPOCH_KEY, String(epoch));
+}
+
 /** True when runs are waiting to be sent (cheap: lets the app shell decide to load sync). */
 export const hasPendingScores = (store: KeyValueStore) =>
   loadPending(store).items.some((i) => !i.rejected);
@@ -275,12 +299,13 @@ export function createSyncedHighScores(deps: SyncedDeps): HighScoreRepository & 
     for (const item of state.items.filter((i) => !i.rejected)) {
       // Who played comes from the token on the server, so it isn't sent.
       const { character, score, runId, achievedAt, durationMs } = item;
+      const epoch = loadScoreEpoch(store);
       let res: Response;
       try {
         res = await fetchImpl(`${url}/game/scores`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
-          body: JSON.stringify({ character, score, runId, achievedAt, durationMs }),
+          body: JSON.stringify({ character, score, runId, achievedAt, durationMs, epoch }),
           signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         });
       } catch {
@@ -300,6 +325,15 @@ export function createSyncedHighScores(deps: SyncedDeps): HighScoreRepository & 
         } catch {
           // The listing below brings it in anyway.
         }
+      } else if (res.status === HTTP_CONFLICT) {
+        // Played before a reset this device hadn't heard of: dropped, never shown as an error.
+        const next = epochOf(await res.json().catch(() => null));
+        if (next > epoch) {
+          startEpoch(store, state, next);
+          table.value = {};
+          return { newBest, sent, reason: null };
+        }
+        state.items = state.items.filter((i) => i.runId !== item.runId);
       } else if (res.status === 400 || res.status === 422) {
         const body = (await res.json().catch(() => null)) as { error?: unknown } | null;
         item.rejected = typeof body?.error === 'string' ? body.error : `Refused (${res.status})`;
@@ -354,7 +388,13 @@ export function createSyncedHighScores(deps: SyncedDeps): HighScoreRepository & 
           signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         });
         if (!res.ok) throw new Error(`Scores unavailable (${res.status})`);
-        local.value = mergeTables(local.value, parseScoreTable(await res.json()));
+        const body: unknown = await res.json();
+        const epoch = epochOf(body);
+        if (epoch > loadScoreEpoch(store)) {
+          startEpoch(store, state, epoch);
+          local.value = {};
+        }
+        local.value = mergeTables(local.value, parseScoreTable(body));
       } catch {
         offline = true;
       }

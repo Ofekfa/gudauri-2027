@@ -9,6 +9,7 @@ import {
   insertHighScore,
   loadHighScores,
   loadPending,
+  loadScoreEpoch,
   type RunRecord,
 } from './highScores';
 import { mergeTop, type ScoreEntry } from './scores';
@@ -26,6 +27,7 @@ function fakeServer() {
   const runs: (ScoreEntry & { character: TravelerId })[] = [];
   let online = true;
   let refuse: number | null = null;
+  let epoch = 1;
   const posted: string[] = [];
   /** A character's top five, without the server-only `character` field. */
   const top = (c: TravelerId): ScoreEntry[] =>
@@ -43,6 +45,10 @@ function fakeServer() {
       const body = JSON.parse(String(init.body)) as RunRecord & { character: TravelerId };
       posted.push(body.runId);
       if (refuse) return new Response(JSON.stringify({ error: 'Nope' }), { status: refuse });
+      if (((body as { epoch?: number }).epoch ?? 1) < epoch)
+        return new Response(JSON.stringify({ error: 'The scores were reset', epoch }), {
+          status: 409,
+        });
       const known = runs.find((r) => r.runId === body.runId);
       const best = top(body.character)[0];
       if (!known)
@@ -65,7 +71,7 @@ function fakeServer() {
     const scores = Object.fromEntries(
       (['ofek', 'ron', 'roy', 'maya'] as const).map((c) => [c, top(c)]),
     );
-    return new Response(JSON.stringify({ scores }));
+    return new Response(JSON.stringify({ scores, epoch }));
   });
   return {
     fetchImpl: fetchImpl as unknown as typeof fetch,
@@ -74,6 +80,11 @@ function fakeServer() {
     posted,
     setOnline: (v: boolean) => (online = v),
     refuseWith: (status: number | null) => (refuse = status),
+    /** What `npm run scores:reset` does: every run gone, epoch raised. */
+    reset: (next: number) => {
+      runs.length = 0;
+      epoch = next;
+    },
   };
 }
 
@@ -235,5 +246,69 @@ describe('synced high scores', () => {
     repo.hold(false);
     await vi.advanceTimersByTimeAsync(0);
     expect(server.posted).toEqual(['run-roy00001']);
+  });
+});
+
+describe('score resets (epochs)', () => {
+  beforeEach(() => vi.useFakeTimers({ now: NOW }));
+  afterEach(() => vi.useRealTimers());
+
+  it('a device with old records and an unsent run drops them all and shows the fresh scores', async () => {
+    const server = fakeServer();
+    const store = createMemoryStore();
+    // Pre-sync records (never uploaded) plus a synced history and an unsent run.
+    store.set('game:highScores', JSON.stringify({ roy: [{ score: 300, at: NOW - 5000 }] }));
+    const phone = device(server, store);
+    await phone.repo.sync();
+    server.setOnline(false);
+    phone.repo.record('ofek', run(800, 'run-ofek0old'));
+    await phone.repo.sync();
+    expect(loadPending(store).items).toHaveLength(1);
+
+    server.reset(2);
+    server.setOnline(true);
+    const postedBefore = server.posted.length;
+    const after = await phone.repo.sync();
+    expect(after.table).toEqual({});
+    expect(after.pending).toBe(0);
+    expect(loadHighScores(store)).toEqual({});
+    expect(loadPending(store)).toMatchObject({ items: [], migrated: true });
+    expect(loadScoreEpoch(store)).toBe(2);
+    // The queued old run was refused once (409) and nothing old reached the server.
+    expect(server.posted.length - postedBefore).toBe(1);
+    expect(server.runs).toEqual([]);
+    // Later syncs never re-upload anything.
+    await phone.repo.sync();
+    expect(server.posted.length - postedBefore).toBe(1);
+  });
+
+  it('learns the new epoch from the listing even without access, and skips the first upload', async () => {
+    const server = fakeServer();
+    server.reset(2);
+    const store = createMemoryStore();
+    store.set('game:highScores', JSON.stringify({ maya: [{ score: 420, at: NOW - 1000 }] }));
+    const phone = device(server, store);
+    phone.setToken({ error: 'not-joined' });
+    const result = await phone.repo.sync();
+    expect(result).toMatchObject({ table: {}, pending: 0 });
+    expect(loadPending(store)).toMatchObject({ items: [], migrated: true });
+    phone.setToken({ token: 't' });
+    await phone.repo.sync();
+    expect(server.posted).toEqual([]);
+  });
+
+  it('a new score after the reset syncs normally and shows on another phone', async () => {
+    const server = fakeServer();
+    const a = device(server);
+    const b = device(server);
+    a.repo.record('ron', run(500, 'run-ron0old1'));
+    await a.repo.sync();
+    server.reset(2);
+    await a.repo.sync();
+    await b.repo.sync();
+    a.repo.record('ron', run(150, 'run-ron0new1'));
+    expect(await a.repo.sync()).toMatchObject({ state: 'synced', newBest: ['run-ron0new1'] });
+    expect((await b.repo.sync()).table.ron!.map((e) => e.score)).toEqual([150]);
+    expect(server.runs.map((r) => r.runId)).toEqual(['run-ron0new1']);
   });
 });

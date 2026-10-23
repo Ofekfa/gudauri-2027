@@ -29,6 +29,8 @@ export interface Env {
     idFromName(name: string): unknown;
     get(id: unknown): import('./routes/album').AlbumStub;
   };
+  /** The ski-game score epoch (a var in wrangler.toml); raising it resets every score. */
+  SCORE_EPOCH?: string;
   /** Durable Object namespace for the shared ski-game scores (one instance). */
   SCORES?: {
     idFromName(name: string): unknown;

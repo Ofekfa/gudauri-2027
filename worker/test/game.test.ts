@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { HIGH_SCORES_PER_CHARACTER } from '../../src/game/constants';
 import { maxPlausibleScore, type ScoreEntry } from '../../src/game/scores';
-import { memoryScoresDb, submitScore } from '../src/game/logic';
+import { applyEpoch, listScores, memoryScoresDb, submitScore } from '../src/game/logic';
 import type { Env } from '../src/env';
 import { handleRequest } from '../src/index';
 import type { ScoresStub } from '../src/routes/game';
@@ -10,11 +10,10 @@ const ORIGIN = 'https://ofekfa.github.io';
 const CODE = 'khinkali-at-midnight';
 const NOW = Date.parse('2027-02-25T10:00:00Z');
 
-function setup(over: Partial<Env> = {}) {
-  const db = memoryScoresDb();
+function setup(over: Partial<Env> = {}, db = memoryScoresDb()) {
   const stub: ScoresStub = {
-    topAll: async (limit) => db.topAll(limit),
-    submit: async (submission, playedBy) => submitScore(db, submission, playedBy),
+    list: async (limit, epoch) => listScores(db, epoch, limit),
+    submit: async (submission, playedBy, epoch) => submitScore(db, submission, playedBy, epoch),
   };
   const env: Env = {
     AI: { run: vi.fn() },
@@ -200,5 +199,85 @@ describe('POST /game/scores', () => {
     expect(res.status).toBe(204);
     expect(res.headers.get('Access-Control-Allow-Methods')).toContain('POST');
     expect(res.headers.get('Access-Control-Allow-Headers')).toContain('Authorization');
+  });
+});
+
+describe('score epochs (resets)', () => {
+  type Listing = {
+    scores: Record<string, ScoreEntry[]>;
+    epoch: number;
+    runs: Record<string, number>;
+  };
+  const listing = async (call: ReturnType<typeof setup>['call']) =>
+    (await (await call('/game/scores')).json()) as Listing;
+
+  it('GET reports the epoch in force and how many runs each character has', async () => {
+    const { call, session, post, run } = setup({ SCORE_EPOCH: '3' });
+    const token = await session();
+    for (const score of [100, 200, 300, 400, 500, 600]) await post(token, run({ score, epoch: 3 }));
+    const body = await listing(call);
+    expect(body.epoch).toBe(3);
+    expect(body.runs).toEqual({ ofek: 6 });
+    expect(body.scores.ofek).toHaveLength(HIGH_SCORES_PER_CHARACTER);
+  });
+
+  it('defaults to epoch 1 and accepts runs that carry no epoch (older apps)', async () => {
+    const { call, session, post, run } = setup();
+    const token = await session();
+    expect((await post(token, run({ score: 120 }))).status).toBe(201);
+    expect((await listing(call)).epoch).toBe(1);
+  });
+
+  it('raising SCORE_EPOCH deletes every run; old-epoch runs then get 409; new ones sync', async () => {
+    const before = setup();
+    const token = await before.session();
+    await before.post(token, before.run({ score: 900 }));
+    await before.post(token, before.run({ character: 'maya', score: 700 }));
+    // Same store, next deploy with the epoch raised.
+    const after = setup({ SCORE_EPOCH: '2' }, before.db);
+    expect(await listing(after.call)).toEqual({ scores: {}, epoch: 2, runs: {} });
+
+    const old = await after.post(token, after.run({ score: 950 }));
+    expect(old.status).toBe(409);
+    expect(await old.json()).toMatchObject({ epoch: 2 });
+    expect((await after.post(token, after.run({ score: 960, epoch: 1 }))).status).toBe(409);
+
+    const fresh = await after.post(token, after.run({ score: 140, epoch: 2 }));
+    expect(fresh.status).toBe(201);
+    expect(await after.reply(fresh)).toMatchObject({ newBest: true });
+    expect((await listing(after.call)).scores.ofek!.map((e) => e.score)).toEqual([140]);
+    // Going back to a lower epoch never undoes the reset.
+    expect((await listing(setup({ SCORE_EPOCH: '1' }, before.db).call)).epoch).toBe(2);
+  });
+
+  it('logs every run before deleting (a full backup in `wrangler tail`)', () => {
+    const db = memoryScoresDb();
+    applyEpoch(db, 1);
+    submitScore(
+      db,
+      {
+        character: 'roy',
+        score: 300,
+        runId: 'run-0000aaaa',
+        achievedAt: '2027-02-25T10:00:00.000Z',
+      },
+      'roy',
+    );
+    const lines: string[] = [];
+    expect(applyEpoch(db, 2, (l) => lines.push(l))).toBe(2);
+    expect(JSON.parse(lines[0]!)).toMatchObject({
+      event: 'scores-reset',
+      from: 1,
+      to: 2,
+      runs: [{ runId: 'run-0000aaaa', score: 300, character: 'roy' }],
+    });
+    expect(db.allRuns()).toEqual([]);
+  });
+
+  it('rejects a malformed epoch (400)', async () => {
+    const { session, post, run } = setup();
+    const token = await session();
+    for (const epoch of [0, -1, 1.5, 'two'])
+      expect((await post(token, run({ epoch }))).status).toBe(400);
   });
 });
