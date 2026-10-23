@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ENTITY, MAGNET, POWER_UPS, SCORE, SKIER, type EntityKind } from './constants';
+import { DEFAULT_PROFILE, ENTITY, SCORE, SKIER, type EntityKind } from './constants';
 import {
   createGameState,
   powerUpLeft,
@@ -18,9 +18,11 @@ const H = 640;
 const DT = 1 / 120;
 const NONE: GameInput = { left: false, right: false };
 const MAGNET_INDEX = DEFAULT_POWER_UPS.findIndex((d) => d.id === 'magnet');
+const MAGNET_SECONDS = DEFAULT_PROFILE.powerUps.magnet.duration;
+const RADIUS = DEFAULT_PROFILE.magnetRadius;
 
 function playing(defs?: readonly PowerUpDef[]): GameState {
-  const state = createGameState(W, H, defs);
+  const state = createGameState(W, H, defs ? { powerUps: defs } : {});
   startGame(state);
   // No random rows: each test places exactly what it needs.
   state.nextRowAt = Number.POSITIVE_INFINITY;
@@ -54,16 +56,15 @@ describe('power-ups', () => {
     step(state, NONE, DT, Math.random);
     expect(state.poweredUpThisStep).toBe(MAGNET_INDEX);
     expect(state.collectedPowerUps).toBe(1);
-    expect(powerUpLeft(state, 'magnet')).toBeCloseTo(POWER_UPS.magnet.duration, 1);
+    expect(powerUpLeft(state, 'magnet')).toBeCloseTo(MAGNET_SECONDS, 1);
 
     for (let i = 0; i < 120 * 5; i++) step(state, NONE, DT, Math.random);
-    expect(powerUpLeft(state, 'magnet')).toBeCloseTo(POWER_UPS.magnet.duration - 5, 1);
+    expect(powerUpLeft(state, 'magnet')).toBeCloseTo(MAGNET_SECONDS - 5, 1);
     put(state, 0, 'magnet', 0, 0).powerUp = MAGNET_INDEX;
     step(state, NONE, DT, Math.random);
-    expect(powerUpLeft(state, 'magnet')).toBeCloseTo(POWER_UPS.magnet.duration, 1);
+    expect(powerUpLeft(state, 'magnet')).toBeCloseTo(MAGNET_SECONDS, 1);
 
-    for (let i = 0; i < 120 * (POWER_UPS.magnet.duration + 0.1); i++)
-      step(state, NONE, DT, Math.random);
+    for (let i = 0; i < 120 * (MAGNET_SECONDS + 0.1); i++) step(state, NONE, DT, Math.random);
     expect(powerUpLeft(state, 'magnet')).toBe(0);
   });
 
@@ -79,7 +80,7 @@ describe('power-ups', () => {
       spawn: { perSecond: 50, minSeconds: 0, cooldownSeconds: 1 },
       step: () => void ticks++,
     };
-    const state = createGameState(W, H, [dummy]);
+    const state = createGameState(W, H, { powerUps: [dummy] });
     startGame(state);
     const random = createRng(3);
     let spawned: Entity | undefined;
@@ -105,15 +106,15 @@ describe('power-ups', () => {
 describe('magnet', () => {
   const withMagnet = () => {
     const state = playing();
-    state.powerUpTime[MAGNET_INDEX] = POWER_UPS.magnet.duration;
+    state.powerUpTime[MAGNET_INDEX] = MAGNET_SECONDS;
     return state;
   };
 
   it('pulls collectibles inside the radius and leaves those just outside', () => {
     const state = withMagnet();
     // The skier moves ~2 px down per step, so allow for that against the radius.
-    const inside = put(state, 0, 'snowflake', MAGNET.radius - 4, 0);
-    const outside = put(state, 1, 'khachapuri', -(MAGNET.radius + 4), 0);
+    const inside = put(state, 0, 'snowflake', RADIUS - 4, 0);
+    const outside = put(state, 1, 'khachapuri', -(RADIUS + 4), 0);
     step(state, NONE, DT, Math.random);
     expect(inside.pulled).toBe(true);
     expect(outside.pulled).toBe(false);
@@ -123,7 +124,7 @@ describe('magnet', () => {
     for (const [dx, dy] of [
       [120, 60],
       [-90, -100],
-      [0, -140],
+      [0, -120],
     ] as const) {
       const state = withMagnet();
       const item = put(state, 0, 'heart', dx, dy);

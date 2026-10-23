@@ -3,7 +3,7 @@ import { AvatarFace, AvatarSkier } from '../avatars/Avatar';
 import { PageHeader } from '../components/PageHeader';
 import { CHARACTERS } from '../data/characters';
 import { trip, type TravelerId } from '../data/trip';
-import { MAX_LIVES, POWER_UPS, SCORE } from '../game/constants';
+import { DEFAULT_PROFILE, POWER_UPS, SCORE } from '../game/constants';
 import {
   createGameController,
   type ControllerStatus,
@@ -11,9 +11,10 @@ import {
   type GameResult,
 } from '../game/controller';
 import type { SyncResult } from '../game/highScores';
+import { presetFromQuery } from '../game/presets';
 import { gameScores, onScoreSync, startScoreSync } from '../game/scoreSync';
 import { bestOf, MIN_DURATION_MS, type ScoreTable } from '../game/scores';
-import { href } from '../lib/router/hashRouter';
+import { href, parseHashQuery } from '../lib/router/hashRouter';
 import { appStore } from '../lib/storage/safeStorage';
 import { syncSettings } from '../lib/sync/settings';
 
@@ -139,17 +140,18 @@ function CharacterPicker({
           <li>
             <strong>Keyboard:</strong> ← → (or A / D) to steer, Space to start, P or Esc to pause.
           </li>
-          <li>Dodge trees, rocks and flags. You have three lives.</li>
+          <li>Dodge trees, rocks and flags. You have {DEFAULT_PROFILE.lives.start} lives.</li>
           <li>
             Grab khachapuri (+{SCORE.khachapuri}) and snowflakes (+{SCORE.snowflake}). It gets
             faster and busier the further you go!
           </li>
           <li>
-            Catch a ❤️ for an extra life (up to {MAX_LIVES}). They get rarer as the run goes on.
+            Catch a ❤️ for an extra life (up to {DEFAULT_PROFILE.lives.max}). They get rarer as the
+            run goes on.
           </li>
           <li>
             {POWER_UPS.magnet.icon} The magnet pulls nearby khachapuri, snowflakes and hearts to you
-            for {POWER_UPS.magnet.duration} seconds.
+            for {DEFAULT_PROFILE.powerUps.magnet.duration} seconds.
           </li>
         </ul>
       </section>
@@ -184,10 +186,13 @@ function Game({
 
   useEffect(() => {
     let disposed = false;
+    const preset = presetFromQuery(parseHashQuery(window.location.hash));
     createGameController({
       field: fieldRef.current!,
       canvas: canvasRef.current!,
       character,
+      profile: preset.profile,
+      presetLabel: preset.label,
       onStatus: (next, outcome) => {
         // No network during a run: syncing waits until it's over.
         if (next === 'playing') gameScores.hold(true);

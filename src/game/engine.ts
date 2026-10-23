@@ -3,27 +3,24 @@
  * allocates during `step`, so the render loop stays smooth on phones.
  */
 import {
+  DEFAULT_PROFILE,
   DESPAWN_ABOVE,
   ENTITY,
-  HEARTS,
-  INVULNERABLE_SECONDS,
-  LIVES,
   MAGNET,
-  MAX_LIVES,
   METERS_PER_PX,
+  MIN_REACTION_SECONDS,
   OBSTACLE_KINDS,
   PICKUP_CLEARANCE,
   POOL_SIZE,
-  PRESSURE_FULL_SECONDS,
   SCORE,
   SKIER,
   SKIER_Y_RATIO,
   SPAWN,
-  SPEED,
   TRAIL,
+  type DifficultyProfile,
   type EntityKind,
 } from './constants';
-import { DEFAULT_POWER_UPS, type PowerUpDef } from './powerUps';
+import { powerUpsFor, type PowerUpDef } from './powerUps';
 
 export type Random = () => number;
 
@@ -54,6 +51,9 @@ export interface GameInput {
 export interface GameState {
   width: number;
   height: number;
+  profile: DifficultyProfile;
+  /** Top speed on this screen: the profile's, or lower on short screens (reaction-time floor). */
+  speedCap: number;
   status: GameStatus;
   time: number;
   /** Camera position: world y at the top of the view. */
@@ -90,10 +90,20 @@ export interface GameState {
   poweredUpThisStep: number;
 }
 
+export interface GameOptions {
+  profile?: DifficultyProfile;
+  /** Defaults to the profile's power-ups (tests can register their own). */
+  powerUps?: readonly PowerUpDef[];
+}
+
+/** The fastest speed that still shows an obstacle MIN_REACTION_SECONDS before it arrives. */
+export const reactionSpeedCap = (height: number) =>
+  (height * (1 - SKIER_Y_RATIO)) / MIN_REACTION_SECONDS;
+
 export function createGameState(
   width: number,
   height: number,
-  powerUps: readonly PowerUpDef[] = DEFAULT_POWER_UPS,
+  { profile = DEFAULT_PROFILE, powerUps = powerUpsFor(profile) }: GameOptions = {},
 ): GameState {
   const entities: Entity[] = Array.from({ length: POOL_SIZE }, () => ({
     active: false,
@@ -109,13 +119,15 @@ export function createGameState(
   const state: GameState = {
     width,
     height,
+    profile,
+    speedCap: Math.min(profile.speed.max, reactionSpeedCap(height)),
     status: 'ready',
     time: 0,
     distance: 0,
-    speed: SPEED.start,
+    speed: profile.speed.start,
     skierX: width / 2,
     skierVx: 0,
-    lives: LIVES,
+    lives: profile.lives.start,
     invulnerableFor: 0,
     bonus: 0,
     collectedKhachapuri: 0,
@@ -146,10 +158,10 @@ export function resetGame(state: GameState): void {
   state.status = 'ready';
   state.time = 0;
   state.distance = 0;
-  state.speed = SPEED.start;
+  state.speed = startSpeed(state);
   state.skierX = state.width / 2;
   state.skierVx = 0;
-  state.lives = LIVES;
+  state.lives = state.profile.lives.start;
   state.invulnerableFor = 0;
   state.bonus = 0;
   state.collectedKhachapuri = 0;
@@ -174,6 +186,8 @@ export function resetGame(state: GameState): void {
 export function resizeGame(state: GameState, width: number, height: number): void {
   state.width = width;
   state.height = height;
+  state.speedCap = Math.min(state.profile.speed.max, reactionSpeedCap(height));
+  state.speed = Math.min(state.speed, state.speedCap);
   state.skierX = clamp(state.skierX, SKIER.edgeMargin, width - SKIER.edgeMargin);
 }
 
@@ -186,19 +200,34 @@ export function score(state: GameState): number {
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-/** 0 at the start, 1 after PRESSURE_FULL_SECONDS of play: drives density and the heart supply. */
+/** 0 at the start, 1 after `density.fullAfterSeconds` of play: drives density and the heart supply. */
 export function pressure(state: GameState): number {
-  return clamp(state.time / PRESSURE_FULL_SECONDS, 0, 1);
+  return clamp(state.time / state.profile.density.fullAfterSeconds, 0, 1);
+}
+
+const startSpeed = (state: GameState) => Math.min(state.profile.speed.start, state.speedCap);
+
+/** Speed after `dt` more seconds: quick up to cruise, slow after, never past the cap. */
+export function rampSpeed(speed: number, profile: DifficultyProfile, cap: number, dt: number) {
+  const { cruise, earlyRamp, lateRamp } = profile.speed;
+  return Math.min(cap, speed + (speed < cruise ? earlyRamp : lateRamp) * dt);
 }
 
 /** Chance that a row with this spacing (in seconds of travel) carries a heart. */
-export function heartChance(lives: number, pressureLevel: number, rowSeconds: number): number {
-  const missing = clamp((MAX_LIVES - lives) / (MAX_LIVES - 1), 0, 1);
-  return HEARTS.perSecond * rowSeconds * missing * lerp(1, HEARTS.lateFactor, pressureLevel);
+export function heartChance(
+  profile: DifficultyProfile,
+  lives: number,
+  pressureLevel: number,
+  rowSeconds: number,
+): number {
+  const { max } = profile.lives;
+  const missing = clamp((max - lives) / (max - 1), 0, 1);
+  const { perSecond, lateFactor } = profile.hearts;
+  return perSecond * rowSeconds * missing * lerp(1, lateFactor, pressureLevel);
 }
 
 export const rowGap = (state: GameState) =>
-  lerp(SPAWN.rowGapStart, SPAWN.rowGapMin, pressure(state));
+  lerp(state.profile.density.rowGapStart, state.profile.density.rowGapMin, pressure(state));
 
 /** Seconds left on a power-up (0 when inactive). */
 export function powerUpLeft(state: GameState, id: string): number {
@@ -242,7 +271,7 @@ function rollSpecial(state: GameState, random: Random): number {
   const rowSeconds = rowGap(state) / state.speed;
   if (
     state.time >= state.heartReadyAt &&
-    random() < heartChance(state.lives, pressure(state), rowSeconds)
+    random() < heartChance(state.profile, state.lives, pressure(state), rowSeconds)
   )
     return SPECIAL_HEART;
   if (state.time < state.powerUpReadyAt || powerUpOnSlope(state)) return SPECIAL_NONE;
@@ -270,8 +299,9 @@ function place(entity: Entity, kind: EntityKind, x: number, y: number, variant: 
 
 function spawnRow(state: GameState, worldY: number, random: Random): void {
   const p = pressure(state);
-  const maxItems = Math.round(lerp(SPAWN.maxItemsPerRowStart, SPAWN.maxItemsPerRowEnd, p));
-  const collectibleChance = lerp(SPAWN.collectibleChance, SPAWN.collectibleChanceEnd, p);
+  const d = state.profile.density;
+  const maxItems = Math.round(lerp(d.maxItemsPerRowStart, d.maxItemsPerRowEnd, p));
+  const collectibleChance = lerp(d.collectibleChance, d.collectibleChanceEnd, p);
   const count = 1 + Math.floor(random() * maxItems);
   let special = rollSpecial(state, random);
   const minX = SKIER.edgeMargin;
@@ -310,7 +340,8 @@ function spawnRow(state: GameState, worldY: number, random: Random): void {
       if (!entity) return;
       place(entity, kind, x, y, variant);
       if (isSpecial) {
-        if (special === SPECIAL_HEART) state.heartReadyAt = state.time + HEARTS.minGapSeconds;
+        if (special === SPECIAL_HEART)
+          state.heartReadyAt = state.time + state.profile.hearts.minGapSeconds;
         else {
           entity.powerUp = special;
           state.powerUpReadyAt = state.time + state.powerUpDefs[special]!.spawn.cooldownSeconds;
@@ -381,7 +412,7 @@ function collect(state: GameState, kind: EntityKind): void {
     state.collectedSnowflakes++;
   } else if (kind === 'heart') {
     state.collectedHearts++;
-    if (state.lives < MAX_LIVES) {
+    if (state.lives < state.profile.lives.max) {
       state.lives++;
       state.lifeGainedThisStep = true;
     } else {
@@ -403,7 +434,7 @@ export function step(state: GameState, input: GameInput, dt: number, random: Ran
   if (state.status !== 'playing') return;
 
   state.time += dt;
-  state.speed = Math.min(SPEED.max, state.speed + SPEED.rampPerSecond * dt);
+  state.speed = rampSpeed(state.speed, state.profile, state.speedCap, dt);
 
   // Steering with acceleration and friction feels like carving rather than teleporting.
   const steer = (input.right ? 1 : 0) - (input.left ? 1 : 0);
@@ -470,8 +501,8 @@ export function step(state: GameState, input: GameInput, dt: number, random: Ran
     } else if (state.invulnerableFor === 0) {
       state.crashedThisStep = true;
       state.lives--;
-      state.speed = Math.max(SPEED.start, state.speed * SPEED.crashFactor);
-      state.invulnerableFor = INVULNERABLE_SECONDS;
+      state.speed = Math.max(startSpeed(state), state.speed * state.profile.speed.crashFactor);
+      state.invulnerableFor = state.profile.invulnerableSeconds;
       if (state.lives <= 0) {
         state.lives = 0;
         state.status = 'over';

@@ -1,12 +1,22 @@
 /**
- * Power-up registry: tuning comes from `POWER_UPS` in constants, behaviour
- * from here. A new power-up is one tuning entry, one definition below and a
- * sprite for its `kind`.
+ * Power-up registry: presentation comes from `POWER_UPS` in constants,
+ * duration and spawn rates from the difficulty profile, behaviour from here.
+ * A new power-up is one `POWER_UPS` entry, its profile balance, one
+ * behaviour below and a sprite for its `kind`.
  */
-import { ENTITY, MAGNET, POWER_UPS, SKIER, type PowerUpId, type PowerUpTuning } from './constants';
+import {
+  DEFAULT_PROFILE,
+  ENTITY,
+  POWER_UPS,
+  SKIER,
+  type DifficultyProfile,
+  type PowerUpBalance,
+  type PowerUpId,
+  type PowerUpTuning,
+} from './constants';
 import type { GameState } from './engine';
 
-export interface PowerUpDef extends PowerUpTuning {
+export interface PowerUpDef extends PowerUpTuning, PowerUpBalance {
   id: string;
   /** Runs every step while active. */
   step?: (state: GameState, dt: number, skierWorldY: number) => void;
@@ -16,7 +26,7 @@ export interface PowerUpDef extends PowerUpTuning {
 function attract(state: GameState, _dt: number, skierWorldY: number): void {
   const cx = state.skierX;
   const cy = skierWorldY + SKIER.hitbox.offsetY;
-  const r2 = MAGNET.radius * MAGNET.radius;
+  const r2 = state.profile.magnetRadius * state.profile.magnetRadius;
   for (const e of state.entities) {
     if (!e.active || e.pulled || ENTITY[e.kind].role !== 'collectible') continue;
     const dx = cx - e.x;
@@ -37,6 +47,12 @@ const BEHAVIOUR: Record<PowerUpId, Pick<PowerUpDef, 'step'>> = {
   magnet: { step: attract },
 };
 
-export const DEFAULT_POWER_UPS: readonly PowerUpDef[] = (Object.keys(POWER_UPS) as PowerUpId[]).map(
-  (id) => ({ id, ...POWER_UPS[id], ...BEHAVIOUR[id] }),
-);
+export const powerUpsFor = (profile: DifficultyProfile): readonly PowerUpDef[] =>
+  (Object.keys(POWER_UPS) as PowerUpId[]).map((id) => ({
+    id,
+    ...POWER_UPS[id],
+    ...profile.powerUps[id],
+    ...BEHAVIOUR[id],
+  }));
+
+export const DEFAULT_POWER_UPS = powerUpsFor(DEFAULT_PROFILE);

@@ -7,10 +7,10 @@ import {
   FIXED_STEP,
   MAX_DEVICE_PIXEL_RATIO,
   MAX_FIELD_WIDTH,
-  MAX_LIVES,
   MAX_STEPS_PER_FRAME,
   METERS_PER_PX,
   SCORE,
+  type DifficultyProfile,
 } from './constants';
 import { addFloater, clearEffects, createEffects, pulseLives, tickEffects } from './effects';
 import {
@@ -46,6 +46,9 @@ export interface ControllerOptions {
   field: HTMLElement;
   canvas: HTMLCanvasElement;
   character: TravelerId;
+  profile: DifficultyProfile;
+  /** A small HUD label naming a trial preset (only when picked by link). */
+  presetLabel: string | null;
   onStatus: (status: ControllerStatus, result?: GameResult) => void;
 }
 
@@ -59,13 +62,15 @@ export async function createGameController({
   field,
   canvas,
   character,
+  profile,
+  presetLabel,
   onStatus,
 }: ControllerOptions) {
   const dpr = Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO);
   const ctx = canvas.getContext('2d', { alpha: false })!;
   const sprites = createEntitySprites(dpr);
   const skier = await createSkierSprite(character, dpr);
-  const state: GameState = createGameState(1, 1);
+  const state: GameState = createGameState(1, 1, { profile });
   const effects = createEffects();
   const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   // Each run gets its own seed; the engine itself stays deterministic.
@@ -170,7 +175,8 @@ export async function createGameController({
     renderFrame(ctx, state, {
       sprites,
       skier,
-      maxLives: MAX_LIVES,
+      maxLives: profile.lives.max,
+      presetLabel,
       effects,
       reducedMotion: motionQuery.matches,
     });

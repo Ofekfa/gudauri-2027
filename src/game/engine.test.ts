@@ -1,15 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   ENTITY,
-  HEARTS,
-  INVULNERABLE_SECONDS,
-  LIVES,
-  MAX_LIVES,
+  DEFAULT_PROFILE,
   METERS_PER_PX,
   PICKUP_CLEARANCE,
   SCORE,
   SKIER,
-  SPEED,
 } from './constants';
 import {
   createGameState,
@@ -22,6 +18,12 @@ import {
   type GameState,
 } from './engine';
 
+const P = DEFAULT_PROFILE;
+const SPEED = P.speed;
+const HEARTS = P.hearts;
+const LIVES = P.lives.start;
+const MAX_LIVES = P.lives.max;
+const INVULNERABLE_SECONDS = P.invulnerableSeconds;
 const W = 360;
 const H = 640;
 const DT = 1 / 120;
@@ -65,9 +67,10 @@ describe('game engine', () => {
     state.nextRowAt = Number.POSITIVE_INFINITY;
     step(state, NONE, 1, Math.random);
     expect(state.distance).toBeGreaterThan(0);
-    expect(state.speed).toBeCloseTo(SPEED.start + SPEED.rampPerSecond);
+    expect(state.speed).toBeCloseTo(SPEED.start + SPEED.earlyRamp);
     for (let i = 0; i < 1000; i++) step(state, NONE, 1, Math.random);
     expect(state.speed).toBe(SPEED.max);
+    expect(state.speedCap).toBe(SPEED.max);
   });
 
   it('steers with acceleration and stays inside the field', () => {
@@ -162,14 +165,14 @@ describe('game engine', () => {
 
   it('spawns hearts more often with fewer lives, never at the cap, and less as pressure rises', () => {
     const rowSeconds = 0.5;
-    expect(heartChance(1, 0, rowSeconds)).toBeCloseTo(HEARTS.perSecond * rowSeconds);
-    expect(heartChance(1, 0, rowSeconds)).toBeGreaterThan(heartChance(3, 0, rowSeconds));
-    expect(heartChance(4, 0, rowSeconds)).toBeGreaterThan(0);
-    expect(heartChance(MAX_LIVES, 0, rowSeconds)).toBe(0);
-    expect(heartChance(1, 1, rowSeconds)).toBeCloseTo(
-      heartChance(1, 0, rowSeconds) * HEARTS.lateFactor,
+    expect(heartChance(P, 1, 0, rowSeconds)).toBeCloseTo(HEARTS.perSecond * rowSeconds);
+    expect(heartChance(P, 1, 0, rowSeconds)).toBeGreaterThan(heartChance(P, 3, 0, rowSeconds));
+    expect(heartChance(P, 4, 0, rowSeconds)).toBeGreaterThan(0);
+    expect(heartChance(P, MAX_LIVES, 0, rowSeconds)).toBe(0);
+    expect(heartChance(P, 1, 1, rowSeconds)).toBeCloseTo(
+      heartChance(P, 1, 0, rowSeconds) * HEARTS.lateFactor,
     );
-    expect(heartChance(1, 0.5, rowSeconds)).toBeLessThan(heartChance(1, 0, rowSeconds));
+    expect(heartChance(P, 1, 0.5, rowSeconds)).toBeLessThan(heartChance(P, 1, 0, rowSeconds));
   });
 
   it('never places a heart or power-up inside, or just uphill of, an obstacle', () => {

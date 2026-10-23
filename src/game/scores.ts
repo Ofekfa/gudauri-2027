@@ -8,9 +8,10 @@ import {
   HIGH_SCORES_PER_CHARACTER,
   METERS_PER_PX,
   POWER_UPS,
+  PRESETS,
   SCORE,
   SPAWN,
-  SPEED,
+  type DifficultyProfile,
 } from './constants';
 
 export interface ScoreEntry {
@@ -70,12 +71,21 @@ export function mergeTables(a: ScoreTable, b: ScoreTable): ScoreTable {
 
 export const bestOf = (table: ScoreTable, id: TravelerId): number => table[id]?.[0]?.score ?? 0;
 
-/** The furthest anyone can ski in `seconds` (full speed ramp, never crashing). */
-export function maxDistancePx(seconds: number): number {
-  const rampSeconds = (SPEED.max - SPEED.start) / SPEED.rampPerSecond;
-  const ramp = Math.min(seconds, rampSeconds);
-  const ramped = SPEED.start * ramp + (SPEED.rampPerSecond * ramp * ramp) / 2;
-  return ramped + SPEED.max * Math.max(0, seconds - rampSeconds);
+/** The furthest anyone can ski in `seconds` (full speed ramp, never crashing, uncapped screen). */
+export function maxDistancePx(profile: DifficultyProfile, seconds: number): number {
+  const { start, cruise, max, earlyRamp, lateRamp } = profile.speed;
+  let distance = 0;
+  let left = seconds;
+  // Each phase: accelerate from `from` toward `to` at `ramp` for up to the time left.
+  for (const [from, to, ramp] of [
+    [start, Math.min(cruise, max), earlyRamp],
+    [Math.min(cruise, max), max, lateRamp],
+  ] as const) {
+    const t = Math.min(left, Math.max(0, (to - from) / ramp));
+    distance += from * t + (ramp * t * t) / 2;
+    left -= t;
+  }
+  return distance + max * Math.max(0, left);
 }
 
 /** The most points any single slope item can give (a heart at full lives scores too). */
@@ -86,18 +96,29 @@ const MAX_MULTIPLIER = Object.values(POWER_UPS).reduce(
   1,
 );
 
+/** Profiles a submitted run may have been played with (every trial preset while they exist). */
+const SCORING_PROFILES: readonly DifficultyProfile[] = Object.values(PRESETS);
+
 /**
  * An upper bound on a run's score: every metre at top speed, plus the best
  * item in every slot of every row that could have scrolled past, at the
- * highest multiplier. The magnet only gathers items that spawned anyway.
+ * highest multiplier, under the most generous profile. The magnet only
+ * gathers items that spawned anyway.
  */
-export function maxPlausibleScore(seconds: number): number {
-  const distancePx = maxDistancePx(seconds);
-  const meters = distancePx * METERS_PER_PX * SCORE.perMeter;
-  const rows =
-    (distancePx + SCREEN_ALLOWANCE_PX) / (SPAWN.rowGapMin * (1 - SPAWN.rowGapJitter)) + 1;
-  const bonus = rows * SPAWN.maxItemsPerRowEnd * MAX_ITEM_POINTS * MAX_MULTIPLIER;
-  return Math.ceil((meters + bonus) * PLAUSIBILITY_SLACK);
+export function maxPlausibleScore(
+  seconds: number,
+  profiles: readonly DifficultyProfile[] = SCORING_PROFILES,
+): number {
+  let bound = 0;
+  for (const profile of profiles) {
+    const distancePx = maxDistancePx(profile, seconds);
+    const meters = distancePx * METERS_PER_PX * SCORE.perMeter;
+    const rowGap = profile.density.rowGapMin * (1 - SPAWN.rowGapJitter);
+    const rows = (distancePx + SCREEN_ALLOWANCE_PX) / rowGap + 1;
+    const bonus = rows * profile.density.maxItemsPerRowEnd * MAX_ITEM_POINTS * MAX_MULTIPLIER;
+    bound = Math.max(bound, Math.ceil((meters + bonus) * PLAUSIBILITY_SLACK));
+  }
+  return bound;
 }
 
 export interface ScoreSubmission {

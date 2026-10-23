@@ -1,4 +1,4 @@
-import { ENTITY, KMH_PER_MPS, MAGNET, METERS_PER_PX, SKIER, TRAIL } from './constants';
+import { ENTITY, KMH_PER_MPS, METERS_PER_PX, SKIER, TRAIL } from './constants';
 import { FLOATER_SECONDS, LIVES_PULSE_SECONDS, type Effects } from './effects';
 import { score, skierScreenY, type GameState } from './engine';
 import type { EntitySprites, Sprite } from './sprites';
@@ -39,6 +39,7 @@ export interface RenderOptions {
   sprites: EntitySprites;
   skier: Sprite;
   maxLives: number;
+  presetLabel: string | null;
   effects: Effects;
   reducedMotion: boolean;
 }
@@ -107,7 +108,7 @@ function drawSkier(
 function drawMagnetField(ctx: CanvasRenderingContext2D, state: GameState, reducedMotion: boolean) {
   if (!magnetActive(state)) return;
   const breath = reducedMotion ? 0 : Math.sin(state.time * Math.PI * 2 * RING_BREATH_HZ);
-  const r = MAGNET.radius * (1 + RING_BREATH * breath);
+  const r = state.profile.magnetRadius * (1 + RING_BREATH * breath);
   const cy = skierScreenY(state) + SKIER.hitbox.offsetY;
   ctx.beginPath();
   ctx.arc(state.skierX, cy, r, 0, Math.PI * 2);
@@ -142,6 +143,7 @@ function drawHud(ctx: CanvasRenderingContext2D, state: GameState, opts: RenderOp
   ctx.font = HUD_SMALL_FONT;
   const kmh = Math.round(state.speed * METERS_PER_PX * KMH_PER_MPS);
   haloText(ctx, `${kmh} km/h`, HUD_PADDING, HUD_PADDING + 24);
+  if (opts.presetLabel) haloText(ctx, `Preset: ${opts.presetLabel}`, HUD_PADDING, HUD_PADDING + 42);
 
   // Lives as hearts, top-right (left of the DOM pause button).
   ctx.font = HUD_FONT;
