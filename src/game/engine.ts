@@ -5,11 +5,16 @@
 import {
   DESPAWN_ABOVE,
   ENTITY,
+  HEARTS,
   INVULNERABLE_SECONDS,
   LIVES,
+  MAGNET,
+  MAX_LIVES,
   METERS_PER_PX,
   OBSTACLE_KINDS,
+  PICKUP_CLEARANCE,
   POOL_SIZE,
+  PRESSURE_FULL_SECONDS,
   SCORE,
   SKIER,
   SKIER_Y_RATIO,
@@ -18,6 +23,7 @@ import {
   TRAIL,
   type EntityKind,
 } from './constants';
+import { DEFAULT_POWER_UPS, type PowerUpDef } from './powerUps';
 
 export type Random = () => number;
 
@@ -30,6 +36,12 @@ export interface Entity {
   y: number;
   /** Variation index for drawing (e.g. flag colour). */
   variant: number;
+  /** Caught by the magnet: flies toward the skier with this world velocity. */
+  pulled: boolean;
+  vx: number;
+  vy: number;
+  /** Index into the power-up registry, for power-up items. */
+  powerUp: number;
 }
 
 export type GameStatus = 'ready' | 'playing' | 'over';
@@ -54,6 +66,14 @@ export interface GameState {
   bonus: number;
   collectedKhachapuri: number;
   collectedSnowflakes: number;
+  collectedHearts: number;
+  collectedPowerUps: number;
+  /** Earliest play time for the next heart / power-up to spawn. */
+  heartReadyAt: number;
+  powerUpReadyAt: number;
+  powerUpDefs: readonly PowerUpDef[];
+  /** Seconds left per power-up (same order as `powerUpDefs`); 0 = inactive. */
+  powerUpTime: Float64Array;
   nextRowAt: number;
   entities: Entity[];
   /** Ski-track ring buffer: x and world-y pairs. */
@@ -64,15 +84,27 @@ export interface GameState {
   /** Set during a step so the UI can react (sound, vibration, announcements). */
   crashedThisStep: boolean;
   collectedThisStep: EntityKind | null;
+  /** A heart added a life this step (false when it scored at the cap instead). */
+  lifeGainedThisStep: boolean;
+  /** Index of the power-up picked up this step, or -1. */
+  poweredUpThisStep: number;
 }
 
-export function createGameState(width: number, height: number): GameState {
+export function createGameState(
+  width: number,
+  height: number,
+  powerUps: readonly PowerUpDef[] = DEFAULT_POWER_UPS,
+): GameState {
   const entities: Entity[] = Array.from({ length: POOL_SIZE }, () => ({
     active: false,
     kind: 'tree',
     x: 0,
     y: 0,
     variant: 0,
+    pulled: false,
+    vx: 0,
+    vy: 0,
+    powerUp: -1,
   }));
   const state: GameState = {
     width,
@@ -88,6 +120,12 @@ export function createGameState(width: number, height: number): GameState {
     bonus: 0,
     collectedKhachapuri: 0,
     collectedSnowflakes: 0,
+    collectedHearts: 0,
+    collectedPowerUps: 0,
+    heartReadyAt: 0,
+    powerUpReadyAt: 0,
+    powerUpDefs: powerUps,
+    powerUpTime: new Float64Array(powerUps.length),
     nextRowAt: 0,
     entities,
     trail: new Float32Array(TRAIL.length * 2),
@@ -96,6 +134,8 @@ export function createGameState(width: number, height: number): GameState {
     nextTrailAt: 0,
     crashedThisStep: false,
     collectedThisStep: null,
+    lifeGainedThisStep: false,
+    poweredUpThisStep: -1,
   };
   resetGame(state);
   return state;
@@ -114,6 +154,11 @@ export function resetGame(state: GameState): void {
   state.bonus = 0;
   state.collectedKhachapuri = 0;
   state.collectedSnowflakes = 0;
+  state.collectedHearts = 0;
+  state.collectedPowerUps = 0;
+  state.heartReadyAt = 0;
+  state.powerUpReadyAt = 0;
+  state.powerUpTime.fill(0);
   // First row appears just below the view, leaving a clear run-in.
   state.nextRowAt = state.height + SPAWN.belowView;
   for (const e of state.entities) e.active = false;
@@ -122,6 +167,8 @@ export function resetGame(state: GameState): void {
   state.nextTrailAt = 0;
   state.crashedThisStep = false;
   state.collectedThisStep = null;
+  state.lifeGainedThisStep = false;
+  state.poweredUpThisStep = -1;
 }
 
 export function resizeGame(state: GameState, width: number, height: number): void {
@@ -136,23 +183,97 @@ export function score(state: GameState): number {
   return Math.floor(state.distance * METERS_PER_PX) * SCORE.perMeter + state.bonus;
 }
 
-/** 0 at the start, 1 once the speed cap is reached. */
-export function difficulty(state: GameState): number {
-  return (state.speed - SPEED.start) / (SPEED.max - SPEED.start);
-}
-
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+/** 0 at the start, 1 after PRESSURE_FULL_SECONDS of play: drives density and the heart supply. */
+export function pressure(state: GameState): number {
+  return clamp(state.time / PRESSURE_FULL_SECONDS, 0, 1);
+}
+
+/** Chance that a row with this spacing (in seconds of travel) carries a heart. */
+export function heartChance(lives: number, pressureLevel: number, rowSeconds: number): number {
+  const missing = clamp((MAX_LIVES - lives) / (MAX_LIVES - 1), 0, 1);
+  return HEARTS.perSecond * rowSeconds * missing * lerp(1, HEARTS.lateFactor, pressureLevel);
+}
+
+export const rowGap = (state: GameState) =>
+  lerp(SPAWN.rowGapStart, SPAWN.rowGapMin, pressure(state));
+
+/** Seconds left on a power-up (0 when inactive). */
+export function powerUpLeft(state: GameState, id: string): number {
+  for (let i = 0; i < state.powerUpDefs.length; i++)
+    if (state.powerUpDefs[i]!.id === id) return state.powerUpTime[i]!;
+  return 0;
+}
+
+function pointsMultiplier(state: GameState): number {
+  let m = 1;
+  for (let i = 0; i < state.powerUpDefs.length; i++)
+    if (state.powerUpTime[i]! > 0) m *= state.powerUpDefs[i]!.scoreMultiplier ?? 1;
+  return m;
+}
+
+const needsClearance = (e: Entity) => e.kind === 'heart' || ENTITY[e.kind].role === 'powerup';
 
 function acquire(state: GameState): Entity | null {
   for (const e of state.entities) if (!e.active) return e;
   return null;
 }
 
+/** No active entity of the other group (obstacles vs hearts/power-ups) near this spot. */
+function clearSpot(state: GameState, x: number, y: number, pickup: boolean): boolean {
+  for (const e of state.entities) {
+    if (!e.active) continue;
+    const other = pickup ? ENTITY[e.kind].role === 'obstacle' : needsClearance(e);
+    if (other && Math.abs(e.x - x) < PICKUP_CLEARANCE.x && Math.abs(e.y - y) < PICKUP_CLEARANCE.y)
+      return false;
+  }
+  return true;
+}
+
+function powerUpOnSlope(state: GameState): boolean {
+  for (const e of state.entities) if (e.active && e.powerUp >= 0) return true;
+  return false;
+}
+
+/** Picks the row's special item (a heart or a power-up), if any: kind, power-up index. */
+function rollSpecial(state: GameState, random: Random): number {
+  const rowSeconds = rowGap(state) / state.speed;
+  if (
+    state.time >= state.heartReadyAt &&
+    random() < heartChance(state.lives, pressure(state), rowSeconds)
+  )
+    return SPECIAL_HEART;
+  if (state.time < state.powerUpReadyAt || powerUpOnSlope(state)) return SPECIAL_NONE;
+  for (let i = 0; i < state.powerUpDefs.length; i++) {
+    const spawn = state.powerUpDefs[i]!.spawn;
+    if (state.time >= spawn.minSeconds && random() < spawn.perSecond * rowSeconds) return i;
+  }
+  return SPECIAL_NONE;
+}
+
+const SPECIAL_NONE = -1;
+const SPECIAL_HEART = -2;
+
+function place(entity: Entity, kind: EntityKind, x: number, y: number, variant: number) {
+  entity.active = true;
+  entity.kind = kind;
+  entity.x = x;
+  entity.y = y;
+  entity.variant = variant;
+  entity.pulled = false;
+  entity.vx = 0;
+  entity.vy = 0;
+  entity.powerUp = -1;
+}
+
 function spawnRow(state: GameState, worldY: number, random: Random): void {
-  const d = clamp(difficulty(state), 0, 1);
-  const maxItems = Math.round(lerp(SPAWN.maxItemsPerRowStart, SPAWN.maxItemsPerRowEnd, d));
+  const p = pressure(state);
+  const maxItems = Math.round(lerp(SPAWN.maxItemsPerRowStart, SPAWN.maxItemsPerRowEnd, p));
+  const collectibleChance = lerp(SPAWN.collectibleChance, SPAWN.collectibleChanceEnd, p);
   const count = 1 + Math.floor(random() * maxItems);
+  let special = rollSpecial(state, random);
   const minX = SKIER.edgeMargin;
   const maxX = state.width - SKIER.edgeMargin;
   // Positions placed in this row (at most maxItemsPerRowEnd), tracked without allocating.
@@ -171,18 +292,31 @@ function spawnRow(state: GameState, worldY: number, random: Random): void {
         Math.abs(x - placed2) < SPAWN.minSpacing ||
         Math.abs(x - placed3) < SPAWN.minSpacing;
       if (tooClose) continue;
+      const y = worldY + (random() - 0.5) * SPAWN.minSpacing * 0.5;
+      const variant = Math.floor(random() * 2);
+      // The first slot carries the row's heart or power-up, away from every obstacle.
+      const isSpecial = i === 0 && special !== SPECIAL_NONE;
+      let kind: EntityKind;
+      if (isSpecial) {
+        if (!clearSpot(state, x, y, true)) continue;
+        kind = special === SPECIAL_HEART ? 'heart' : state.powerUpDefs[special]!.kind;
+      } else if (random() < collectibleChance) {
+        kind = random() < SPAWN.khachapuriShare ? 'khachapuri' : 'snowflake';
+      } else {
+        kind = OBSTACLE_KINDS[Math.floor(random() * OBSTACLE_KINDS.length)]!;
+        if (!clearSpot(state, x, y, false)) continue;
+      }
       const entity = acquire(state);
       if (!entity) return;
-      const collectible = random() < SPAWN.collectibleChance;
-      entity.active = true;
-      entity.x = x;
-      entity.y = worldY + (random() - 0.5) * SPAWN.minSpacing * 0.5;
-      entity.variant = Math.floor(random() * 2);
-      entity.kind = collectible
-        ? random() < SPAWN.khachapuriShare
-          ? 'khachapuri'
-          : 'snowflake'
-        : OBSTACLE_KINDS[Math.floor(random() * OBSTACLE_KINDS.length)]!;
+      place(entity, kind, x, y, variant);
+      if (isSpecial) {
+        if (special === SPECIAL_HEART) state.heartReadyAt = state.time + HEARTS.minGapSeconds;
+        else {
+          entity.powerUp = special;
+          state.powerUpReadyAt = state.time + state.powerUpDefs[special]!.spawn.cooldownSeconds;
+        }
+        special = SPECIAL_NONE;
+      }
       if (placedCount === 0) placed0 = x;
       else if (placedCount === 1) placed1 = x;
       else if (placedCount === 2) placed2 = x;
@@ -190,6 +324,38 @@ function spawnRow(state: GameState, worldY: number, random: Random): void {
       placedCount++;
       break;
     }
+    // A special that found no clear spot is dropped rather than squeezed in.
+    if (i === 0) special = SPECIAL_NONE;
+  }
+}
+
+/** Magnet-caught collectibles steer toward the skier (velocity relative to the skier, capped). */
+function movePulled(state: GameState, dt: number, skierWorldY: number): void {
+  const cx = state.skierX;
+  const cy = skierWorldY + SKIER.hitbox.offsetY;
+  const maxDv = MAGNET.acceleration * dt;
+  for (const e of state.entities) {
+    if (!e.active || !e.pulled) continue;
+    const dx = cx - e.x;
+    const dy = cy - e.y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    // Close enough to arrive this step: land on the skier (collected below).
+    if (d <= MAGNET.maxSpeed * dt) {
+      e.x = cx;
+      e.y = cy;
+      continue;
+    }
+    let ax = state.skierVx + (dx / d) * MAGNET.maxSpeed - e.vx;
+    let ay = state.speed + (dy / d) * MAGNET.maxSpeed - e.vy;
+    const a = Math.sqrt(ax * ax + ay * ay);
+    if (a > maxDv) {
+      ax *= maxDv / a;
+      ay *= maxDv / a;
+    }
+    e.vx += ax;
+    e.vy += ay;
+    e.x += e.vx * dt;
+    e.y += e.vy * dt;
   }
 }
 
@@ -205,7 +371,24 @@ function overlaps(state: GameState, e: Entity, skierWorldY: number): boolean {
   );
 }
 
-const isCollectible = (kind: EntityKind) => kind === 'khachapuri' || kind === 'snowflake';
+function collect(state: GameState, kind: EntityKind): void {
+  const multiplier = pointsMultiplier(state);
+  if (kind === 'khachapuri') {
+    state.bonus += SCORE.khachapuri * multiplier;
+    state.collectedKhachapuri++;
+  } else if (kind === 'snowflake') {
+    state.bonus += SCORE.snowflake * multiplier;
+    state.collectedSnowflakes++;
+  } else if (kind === 'heart') {
+    state.collectedHearts++;
+    if (state.lives < MAX_LIVES) {
+      state.lives++;
+      state.lifeGainedThisStep = true;
+    } else {
+      state.bonus += SCORE.heartAtCap * multiplier;
+    }
+  }
+}
 
 export function startGame(state: GameState): void {
   if (state.status === 'over') resetGame(state);
@@ -215,6 +398,8 @@ export function startGame(state: GameState): void {
 export function step(state: GameState, input: GameInput, dt: number, random: Random): void {
   state.crashedThisStep = false;
   state.collectedThisStep = null;
+  state.lifeGainedThisStep = false;
+  state.poweredUpThisStep = -1;
   if (state.status !== 'playing') return;
 
   state.time += dt;
@@ -250,11 +435,17 @@ export function step(state: GameState, input: GameInput, dt: number, random: Ran
   const spawnHorizon = state.distance + state.height + SPAWN.belowView;
   while (state.nextRowAt < spawnHorizon) {
     spawnRow(state, state.nextRowAt, random);
-    const gap = lerp(SPAWN.rowGapStart, SPAWN.rowGapMin, clamp(difficulty(state), 0, 1));
-    state.nextRowAt += gap * (1 + (random() * 2 - 1) * SPAWN.rowGapJitter);
+    state.nextRowAt += rowGap(state) * (1 + (random() * 2 - 1) * SPAWN.rowGapJitter);
   }
 
   if (state.invulnerableFor > 0) state.invulnerableFor = Math.max(0, state.invulnerableFor - dt);
+
+  for (let i = 0; i < state.powerUpDefs.length; i++) {
+    if (state.powerUpTime[i]! <= 0) continue;
+    state.powerUpDefs[i]!.step?.(state, dt, skierWorldY);
+    state.powerUpTime[i] = Math.max(0, state.powerUpTime[i]! - dt);
+  }
+  movePulled(state, dt, skierWorldY);
 
   for (const e of state.entities) {
     if (!e.active) continue;
@@ -263,16 +454,19 @@ export function step(state: GameState, input: GameInput, dt: number, random: Ran
       continue;
     }
     if (!overlaps(state, e, skierWorldY)) continue;
-    if (isCollectible(e.kind)) {
+    const role = ENTITY[e.kind].role;
+    if (role === 'collectible') {
       e.active = false;
       state.collectedThisStep = e.kind;
-      if (e.kind === 'khachapuri') {
-        state.bonus += SCORE.khachapuri;
-        state.collectedKhachapuri++;
-      } else {
-        state.bonus += SCORE.snowflake;
-        state.collectedSnowflakes++;
-      }
+      collect(state, e.kind);
+    } else if (role === 'powerup') {
+      e.active = false;
+      const def = state.powerUpDefs[e.powerUp];
+      if (!def) continue;
+      // Picking one up while it's active refreshes it to the full duration.
+      state.powerUpTime[e.powerUp] = def.duration;
+      state.poweredUpThisStep = e.powerUp;
+      state.collectedPowerUps++;
     } else if (state.invulnerableFor === 0) {
       state.crashedThisStep = true;
       state.lives--;

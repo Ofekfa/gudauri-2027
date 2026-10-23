@@ -4,7 +4,14 @@
  * game constants, so the bound always follows the real tuning.
  */
 import { trip, type TravelerId } from '../data/trip';
-import { HIGH_SCORES_PER_CHARACTER, METERS_PER_PX, SCORE, SPAWN, SPEED } from './constants';
+import {
+  HIGH_SCORES_PER_CHARACTER,
+  METERS_PER_PX,
+  POWER_UPS,
+  SCORE,
+  SPAWN,
+  SPEED,
+} from './constants';
 
 export interface ScoreEntry {
   score: number;
@@ -71,16 +78,25 @@ export function maxDistancePx(seconds: number): number {
   return ramped + SPEED.max * Math.max(0, seconds - rampSeconds);
 }
 
+/** The most points any single slope item can give (a heart at full lives scores too). */
+const MAX_ITEM_POINTS = Math.max(SCORE.khachapuri, SCORE.snowflake, SCORE.heartAtCap);
+/** The biggest points multiplier any power-up gives. */
+const MAX_MULTIPLIER = Object.values(POWER_UPS).reduce(
+  (m, p) => Math.max(m, p.scoreMultiplier ?? 1),
+  1,
+);
+
 /**
  * An upper bound on a run's score: every metre at top speed, plus the best
- * collectible in every slot of every row that could have scrolled past.
+ * item in every slot of every row that could have scrolled past, at the
+ * highest multiplier. The magnet only gathers items that spawned anyway.
  */
 export function maxPlausibleScore(seconds: number): number {
   const distancePx = maxDistancePx(seconds);
   const meters = distancePx * METERS_PER_PX * SCORE.perMeter;
   const rows =
     (distancePx + SCREEN_ALLOWANCE_PX) / (SPAWN.rowGapMin * (1 - SPAWN.rowGapJitter)) + 1;
-  const bonus = rows * SPAWN.maxItemsPerRowEnd * Math.max(SCORE.khachapuri, SCORE.snowflake);
+  const bonus = rows * SPAWN.maxItemsPerRowEnd * MAX_ITEM_POINTS * MAX_MULTIPLIER;
   return Math.ceil((meters + bonus) * PLAUSIBILITY_SLACK);
 }
 

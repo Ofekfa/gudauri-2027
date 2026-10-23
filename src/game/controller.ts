@@ -5,22 +5,27 @@
 import type { TravelerId } from '../data/trip';
 import {
   FIXED_STEP,
-  LIVES,
   MAX_DEVICE_PIXEL_RATIO,
   MAX_FIELD_WIDTH,
+  MAX_LIVES,
   MAX_STEPS_PER_FRAME,
   METERS_PER_PX,
+  SCORE,
 } from './constants';
+import { addFloater, clearEffects, createEffects, pulseLives, tickEffects } from './effects';
 import {
   createGameState,
   resetGame,
   resizeGame,
   score,
+  skierScreenY,
   startGame,
   step,
   type GameState,
+  type Random,
 } from './engine';
 import { createInput } from './input';
+import { createRng, randomSeed } from './random';
 import { renderFrame } from './render';
 import { createEntitySprites, createSkierSprite } from './sprites';
 
@@ -31,6 +36,8 @@ export interface GameResult {
   meters: number;
   khachapuri: number;
   snowflakes: number;
+  hearts: number;
+  powerUps: number;
   /** Play time, pauses excluded (simulation time). */
   seconds: number;
 }
@@ -45,6 +52,8 @@ export interface ControllerOptions {
 /** Long frames (tab switches, GC pauses) are capped so the skier doesn't teleport. */
 const MAX_FRAME_SECONDS = 0.25;
 const CRASH_VIBRATION_MS = 60;
+/** Floating text appears this far above the skier. */
+const FLOATER_OFFSET_Y = 34;
 
 export async function createGameController({
   field,
@@ -57,6 +66,10 @@ export async function createGameController({
   const sprites = createEntitySprites(dpr);
   const skier = await createSkierSprite(character, dpr);
   const state: GameState = createGameState(1, 1);
+  const effects = createEffects();
+  const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  // Each run gets its own seed; the engine itself stays deterministic.
+  let random: Random = createRng(randomSeed());
   let status: ControllerStatus = 'ready';
   let frame = 0;
   let last = 0;
@@ -71,6 +84,8 @@ export async function createGameController({
         meters: Math.floor(state.distance * METERS_PER_PX),
         khachapuri: state.collectedKhachapuri,
         snowflakes: state.collectedSnowflakes,
+        hearts: state.collectedHearts,
+        powerUps: state.collectedPowerUps,
         seconds: state.time,
       });
     } else {
@@ -106,6 +121,8 @@ export async function createGameController({
   };
   const start = () => {
     if (status === 'ready' || status === 'over') {
+      random = createRng(randomSeed());
+      clearEffects(effects);
       startGame(state);
       last = performance.now();
       accumulator = 0;
@@ -137,19 +154,44 @@ export async function createGameController({
       accumulator += Math.min((now - last) / 1000, MAX_FRAME_SECONDS);
       let steps = 0;
       while (accumulator >= FIXED_STEP && steps < MAX_STEPS_PER_FRAME) {
-        step(state, input.state, FIXED_STEP, Math.random);
+        step(state, input.state, FIXED_STEP, random);
         accumulator -= FIXED_STEP;
         steps++;
-        if (state.crashedThisStep) navigator.vibrate?.(CRASH_VIBRATION_MS);
+        react();
         if (state.status === 'over') {
           setStatus('over');
           break;
         }
       }
       if (steps === MAX_STEPS_PER_FRAME) accumulator = 0;
+      tickEffects(effects, Math.min((now - last) / 1000, MAX_FRAME_SECONDS));
     }
     last = now;
-    renderFrame(ctx, state, { sprites, skier, maxLives: LIVES });
+    renderFrame(ctx, state, {
+      sprites,
+      skier,
+      maxLives: MAX_LIVES,
+      effects,
+      reducedMotion: motionQuery.matches,
+    });
+  };
+
+  /** Turns this step's events into feedback (vibration, floating text, HUD pulse). */
+  const react = () => {
+    const x = state.skierX;
+    const y = skierScreenY(state) - FLOATER_OFFSET_Y;
+    if (state.crashedThisStep) {
+      navigator.vibrate?.(CRASH_VIBRATION_MS);
+      pulseLives(effects, state.lives);
+    }
+    if (state.lifeGainedThisStep) {
+      addFloater(effects, '+1 ❤️', x, y);
+      pulseLives(effects, state.lives - 1);
+    } else if (state.collectedThisStep === 'heart') {
+      addFloater(effects, `+${SCORE.heartAtCap}`, x, y);
+    }
+    const def = state.powerUpDefs[state.poweredUpThisStep];
+    if (def) addFloater(effects, `${def.icon} ${def.label}!`, x, y);
   };
 
   const onVisibility = () => {

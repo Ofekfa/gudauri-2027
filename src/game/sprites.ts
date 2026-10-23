@@ -30,6 +30,12 @@ const COLORS = {
   cheese: '#ffe08a',
   yolk: '#ffb703',
   flake: '#3d8bfd',
+  heart: '#e63946',
+  heartDark: '#b3202c',
+  magnet: '#d62839',
+  magnetDark: '#9e1b29',
+  steel: '#c9d3de',
+  steelDark: '#8794a3',
 } as const;
 
 function makeSprite(
@@ -199,7 +205,78 @@ function drawSnowflake(ctx: CanvasRenderingContext2D, w: number, h: number) {
   }
 }
 
-/** Obstacles and collectibles; `variant` picks e.g. the flag colour. */
+function heartPath(ctx: CanvasRenderingContext2D, cx: number, top: number, w: number, h: number) {
+  ctx.beginPath();
+  ctx.moveTo(cx, top + h * 0.28);
+  ctx.bezierCurveTo(cx, top, cx - w / 2, top, cx - w / 2, top + h * 0.32);
+  ctx.bezierCurveTo(cx - w / 2, top + h * 0.6, cx - w * 0.12, top + h * 0.78, cx, top + h);
+  ctx.bezierCurveTo(
+    cx + w * 0.12,
+    top + h * 0.78,
+    cx + w / 2,
+    top + h * 0.6,
+    cx + w / 2,
+    top + h * 0.32,
+  );
+  ctx.bezierCurveTo(cx + w / 2, top, cx, top, cx, top + h * 0.28);
+  ctx.closePath();
+}
+
+function drawHeart(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  shadow(ctx, w / 2, h - 2, w * 0.3, 2.5);
+  // A white rim keeps it readable against snow and trees alike.
+  ctx.fillStyle = COLORS.snow;
+  heartPath(ctx, w / 2, 0.5, w - 1, h - 3);
+  ctx.fill();
+  ctx.fillStyle = COLORS.heartDark;
+  heartPath(ctx, w / 2, 2, w - 5, h - 6.5);
+  ctx.fill();
+  ctx.fillStyle = COLORS.heart;
+  heartPath(ctx, w / 2, 2.5, w - 8, h - 9);
+  ctx.fill();
+  ctx.fillStyle = COLORS.snow;
+  ctx.beginPath();
+  ctx.ellipse(w * 0.33, h * 0.3, 2.6, 1.8, -0.6, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawMagnet(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  shadow(ctx, w / 2, h - 2, w * 0.32, 2.5);
+  const cx = w / 2;
+  const cy = h * 0.42;
+  const r = w * 0.3;
+  const arm = h * 0.36;
+  const thick = w * 0.2;
+  // Horseshoe: white outline, dark edge, red body, steel tips.
+  ctx.lineCap = 'butt';
+  for (const [color, width] of [
+    [COLORS.snow, thick + 4],
+    [COLORS.magnetDark, thick + 1.5],
+    [COLORS.magnet, thick - 1],
+  ] as const) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(cx - r, cy + arm);
+    ctx.lineTo(cx - r, cy);
+    ctx.arc(cx, cy, r, Math.PI, 0);
+    ctx.lineTo(cx + r, cy + arm);
+    ctx.stroke();
+  }
+  const tip = arm * 0.42;
+  for (const x of [cx - r, cx + r]) {
+    ctx.fillStyle = COLORS.steelDark;
+    ctx.fillRect(x - thick / 2 - 0.75, cy + arm - tip, thick + 1.5, tip + 0.5);
+    ctx.fillStyle = COLORS.steel;
+    ctx.fillRect(x - thick / 2 + 0.5, cy + arm - tip + 0.5, thick - 1, tip - 1);
+  }
+  ctx.fillStyle = COLORS.snow;
+  ctx.beginPath();
+  ctx.arc(cx - r * 0.55, cy - r * 0.7, 1.6, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** Obstacles, collectibles and power-ups; `variant` picks e.g. the flag colour. */
 export type EntitySprites = Record<EntityKind, Sprite[]>;
 
 export function createEntitySprites(dpr: number): EntitySprites {
@@ -217,6 +294,8 @@ export function createEntitySprites(dpr: number): EntitySprites {
     snowflake: [
       makeSprite(...size('snowflake'), dpr, (c) => drawSnowflake(c, ...size('snowflake'))),
     ],
+    heart: [makeSprite(...size('heart'), dpr, (c) => drawHeart(c, ...size('heart')))],
+    magnet: [makeSprite(...size('magnet'), dpr, (c) => drawMagnet(c, ...size('magnet')))],
   };
 }
 
