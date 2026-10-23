@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { botInput } from './bot';
-import { HIGH_SCORES_PER_CHARACTER, LIVES, MAX_LIVES } from './constants';
+import { DEFAULT_PROFILE, HIGH_SCORES_PER_CHARACTER, PRESETS } from './constants';
 import { createGameState, score, startGame, step, type GameInput } from './engine';
 import { createRng } from './random';
 import {
@@ -88,7 +88,7 @@ describe('plausibility', () => {
           input = { left: r < 0.33, right: r > 0.66 };
         }
         step(state, input, 1 / 120, random);
-        state.lives = LIVES; // keep going for five minutes
+        state.lives = DEFAULT_PROFILE.lives.start; // keep going for five minutes
       }
       expect(score(state)).toBeLessThanOrEqual(maxPlausibleScore(state.time));
       expect(submit({ score: score(state), durationMs: Math.round(state.time * 1000) }).ok).toBe(
@@ -97,15 +97,15 @@ describe('plausibility', () => {
     }
   });
 
-  it('accepts a max-effort run with hearts and the magnet always on', () => {
-    for (const seed of [1, 2]) {
-      const random = createRng(seed);
-      const state = createGameState(360, 640);
+  it('accepts a max-effort run with hearts and the magnet always on, on every preset', () => {
+    for (const [seed, profile] of Object.values(PRESETS).entries()) {
+      const random = createRng(seed + 1);
+      const state = createGameState(360, 900, { profile });
       startGame(state);
       let input = botInput(state);
       for (let i = 0; i < 120 * 600; i++) {
         // Never dies, the magnet never runs out, and hearts at the cap score points.
-        state.lives = MAX_LIVES;
+        state.lives = profile.lives.max;
         state.powerUpTime.fill(10);
         if (i % 3 === 0) input = botInput(state);
         step(state, input, 1 / 120, random);

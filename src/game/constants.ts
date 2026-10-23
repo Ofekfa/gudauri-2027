@@ -19,24 +19,102 @@ export const SKIER = {
   maxTilt: 0.35,
 } as const;
 
-export const SPEED = {
-  start: 240,
-  max: 640,
-  /** Increase per second of play (the cap arrives after ~4.5 min). */
-  rampPerSecond: 1.5,
-  /** Multiplier applied to speed on a crash. */
-  crashFactor: 0.55,
-} as const;
+/**
+ * Every difficulty number in one place. The engine reads the profile from
+ * its state, so a preset can be swapped per run.
+ */
+export interface DifficultyProfile {
+  name: string;
+  speed: {
+    start: number;
+    /** A quick early ramp up to `cruise`, then a slow one up to `max` (px/s per second). */
+    cruise: number;
+    max: number;
+    earlyRamp: number;
+    lateRamp: number;
+    /** Multiplier applied to speed on a crash (it then ramps up again). */
+    crashFactor: number;
+  };
+  density: {
+    /** Vertical gap between rows at the start and once pressure is full. */
+    rowGapStart: number;
+    rowGapMin: number;
+    maxItemsPerRowStart: number;
+    maxItemsPerRowEnd: number;
+    /** Share of items that are collectibles, at the start and at full pressure. */
+    collectibleChance: number;
+    collectibleChanceEnd: number;
+    /** Pressure (density, items per row, the heart supply) goes 0 → 1 over this long. */
+    fullAfterSeconds: number;
+  };
+  /**
+   * Extra lives. A rate per second of play (row spacing ÷ speed), so it doesn't
+   * depend on how fast you go; scaled by missing lives (none at the cap) and
+   * fading with pressure, so runs still end.
+   */
+  hearts: { perSecond: number; lateFactor: number; minGapSeconds: number };
+  powerUps: Record<PowerUpId, PowerUpBalance>;
+  magnetRadius: number;
+  invulnerableSeconds: number;
+  lives: { start: number; max: number };
+}
 
-/** Lives at the start, and the most hearts can top you up to. */
-export const LIVES = 3;
-export const MAX_LIVES = 5;
-export const INVULNERABLE_SECONDS = 1.6;
+export interface PowerUpBalance {
+  duration: number;
+  spawn: { perSecond: number; minSeconds: number; cooldownSeconds: number };
+}
 
-/** Row density, item count and the heart supply follow play time, 0 → 1 over this long. */
-export const PRESSURE_FULL_SECONDS = 720;
+/** Faster than v1.15.0 from the first seconds, with rarer hearts and magnets. The default. */
+const FASTER: DifficultyProfile = {
+  name: 'faster',
+  speed: { start: 300, cruise: 520, max: 720, earlyRamp: 10, lateRamp: 1.2, crashFactor: 0.6 },
+  density: {
+    rowGapStart: 180,
+    rowGapMin: 90,
+    maxItemsPerRowStart: 1,
+    maxItemsPerRowEnd: 4,
+    collectibleChance: 0.22,
+    collectibleChanceEnd: 0.16,
+    fullAfterSeconds: 540,
+  },
+  hearts: { perSecond: 1 / 16, lateFactor: 0.15, minGapSeconds: 10 },
+  powerUps: {
+    magnet: { duration: 7, spawn: { perSecond: 1 / 40, minSeconds: 20, cooldownSeconds: 30 } },
+  },
+  magnetRadius: 140,
+  invulnerableSeconds: 1.6,
+  lives: { start: 3, max: 5 },
+};
 
-/** 20 px of slope = 1 m, so the start speed is ~43 km/h and the cap ~115 km/h. */
+/** Trial presets (temporary): pick one with `#/game?preset=<name>`. */
+export const PRESETS = {
+  /** A little gentler: slower top speed. */
+  fast: {
+    ...FASTER,
+    name: 'fast',
+    speed: { ...FASTER.speed, start: 280, cruise: 480, max: 680, earlyRamp: 9 },
+    hearts: { ...FASTER.hearts, perSecond: 1 / 18 },
+  },
+  faster: FASTER,
+  /** Quickest start and top speed. */
+  fastest: {
+    ...FASTER,
+    name: 'fastest',
+    speed: { ...FASTER.speed, start: 340, cruise: 600, max: 800, earlyRamp: 13 },
+    hearts: { ...FASTER.hearts, perSecond: 1 / 18 },
+  },
+} satisfies Record<string, DifficultyProfile>;
+
+export type PresetName = keyof typeof PRESETS;
+export const DEFAULT_PROFILE: DifficultyProfile = PRESETS.faster;
+
+/**
+ * Fairness floor: an obstacle must stay on screen at least this long before
+ * it reaches the skier, so short screens cap the speed (only below ~600 px).
+ */
+export const MIN_REACTION_SECONDS = 0.45;
+
+/** 20 px of slope = 1 m (so 300 px/s ≈ 54 km/h). */
 export const METERS_PER_PX = 0.05;
 export const KMH_PER_MPS = 3.6;
 
@@ -49,16 +127,8 @@ export const SCORE = {
 } as const;
 
 export const SPAWN = {
-  /** Vertical gap between rows at the start and at max difficulty. */
-  rowGapStart: 150,
-  rowGapMin: 75,
   /** Random spread applied to each gap (±). */
   rowGapJitter: 0.3,
-  maxItemsPerRowStart: 2,
-  maxItemsPerRowEnd: 4,
-  collectibleChance: 0.22,
-  /** Collectible share once pressure is full (the slope gets busier with obstacles). */
-  collectibleChanceEnd: 0.16,
   /** Share of collectibles that are khachapuri (the rest are snowflakes). */
   khachapuriShare: 0.35,
   /** Minimum horizontal distance between items in one row. */
@@ -67,19 +137,6 @@ export const SPAWN = {
   belowView: 60,
   /** Tries to place an item before giving up for that row. */
   placementAttempts: 8,
-} as const;
-
-/**
- * Extra lives. Chance is a rate per second of play (row spacing ÷ speed), so
- * it doesn't depend on how fast you go. Scaled by missing lives (none at the
- * cap) and fading with pressure, so runs still end.
- */
-export const HEARTS = {
-  perSecond: 1 / 14,
-  /** Multiplier on the rate once pressure is full. */
-  lateFactor: 0.15,
-  /** Minimum play time between two hearts. */
-  minGapSeconds: 8,
 } as const;
 
 /** Hearts and power-ups keep this far from any obstacle (centre to centre). */
@@ -93,10 +150,8 @@ export interface PowerUpTuning {
   /** HUD icon and the pickup message ("🧲 Magnet!"). */
   icon: string;
   label: string;
-  duration: number;
   /** The HUD timer warns (blinks) for the last this-many seconds. */
   warnSeconds: number;
-  spawn: { perSecond: number; minSeconds: number; cooldownSeconds: number };
   /** Applied to collectible points while active. */
   scoreMultiplier?: number;
 }
@@ -106,15 +161,12 @@ export const POWER_UPS: Record<PowerUpId, PowerUpTuning> = {
     kind: 'magnet',
     icon: '🧲',
     label: 'Magnet',
-    duration: 8,
     warnSeconds: 2,
-    spawn: { perSecond: 1 / 30, minSeconds: 15, cooldownSeconds: 25 },
   },
 };
 
+/** How caught items fly in (the catch radius is in the profile). */
 export const MAGNET = {
-  /** Collectibles whose centre is this close to the skier start flying in. */
-  radius: 150,
   /** Steering acceleration toward the skier. */
   acceleration: 2600,
   /** Top approach speed, relative to the skier. */
