@@ -27,6 +27,8 @@
 | 10.3a | Fix: album uploads stuck at "Uploading 0%"                               | ✅ Done | v1.12.1 |
 | 10.4  | Album card carousel, custom moments, bigger snowfall                     | ✅ Done | v1.13.0 |
 | 10.5  | Shared ski-game high scores + crew leaderboard                           | ✅ Done | v1.14.0 |
+| 10.6  | Ski game: hearts, power-up system, magnet, 3–6 min pacing                | ✅ Done | v1.15.0 |
+| 10.7  | Ski game: shield, slow-mo, double points (approved, queued)              | ⏳ Next |         |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/ · **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev · Session handoff: `docs/HANDOFF.md`
 
@@ -47,6 +49,8 @@ All three are verified live.
 - **Storage:** a `ScoresStore` Durable Object (migration v3); `POST` needs the album token and is checked against a plausibility bound derived from the game constants.
 - **Offline:** runs wait in a pending queue and sync later. Existing local scores were uploaded once.
 - **Verified live with two browsers.** Test runs left on the leaderboard (Ofek's OK): Ofek 268, Maya 301.
+
+**10.6** (`v1.15.0`, #101): the ski game has collectible hearts (start 3, cap 5; none spawn at the cap), a generic power-up system with the magnet (8 s), slower pacing (a decent run now lasts ~3–6 min) and a seeded RNG. The shared score bound covers the new items; old records were kept (Ofek's choice). Verified live at 60 fps with 4× throttle on phone and desktop.
 
 **Next action:** Ofek's real-phone tests (album checklist, plus scores: a record on phone A shows on phone B, and an offline run syncs once back online).
 
@@ -1195,3 +1199,23 @@ A page of frames, one per moment of the trip in story order; any of us adds phot
   - axe 0 in light and dark; CLS 0; no overflow at 375 px.
 - **Live:** viewing works. `POST /album/session` answers `501` because `ALBUM_SIGNING_KEY` isn't set. **Open bug:** in that state an added photo sits at "Uploading 0%" forever with no error (reproduced locally; see `docs/HANDOFF.md`).
 - **Not checked:** real iPhone and Android phones (camera, HEIC → JPEG, upload on mountain signal) still need Ofek's test.
+
+## Phase 10.6 — Ski game: hearts, power-ups and the magnet → `v1.15.0`
+
+Runs ended after ~1–1.5 min: the speed cap arrived at ~57 s, and difficulty stopped rising with it. Decisions (Ofek, 2026-10-23): **target 3–6 min runs**; **keep the old records**; next power-ups **shield, slow-mo and double points** (Phase 10.7, after the magnet ships).
+
+- **Hearts:** +1 life, cap 5.
+  - **At the cap, none spawn.** This keeps scoring unchanged, and full health gains nothing. One already on the slope scores 50.
+  - **Chance:** a per-second rate × missing lives, fading with pressure, at least 8 s apart. Never within 44 × 90 px of an obstacle.
+  - **Crashes:** the existing 1.6 s invulnerability covers clusters.
+- **Power-ups:** a registry (tuning in `constants.ts`, behaviour in `powerUps.ts`); re-pickup refreshes the timer; at most one on the slope, with a cooldown.
+- **Magnet:** a capped steering pull of collectibles within 150 px. Obstacles and power-ups are never pulled, so a power-up stays a deliberate steer and can't chain-refresh.
+- **Pacing:** the speed ramp went from 7 to 1.5 (cap at ~4.5 min). A time-based `pressure()` over 12 min drives row density, items per row, the obstacle share and the heart supply.
+- **Balance:** a scripted bot over 30 seeds has a median of 3.5 min, p95 5.9 min, and a maximum of 6 min (a test asserts a median of 3–6 min and that every run ends by 15 min).
+- **Status (2026-10-23):** shipped as `v1.15.0`. 60 fps at 4× throttle, both locally (worst case with the magnet always on) and live; axe 0; Lighthouse `/#/game` 99/100/100, CLS 0. Not yet tested by Ofek on a real phone.
+
+## Phase 10.7 — Ski game: shield, slow-mo, double points (approved, queued)
+
+- **Shield:** absorbs the next crash (no life lost, no slowdown); lasts until hit or 12 s.
+- **Slow-mo:** the slope at 60 % speed for 6 s. Distance points slow accordingly.
+- **Double points:** collectibles ×2 for 10 s. The score bound already multiplies by the largest `scoreMultiplier`.

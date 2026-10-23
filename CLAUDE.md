@@ -55,6 +55,11 @@ Run lint, typecheck, test and build (and the Worker's tests if you touched it or
     - selectors and `downloadAlbum` take the moment list;
     - optimistic ids start with `tmp-` and can't take photos until saved.
 
+- **Game mechanics:** `engine.ts` stays pure and deterministic (an injected `Random`; the controller seeds `createRng` per run).
+  - Entities have a `role` (`obstacle` / `collectible` / `powerup`) in `ENTITY`; a new collectible is magnet-pulled automatically.
+  - **Power-ups:** tuning in `POWER_UPS` (`constants.ts`) plus behaviour in `src/game/powerUps.ts` and a sprite. Re-pickup refreshes the timer.
+  - **Difficulty** follows time (`pressure()`, `PRESSURE_FULL_SECONDS`), not speed.
+  - **Balance changes:** re-run `balance.test.ts` (a bot over 30 seeds; median 3–6 min). Anything that adds points (new items, multipliers) must stay inside `maxPlausibleScore`, which reads the item scores and `scoreMultiplier`.
 - **Shared game scores:**
   - `src/game/scores.ts` is shared with the Worker: `ScoreEntry {score, achievedAt, runId, playedBy?}`, `mergeTop`/`mergeTables` (dedupe by `runId`, top 5, earlier wins ties), `maxPlausibleScore(seconds)` (derived from `constants.ts`) and `parseScoreSubmission`.
   - `src/game/highScores.ts` has the repository: local (versioned v2 `game:highScores`, migrating the old `{score, at}`) and synced (pending queue `game:pendingScores`, backoff, a one-time upload of existing scores, and `hold()` so nothing goes over the network during a run).

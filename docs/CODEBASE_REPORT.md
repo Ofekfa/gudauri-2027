@@ -4,6 +4,31 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **ever
 
 ## Changelog since v1.0.0
 
+### Phase 10.6 — Ski game: hearts, power-ups, magnet (`v1.15.0`)
+
+- **`constants.ts`:**
+  - `MAX_LIVES` (5), `PRESSURE_FULL_SECONDS` (720), `HEARTS`, `PICKUP_CLEARANCE`, `POWER_UPS` (tuning per id), `MAGNET`;
+  - `ENTITY[kind].role` (`obstacle` / `collectible` / `powerup`);
+  - the new kinds `heart` and `magnet`; `SCORE.heartAtCap`; a slower `SPEED.rampPerSecond` (1.5).
+- **`engine.ts`:**
+  - `pressure()` (time-based) replaces the speed-based `difficulty()`;
+  - `heartChance()`, `rowGap()`, `powerUpLeft()`;
+  - spawning picks one special per row with obstacle clearance;
+  - magnet-caught items fly in (`movePulled`);
+  - new state: `powerUpTime` (a `Float64Array`), `collectedHearts`/`collectedPowerUps`, `lifeGainedThisStep`, `poweredUpThisStep`.
+  - Still pure and allocation-free in `step`.
+- **New files:**
+  - `powerUps.ts`: the registry (`DEFAULT_POWER_UPS`, the magnet's `attract`);
+  - `random.ts`: `createRng` (mulberry32) and `randomSeed`;
+  - `effects.ts`: floaters and the lives pulse, on real time and preallocated;
+  - `bot.ts`: a test-only lane-scoring player.
+- **Rendering and page:**
+  - `render.ts` and `sprites.ts`: the heart and magnet sprites, the magnet field, five HUD hearts with a pulse, the power-up timer bar with a warning, floaters, and reduced-motion variants (`RenderOptions.reducedMotion`);
+  - the controller seeds each run and turns events into feedback;
+  - `GamePage`: a one-time tip (`game:powerHintSeen`), how-to-play lines, and hearts and power-ups in the run summary.
+- **`scores.ts`:** the bound uses the best points of any item and the largest power-up multiplier.
+- **Tests:** 460 site (+ `powerUps.test.ts`, `balance.test.ts`, heart/placement tests) and 98 Worker.
+
 ### Phase 10.5 — Shared ski-game high scores (`v1.14.0`)
 
 - **`src/game/scores.ts`** (shared with the Worker): `ScoreEntry`, `mergeTop`/`mergeTables` (dedupe by `runId`, top 5, earlier wins ties), `maxPlausibleScore(seconds)` (derived from `constants.ts`), `parseScoreSubmission`, `parseScoreTable`.
@@ -441,7 +466,7 @@ There's no router library, state library, CSS framework, date library or icon li
 │  │  └─ weather/            MountainZones, WebcamCard
 │  ├─ data/                  trip, characters, facts, words, packingTemplate, todoTemplate, pistes.json, zones, dishes,
 │  │                         dishImages(.json), tracks(.json), musicEmbeds, fallbackRates, album (+tests)
-│  ├─ game/                  canvas game: constants, engine (pure), render, sprites, input, controller, highScores (+tests)
+│  ├─ game/                  canvas game: constants, engine (pure), powerUps, random, effects, render, sprites, input, controller, highScores, bot (test-only) (+tests)
 │  ├─ lib/                   pure logic, framework-light, unit-tested
 │  │  ├─ album/              protocol, jpeg, pipeline, queue, repository, token, uploader, selectors, zip, download, service, useAlbum
 │  │  ├─ currency/           rates (shared with Worker), convert, fallback, ratesClient, useRates
@@ -615,6 +640,7 @@ There's no router library, state library, CSS framework, date library or icon li
 | `todo:profile`                       | `TodoPage`, `NextTodos`                    | last selected list                          |
 | `facts:muted` / `facts:lastShownAt`  | `lib/facts/settings.ts`                    | `'true'/'false'` / epoch ms                 |
 | `game:highScores` / `game:character` | `game/highScores.ts` / `GamePage`          | top-5 per character / last pick             |
+| `game:powerHintSeen`                 | `GamePage`                                 | `'1'` once the start tip was dismissed      |
 | `assistant:speak`                    | `AssistantPage`                            | `'true'/'false'`                            |
 | `currency:rates`                     | `lib/currency/ratesClient.ts` (versioned)  | last rates payload                          |
 | `itinerary:last`                     | `lib/itinerary/itineraryClient.ts` (vers.) | last itinerary payload                      |

@@ -1,8 +1,8 @@
-# Handoff — 2026-10-22
+# Handoff — 2026-10-23
 
 ## Current state
 
-The last tag is **`v1.14.0`**: shared ski-game high scores (#99). `main` is at the docs PR for it, and its CI is green.
+The last tag is **`v1.15.0`**: ski-game hearts, power-ups and the magnet (#101). `main` is at the docs PR for it, and its CI is green.
 
 - **Live site:** https://ofekfa.github.io/gudauri-2027/
 - **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev
@@ -10,7 +10,7 @@ The last tag is **`v1.14.0`**: shared ski-game high scores (#99). `main` is at t
 Both match `main`:
 
 - Pages deploys on every push to `main`.
-- The Worker was last deployed from `87e1751` (#99: game score routes and the `ScoresStore` Durable Object, migration `v3`), and `ALBUM_SIGNING_KEY` is set.
+- The Worker was last deployed from `348cc07` (#101: the score bound follows the new game constants), and `ALBUM_SIGNING_KEY` is set.
 
 There are no open PRs and no work-in-progress branches; old merged branches remain on the remote. Read `PLAN.md` (status, queue, decisions) and `CLAUDE.md` (conventions, gotchas) first.
 
@@ -37,6 +37,13 @@ Phase 10.5 (`v1.14.0`, #99) is shipped:
   - B (a separate Chrome, joined as Maya) saw it, then played offline (301, "1 waiting to send") and synced on reconnect;
   - A then showed Maya 301 on top.
 - These two runs stay on the shared leaderboard (no delete route; Ofek agreed).
+
+Phase 10.6 (`v1.15.0`, #101) is shipped:
+
+- **Game:** hearts (cap 5, none spawn at the cap), a power-up registry (`src/game/powerUps.ts`), the magnet, time-based `pressure()`, a seeded RNG per run.
+- **Balance:** a bot over 30 seeds, median 3.5 min.
+- **Verified live on 2026-10-23:** 60 fps at 4× throttle on phone (touch) and desktop (keys), and the start tip shows. No scores were posted during the check.
+- **Next:** Phase 10.7 (shield, slow-mo, double points) is approved and queued. Each one is a `POWER_UPS` entry, a behaviour in `powerUps.ts` and a sprite. Double points sets `scoreMultiplier`; the bound already uses it.
 
 Left to do: Ofek's real-phone test (camera, gallery multi-select, airplane mode, plus the `v1.13.0` checklist: swiping a card, adding "Breakfast", the snowflakes).
 
