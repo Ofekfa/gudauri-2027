@@ -26,6 +26,7 @@
 | 10.3  | Album: our trip in photos                                                | ✅ Done | v1.12.0 |
 | 10.3a | Fix: album uploads stuck at "Uploading 0%"                               | ✅ Done | v1.12.1 |
 | 10.4  | Album card carousel, custom moments, bigger snowfall                     | ✅ Done | v1.13.0 |
+| 10.5  | Shared ski-game high scores + crew leaderboard                           | ✅ Done | v1.14.0 |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/ · **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev · Session handoff: `docs/HANDOFF.md`
 
@@ -41,7 +42,13 @@
 
 All three are verified live.
 
-**Next action:** Ofek's real-phone album test (camera, gallery multi-select, airplane mode, swiping a card, adding "Breakfast", the snowflakes).
+**10.5** (`v1.14.0`, #99): ski-game high scores are shared across phones (top 5 per character, played-by, crew leaderboard).
+
+- **Storage:** a `ScoresStore` Durable Object (migration v3); `POST` needs the album token and is checked against a plausibility bound derived from the game constants.
+- **Offline:** runs wait in a pending queue and sync later. Existing local scores were uploaded once.
+- **Verified live with two browsers.** Test runs left on the leaderboard (Ofek's OK): Ofek 268, Maya 301.
+
+**Next action:** Ofek's real-phone tests (album checklist, plus scores: a record on phone A shows on phone B, and an offline run syncs once back online).
 
 ### Queued (in order)
 

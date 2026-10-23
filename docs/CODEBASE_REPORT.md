@@ -4,6 +4,19 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **ever
 
 ## Changelog since v1.0.0
 
+### Phase 10.5 — Shared ski-game high scores (`v1.14.0`)
+
+- **`src/game/scores.ts`** (shared with the Worker): `ScoreEntry`, `mergeTop`/`mergeTables` (dedupe by `runId`, top 5, earlier wins ties), `maxPlausibleScore(seconds)` (derived from `constants.ts`), `parseScoreSubmission`, `parseScoreTable`.
+- **`src/game/highScores.ts`:**
+  - versioned v2 table (migrating the old `{score, at}` with `legacy-…` ids);
+  - `createLocalHighScores` and `createSyncedHighScores`: a pending queue `game:pendingScores`, backoff from the new `src/lib/net/backoff.ts`, a one-time upload, and `hold()` during runs;
+  - `src/game/scoreSync.ts` is the app singleton (`online`, `onAlbumToken` from `lib/album/token.ts`, record toasts); `components/game/ScoreSyncHost.tsx` flushes on app load.
+- **Game page:** a sync status line, "· by Maya", and the crew leaderboard. The controller reports `seconds` (play time).
+- **Worker:**
+  - `routes/game.ts`: `GET /game/scores` (public, 20 s) and `POST` (album token, `RL_DATA`, 400/422, idempotent);
+  - `game/logic.ts` and the `game/ScoresStore.ts` Durable Object (SQLite `runs` table, every run kept, migration `v3`, binding `SCORES`).
+- **Tests:** 447 site + 97 Worker.
+
 ### Phase 10.4 — Album cards, custom moments, snowfall (`v1.13.0`)
 
 - **Card carousel (#95):**
