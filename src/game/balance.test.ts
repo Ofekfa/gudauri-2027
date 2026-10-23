@@ -17,6 +17,9 @@ const TARGET_MEDIAN_S = { min: 2 * 60, max: 3.5 * 60 };
  * measured with this bot over seeds 1–60. Its code is gone, so it's a number.
  */
 const ORIGINAL_MEDIAN_S = 57;
+const MAX_POWER_UPS_PER_RUN = 4;
+
+const NEVER = { perSecond: 0, minSeconds: 0, cooldownSeconds: 0 };
 
 /** v1.15.0's balance (slow and generous), kept to prove the retune is harder. */
 const V1_15_PROFILE: DifficultyProfile = {
@@ -34,6 +37,10 @@ const V1_15_PROFILE: DifficultyProfile = {
   hearts: { perSecond: 1 / 14, lateFactor: 0.15, minGapSeconds: 8 },
   powerUps: {
     magnet: { duration: 8, spawn: { perSecond: 1 / 30, minSeconds: 15, cooldownSeconds: 25 } },
+    // v1.15.0 had only the magnet.
+    shield: { duration: 0, spawn: NEVER },
+    slowmo: { duration: 0, spawn: NEVER },
+    double: { duration: 0, spawn: NEVER },
   },
   magnetRadius: 150,
   invulnerableSeconds: 1.6,
@@ -83,8 +90,9 @@ describe('balance (scripted bot over fixed seeds)', () => {
       // Hearts and the magnet still matter, just less generously.
       expect(now.heartsPerRun).toBeGreaterThan(1);
       expect(now.heartsPerRun).toBeLessThan(before.heartsPerRun);
-      expect(now.powerUpsPerRun).toBeGreaterThan(0.5);
-      expect(now.powerUpsPerRun).toBeLessThan(before.powerUpsPerRun);
+      // Four kinds now (v1.15.0 had only the magnet): a few per run, not a constant stream.
+      expect(now.powerUpsPerRun).toBeGreaterThan(1);
+      expect(now.powerUpsPerRun).toBeLessThan(MAX_POWER_UPS_PER_RUN);
       expect(now.seconds.at(-1)!).toBeLessThan(HARD_LIMIT_S);
     },
     TIMEOUT_MS,

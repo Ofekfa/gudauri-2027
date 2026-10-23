@@ -79,7 +79,10 @@ const FASTER: DifficultyProfile = {
   },
   hearts: { perSecond: 1 / 16, lateFactor: 0.15, minGapSeconds: 10 },
   powerUps: {
-    magnet: { duration: 7, spawn: { perSecond: 1 / 40, minSeconds: 20, cooldownSeconds: 30 } },
+    magnet: { duration: 7, spawn: { perSecond: 1 / 45, minSeconds: 20, cooldownSeconds: 30 } },
+    shield: { duration: 12, spawn: { perSecond: 1 / 70, minSeconds: 40, cooldownSeconds: 30 } },
+    slowmo: { duration: 6, spawn: { perSecond: 1 / 80, minSeconds: 45, cooldownSeconds: 30 } },
+    double: { duration: 10, spawn: { perSecond: 1 / 60, minSeconds: 25, cooldownSeconds: 30 } },
   },
   magnetRadius: 140,
   invulnerableSeconds: 1.6,
@@ -142,7 +145,7 @@ export const SPAWN = {
 /** Hearts and power-ups keep this far from any obstacle (centre to centre). */
 export const PICKUP_CLEARANCE = { x: 44, y: 90 } as const;
 
-export type PowerUpId = 'magnet';
+export type PowerUpId = 'magnet' | 'shield' | 'slowmo' | 'double';
 
 export interface PowerUpTuning {
   /** The slope item that grants it (and its sprite). */
@@ -150,10 +153,18 @@ export interface PowerUpTuning {
   /** HUD icon and the pickup message ("🧲 Magnet!"). */
   icon: string;
   label: string;
+  /** What it does, short, for the start-screen tip ("pulls items to you"). */
+  hint: string;
+  /** What it does, for How to play. */
+  detail: string;
   /** The HUD timer warns (blinks) for the last this-many seconds. */
   warnSeconds: number;
   /** Applied to collectible points while active. */
   scoreMultiplier?: number;
+  /** Multiplies how fast the slope moves (and so distance points) while active. */
+  slopeSpeedFactor?: number;
+  /** Takes the next crash instead of a life, then ends. */
+  absorbsCrash?: boolean;
 }
 
 export const POWER_UPS: Record<PowerUpId, PowerUpTuning> = {
@@ -161,9 +172,41 @@ export const POWER_UPS: Record<PowerUpId, PowerUpTuning> = {
     kind: 'magnet',
     icon: '🧲',
     label: 'Magnet',
+    hint: 'pulls items to you',
+    detail: 'pulls nearby khachapuri, snowflakes and hearts to you',
     warnSeconds: 2,
   },
+  shield: {
+    kind: 'shield',
+    icon: '🛡️',
+    label: 'Shield',
+    hint: 'blocks one crash',
+    detail: 'takes your next crash instead of a life (it lasts until then, or runs out)',
+    warnSeconds: 2,
+    absorbsCrash: true,
+  },
+  slowmo: {
+    kind: 'slowmo',
+    icon: '⏳',
+    label: 'Slow-mo',
+    hint: 'slows the slope down',
+    detail: 'slows the whole slope down, so busy stretches are easier to thread',
+    warnSeconds: 1.5,
+    slopeSpeedFactor: 0.6,
+  },
+  double: {
+    kind: 'double',
+    icon: '2×',
+    label: 'Double points',
+    hint: 'double points',
+    detail: 'makes khachapuri and snowflakes worth twice as much',
+    warnSeconds: 2,
+    scoreMultiplier: 2,
+  },
 };
+
+/** After the shield takes a hit: a moment to get clear of that cluster. */
+export const SHIELD_GRACE_SECONDS = 0.6;
 
 /** How caught items fly in (the catch radius is in the profile). */
 export const MAGNET = {
@@ -193,7 +236,17 @@ export const TRAIL = {
   sampleEvery: 10,
 } as const;
 
-export type EntityKind = 'tree' | 'rock' | 'flag' | 'khachapuri' | 'snowflake' | 'heart' | 'magnet';
+export type EntityKind =
+  | 'tree'
+  | 'rock'
+  | 'flag'
+  | 'khachapuri'
+  | 'snowflake'
+  | 'heart'
+  | 'magnet'
+  | 'shield'
+  | 'slowmo'
+  | 'double';
 /** Obstacles crash you, collectibles score (and the magnet pulls them), power-ups activate. */
 export type EntityRole = 'obstacle' | 'collectible' | 'powerup';
 export const OBSTACLE_KINDS = ['tree', 'tree', 'rock', 'flag'] as const;
@@ -229,6 +282,9 @@ export const ENTITY: Record<
     hitbox: { width: 24, height: 22, offsetY: 0 },
   },
   magnet: { role: 'powerup', width: 28, height: 28, hitbox: { width: 26, height: 26, offsetY: 0 } },
+  shield: { role: 'powerup', width: 28, height: 30, hitbox: { width: 26, height: 26, offsetY: 0 } },
+  slowmo: { role: 'powerup', width: 24, height: 30, hitbox: { width: 24, height: 26, offsetY: 0 } },
+  double: { role: 'powerup', width: 30, height: 30, hitbox: { width: 26, height: 26, offsetY: 0 } },
 };
 
 export const HIGH_SCORES_PER_CHARACTER = 5;

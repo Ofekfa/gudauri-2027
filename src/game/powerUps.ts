@@ -22,6 +22,14 @@ export interface PowerUpDef extends PowerUpTuning, PowerUpBalance {
   step?: (state: GameState, dt: number, skierWorldY: number) => void;
 }
 
+/** How fast the slope actually moves: the skier's speed, slowed by any active slow-mo. */
+export function slopeSpeed(state: GameState): number {
+  let factor = 1;
+  for (let i = 0; i < state.powerUpDefs.length; i++)
+    if (state.powerUpTime[i]! > 0) factor *= state.powerUpDefs[i]!.slopeSpeedFactor ?? 1;
+  return state.speed * factor;
+}
+
 /** Collectibles within the radius are caught by the field; the engine flies them in. */
 function attract(state: GameState, _dt: number, skierWorldY: number): void {
   const cx = state.skierX;
@@ -37,14 +45,19 @@ function attract(state: GameState, _dt: number, skierWorldY: number): void {
     // Keep any closing speed it already had (things ahead rush up the slope);
     // drop the part moving away, so the distance only ever shrinks.
     const d = Math.sqrt(d2) || 1;
-    const closing = Math.max(0, -(state.skierVx * dx + state.speed * dy) / d);
+    const slope = slopeSpeed(state);
+    const closing = Math.max(0, -(state.skierVx * dx + slope * dy) / d);
     e.vx = state.skierVx + (dx / d) * closing;
-    e.vy = state.speed + (dy / d) * closing;
+    e.vy = slope + (dy / d) * closing;
   }
 }
 
+/** Per-step behaviour. Shield, slow-mo and double points work through their tuning flags. */
 const BEHAVIOUR: Record<PowerUpId, Pick<PowerUpDef, 'step'>> = {
   magnet: { step: attract },
+  shield: {},
+  slowmo: {},
+  double: {},
 };
 
 export const powerUpsFor = (profile: DifficultyProfile): readonly PowerUpDef[] =>
