@@ -72,4 +72,4 @@ ALLOWED_ORIGINS = "https://ofekfa.github.io,http://localhost:5173,http://localho
 MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"
 # Ski-game score epoch. Raising it deletes every shared score and makes phones
 # drop theirs. Use `npm run scores:reset` (it backs up and asks first).
-SCORE_EPOCH = "1"
+SCORE_EPOCH = "2"
