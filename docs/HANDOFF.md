@@ -2,7 +2,7 @@
 
 ## Current state
 
-The last tag is **`v1.15.0`**: ski-game hearts, power-ups and the magnet (#101). `main` is at the docs PR for it, and its CI is green.
+The last tag is **`v1.15.1`**: the ski game retuned faster and harder, with three trial presets (#103). `main` is at the docs PR for it, and its CI is green.
 
 - **Live site:** https://ofekfa.github.io/gudauri-2027/
 - **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev
@@ -10,7 +10,7 @@ The last tag is **`v1.15.0`**: ski-game hearts, power-ups and the magnet (#101).
 Both match `main`:
 
 - Pages deploys on every push to `main`.
-- The Worker was last deployed from `348cc07` (#101: the score bound follows the new game constants), and `ALBUM_SIGNING_KEY` is set.
+- The Worker was last deployed from `22c2c4b` (#103: the score bound covers every trial preset), and `ALBUM_SIGNING_KEY` is set.
 
 There are no open PRs and no work-in-progress branches; old merged branches remain on the remote. Read `PLAN.md` (status, queue, decisions) and `CLAUDE.md` (conventions, gotchas) first.
 
@@ -44,6 +44,16 @@ Phase 10.6 (`v1.15.0`, #101) is shipped:
 - **Balance:** a bot over 30 seeds, median 3.5 min.
 - **Verified live on 2026-10-23:** 60 fps at 4× throttle on phone (touch) and desktop (keys), and the start tip shows. No scores were posted during the check.
 - **Next:** Phase 10.7 (shield, slow-mo, double points) is approved and queued. Each one is a `POWER_UPS` entry, a behaviour in `powerUps.ts` and a sprite. Double points sets `scoreMultiplier`; the bound already uses it.
+
+Retune `v1.15.1` (#103) is shipped:
+
+- **`DifficultyProfile`** in `constants.ts`. The default is `faster`: 54 → 94 km/h in ~22 s, top 130 km/h, rarer hearts and magnets.
+- **Bot median 170 s** (original 57 s, v1.15.0 204 s).
+- **Trial links, waiting for Ofek's pick:**
+  - https://ofekfa.github.io/gudauri-2027/#/game?preset=fast
+  - https://ofekfa.github.io/gudauri-2027/#/game?preset=faster
+  - https://ofekfa.github.io/gudauri-2027/#/game?preset=fastest
+- **After he picks:** lock it in (one profile), delete `src/game/presets.ts`, `presets.test.ts`, the `presetLabel` HUD line and the `PRESETS` map, and the score bound falls back to that one profile. Re-run `balance.test.ts`, then patch-tag.
 
 Left to do: Ofek's real-phone test (camera, gallery multi-select, airplane mode, plus the `v1.13.0` checklist: swiping a card, adding "Breakfast", the snowflakes).
 

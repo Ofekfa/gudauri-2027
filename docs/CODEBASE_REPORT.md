@@ -4,6 +4,22 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **ever
 
 ## Changelog since v1.0.0
 
+### Phase 10.6a — Ski game retune (`v1.15.1`)
+
+- **`constants.ts`:** `DifficultyProfile` (speed curve, density, hearts, power-up balance, `magnetRadius`, invulnerability, lives); `PRESETS` (`fast`, `faster` = `DEFAULT_PROFILE`, `fastest`); `MIN_REACTION_SECONDS`.
+  - These replace `SPEED`, `LIVES`, `MAX_LIVES`, `INVULNERABLE_SECONDS`, `PRESSURE_FULL_SECONDS` and `HEARTS`, plus the difficulty fields of `SPAWN`, `POWER_UPS` and `MAGNET`.
+- **`engine.ts`:**
+  - `createGameState(w, h, { profile, powerUps })`;
+  - `state.profile` and `state.speedCap` (`reactionSpeedCap(height)`);
+  - `rampSpeed()` (two-phase);
+  - `heartChance(profile, …)`.
+- **Other source:**
+  - `powerUps.ts`: `powerUpsFor(profile)`;
+  - `scores.ts`: `maxDistancePx(profile, s)` and `maxPlausibleScore(s, profiles = all presets)`;
+  - `presets.ts`: `presetFromQuery`;
+  - the controller and `GamePage` pass the profile and the HUD `presetLabel`.
+- **Tests:** `fairness.test.ts`, `presets.test.ts`, and a reworked `balance.test.ts`; 468 site, 98 Worker.
+
 ### Phase 10.6 — Ski game: hearts, power-ups, magnet (`v1.15.0`)
 
 - **`constants.ts`:**

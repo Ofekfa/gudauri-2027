@@ -28,7 +28,9 @@
 | 10.4  | Album card carousel, custom moments, bigger snowfall                     | ✅ Done | v1.13.0 |
 | 10.5  | Shared ski-game high scores + crew leaderboard                           | ✅ Done | v1.14.0 |
 | 10.6  | Ski game: hearts, power-up system, magnet, 3–6 min pacing                | ✅ Done | v1.15.0 |
-| 10.7  | Ski game: shield, slow-mo, double points (approved, queued)              | ⏳ Next |         |
+| 10.6a | Ski game retune: faster and harder (profiles + 3 trial presets)          | ✅ Done | v1.15.1 |
+| 10.6b | Lock in Ofek's preset; remove the trial switch                           | ⏳ Next |         |
+| 10.7  | Ski game: shield, slow-mo, double points (approved, queued)              | Queued  |         |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/ · **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev · Session handoff: `docs/HANDOFF.md`
 
@@ -51,6 +53,8 @@ All three are verified live.
 - **Verified live with two browsers.** Test runs left on the leaderboard (Ofek's OK): Ofek 268, Maya 301.
 
 **10.6** (`v1.15.0`, #101): the ski game has collectible hearts (start 3, cap 5; none spawn at the cap), a generic power-up system with the magnet (8 s), slower pacing (a decent run now lasts ~3–6 min) and a seeded RNG. The shared score bound covers the new items; old records were kept (Ofek's choice). Verified live at 60 fps with 4× throttle on phone and desktop.
+
+**10.6a** (`v1.15.1`, #103): Ofek found v1.15.0 too slow and too easy. All difficulty numbers now live in one `DifficultyProfile`, and the default (`faster`) reaches ~94 km/h in ~20 s. Bot median: 170 s, between the original's 57 s and v1.15.0's 204 s. Three trial presets can be picked with `#/game?preset=fast|faster|fastest`. **Waiting for Ofek to pick one;** then 10.6b locks it in and removes the switch.
 
 **Next action:** Ofek's real-phone tests (album checklist, plus scores: a record on phone A shows on phone B, and an offline run syncs once back online).
 
@@ -1213,6 +1217,18 @@ Runs ended after ~1–1.5 min: the speed cap arrived at ~57 s, and difficulty st
 - **Pacing:** the speed ramp went from 7 to 1.5 (cap at ~4.5 min). A time-based `pressure()` over 12 min drives row density, items per row, the obstacle share and the heart supply.
 - **Balance:** a scripted bot over 30 seeds has a median of 3.5 min, p95 5.9 min, and a maximum of 6 min (a test asserts a median of 3–6 min and that every run ends by 15 min).
 - **Status (2026-10-23):** shipped as `v1.15.0`. 60 fps at 4× throttle, both locally (worst case with the magnet always on) and live; axe 0; Lighthouse `/#/game` 99/100/100, CLS 0. Not yet tested by Ofek on a real phone.
+
+## Phase 10.6a — Ski game retune: faster and harder → `v1.15.1`
+
+Ofek (2026-10-23): v1.15.0 felt too slow and too easy. Target: harder than v1.15.0 but easier than the original, with the emphasis on speed; a median run of ~2–3.5 min.
+
+- **`DifficultyProfile`** (`constants.ts`) holds every difficulty number: the speed curve (start, cruise, max, early/late ramp, crash factor), density and its ramp, hearts and their decay, power-up duration and spawn, the magnet radius, invulnerability and lives. The engine reads `state.profile`.
+- **Trial presets:** `fast`, `faster` (default) and `fastest`, picked with `#/game?preset=<name>`, with a HUD label only then.
+- **Bot medians (60 seeds):** original 57 s · v1.15.0 204 s · fast 171 s · faster 170 s · fastest 153 s. At 30 s: 58 / 49 / 82 / 88 / 102 km/h.
+- **Fairness:** physics at a fixed 120 Hz never moves past a hitbox (tested per preset). A reaction-time floor (0.45 s of visible slope) caps speed on short fields. Steering clears an obstacle within that window.
+- **Scores:** the bound takes the most generous preset while presets exist.
+- **Status (2026-10-23):** shipped. Live: 59.5–60 fps at 4× throttle on `fastest` (phone touch and desktop).
+- **Follow-up (10.6b):** once Ofek picks a preset, make it the only profile, remove `presets.ts`, the link switch and the HUD label, and let the score bound use that one profile.
 
 ## Phase 10.7 — Ski game: shield, slow-mo, double points (approved, queued)
 
