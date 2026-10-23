@@ -29,6 +29,11 @@ export interface Env {
     idFromName(name: string): unknown;
     get(id: unknown): import('./routes/album').AlbumStub;
   };
+  /** Durable Object namespace for the shared ski-game scores (one instance). */
+  SCORES?: {
+    idFromName(name: string): unknown;
+    get(id: unknown): import('./routes/game').ScoresStub;
+  };
   /** Durable Object namespace holding the shared lists. */
   LISTS?: {
     idFromName(name: string): unknown;

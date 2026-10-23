@@ -7,6 +7,7 @@
  */
 import type { TravelerId } from '../../data/trip';
 import type { AlbumPhoto, UploadMeta } from './protocol';
+import { backoffMs } from '../net/backoff';
 import { retryReason, type UploadOutcome } from './repository';
 
 export type QueueState = 'queued' | 'uploading' | 'waiting-offline' | 'failed';
@@ -37,19 +38,11 @@ export interface QueueStore {
 }
 
 export const MAX_PARALLEL_UPLOADS = 2;
-export const BASE_BACKOFF_MS = 2_000;
-export const MAX_BACKOFF_MS = 5 * 60_000;
+export { BASE_BACKOFF_MS, MAX_BACKOFF_MS, backoffMs } from '../net/backoff';
 /** Online tries before a photo is marked failed (2+4+8+16 s of backoff in between). */
 export const MAX_ATTEMPTS = 5;
 /** Longest one attempt (token + upload) may take; above the upload's own timeout. */
 export const ATTEMPT_TIMEOUT_MS = 3 * 60_000;
-const JITTER = 0.25;
-
-/** Delay before retry number `attempts` (1, 2, 3…), with ±25% jitter from `random`. */
-export function backoffMs(attempts: number, random: () => number = Math.random): number {
-  const base = Math.min(MAX_BACKOFF_MS, BASE_BACKOFF_MS * 2 ** Math.max(0, attempts - 1));
-  return Math.round(base * (1 - JITTER + random() * 2 * JITTER));
-}
 
 export interface QueueDeps {
   store: QueueStore;

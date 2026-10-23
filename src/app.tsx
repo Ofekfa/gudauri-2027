@@ -10,6 +10,7 @@ import { MapBackground } from './components/map/MapBackground';
 import { Snowfall } from './components/Snowfall';
 import { ToastHost } from './components/ToastHost';
 import { AlbumQueueHost } from './components/album/AlbumQueueHost';
+import { ScoreSyncHost } from './components/game/ScoreSyncHost';
 import { FactPopups } from './components/facts/FactPopups';
 import { findNavItem, HOME } from './navigation';
 import { ComingSoonPage } from './pages/ComingSoonPage';
@@ -102,6 +103,7 @@ export function App() {
       <Footer />
       <ToastHost />
       <AlbumQueueHost />
+      <ScoreSyncHost />
       <FactPopups path={sectionPath} />
       <BottomTabBar activePath={sectionPath} />
     </>

@@ -31,6 +31,8 @@ export interface GameResult {
   meters: number;
   khachapuri: number;
   snowflakes: number;
+  /** Play time, pauses excluded (simulation time). */
+  seconds: number;
 }
 
 export interface ControllerOptions {
@@ -69,6 +71,7 @@ export async function createGameController({
         meters: Math.floor(state.distance * METERS_PER_PX),
         khachapuri: state.collectedKhachapuri,
         snowflakes: state.collectedSnowflakes,
+        seconds: state.time,
       });
     } else {
       onStatus(next);

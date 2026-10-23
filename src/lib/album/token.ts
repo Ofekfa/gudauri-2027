@@ -40,6 +40,13 @@ const spec: VersionedSpec<StoredToken> = {
 export type TokenResult =
   { token: string } | { error: 'not-joined' | 'wrong-code' | 'not-set-up' | 'offline' };
 
+const tokenListeners = new Set<() => void>();
+/** Called whenever this phone gets a new album token (e.g. right after joining). */
+export function onAlbumToken(listener: () => void): () => void {
+  tokenListeners.add(listener);
+  return () => void tokenListeners.delete(listener);
+}
+
 export function clearAlbumToken(store: KeyValueStore = appStore) {
   saveVersioned(store, spec, spec.empty());
 }
@@ -89,5 +96,6 @@ export async function getAlbumToken(
     expiresAt: Date.parse(body.expiresAt),
     who: settings.me,
   });
+  tokenListeners.forEach((l) => l());
   return { token: body.token };
 }
