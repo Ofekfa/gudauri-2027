@@ -2,7 +2,7 @@
 
 ## Current state
 
-The last tag is **`v1.13.0`**: the card carousel (#95), custom moments (#96) and the bigger snowfall (#97). `main` is at the docs PR for it, and its CI is green.
+The last tag is **`v1.14.0`**: shared ski-game high scores (#99). `main` is at the docs PR for it, and its CI is green.
 
 - **Live site:** https://ofekfa.github.io/gudauri-2027/
 - **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev
@@ -10,7 +10,7 @@ The last tag is **`v1.13.0`**: the card carousel (#95), custom moments (#96) and
 Both match `main`:
 
 - Pages deploys on every push to `main`.
-- The Worker was last deployed from `5f1cf5e` (#96, custom moment routes), and `ALBUM_SIGNING_KEY` is set.
+- The Worker was last deployed from `87e1751` (#99: game score routes and the `ScoresStore` Durable Object, migration `v3`), and `ALBUM_SIGNING_KEY` is set.
 
 There are no open PRs and no work-in-progress branches; old merged branches remain on the remote. Read `PLAN.md` (status, queue, decisions) and `CLAUDE.md` (conventions, gotchas) first.
 
@@ -28,6 +28,15 @@ Live checks on 2026-10-22:
 
 - 3 test photos browsed on a card, plus the deep link; a test moment added after Bowling, deep-linked after a reload, then deleted. All test data was removed. Ofek's own 2 McDonald's photos are untouched.
 - 60 fps at 4× throttle with 42/59/102 flakes; axe 0 on 17 routes in light and dark; Lighthouse mobile 96–100 / 100 / 100, CLS 0.
+
+Phase 10.5 (`v1.14.0`, #99) is shipped:
+
+- **Shared high scores:** `GET`/`POST /game/scores`; the `ScoresStore` Durable Object; `src/game/scores.ts` shared with the Worker; the synced repository in `src/game/highScores.ts`; `src/game/scoreSync.ts`; `ScoreSyncHost`.
+- **Verified live on 2026-10-23 with two browsers:**
+  - A (Ofek's Chrome) ran 268 as Ofek and got the "🏆 New record" toast;
+  - B (a separate Chrome, joined as Maya) saw it, then played offline (301, "1 waiting to send") and synced on reconnect;
+  - A then showed Maya 301 on top.
+- These two runs stay on the shared leaderboard (no delete route; Ofek agreed).
 
 Left to do: Ofek's real-phone test (camera, gallery multi-select, airplane mode, plus the `v1.13.0` checklist: swiping a card, adding "Breakfast", the snowflakes).
 
