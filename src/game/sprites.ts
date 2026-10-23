@@ -36,6 +36,13 @@ const COLORS = {
   magnetDark: '#9e1b29',
   steel: '#c9d3de',
   steelDark: '#8794a3',
+  shield: '#1f6fd1',
+  shieldLight: '#6fa8f0',
+  glass: '#dcecff',
+  sand: '#f4a261',
+  gold: '#f6c445',
+  goldDark: '#c8901a',
+  ink: '#0e2a47',
 } as const;
 
 function makeSprite(
@@ -276,6 +283,115 @@ function drawMagnet(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.fill();
 }
 
+function shieldPath(ctx: CanvasRenderingContext2D, cx: number, top: number, w: number, h: number) {
+  ctx.beginPath();
+  ctx.moveTo(cx, top);
+  ctx.quadraticCurveTo(cx + w * 0.3, top + h * 0.12, cx + w / 2, top + h * 0.1);
+  ctx.quadraticCurveTo(cx + w / 2, top + h * 0.75, cx, top + h);
+  ctx.quadraticCurveTo(cx - w / 2, top + h * 0.75, cx - w / 2, top + h * 0.1);
+  ctx.quadraticCurveTo(cx - w * 0.3, top + h * 0.12, cx, top);
+  ctx.closePath();
+}
+
+function drawShield(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  shadow(ctx, w / 2, h - 2, w * 0.3, 2.5);
+  ctx.fillStyle = COLORS.snow;
+  shieldPath(ctx, w / 2, 0.5, w - 2, h - 4);
+  ctx.fill();
+  ctx.fillStyle = COLORS.shield;
+  shieldPath(ctx, w / 2, 2.5, w - 6, h - 8);
+  ctx.fill();
+  // A lighter left half and a white chevron read as a shield at any size.
+  ctx.save();
+  shieldPath(ctx, w / 2, 2.5, w - 6, h - 8);
+  ctx.clip();
+  ctx.fillStyle = COLORS.shieldLight;
+  ctx.fillRect(0, 0, w / 2, h);
+  ctx.restore();
+  ctx.strokeStyle = COLORS.snow;
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(w * 0.32, h * 0.42);
+  ctx.lineTo(w / 2, h * 0.56);
+  ctx.lineTo(w * 0.68, h * 0.42);
+  ctx.stroke();
+}
+
+function drawHourglass(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  shadow(ctx, w / 2, h - 2, w * 0.3, 2.5);
+  const top = 3;
+  const bottom = h - 5;
+  const mid = (top + bottom) / 2;
+  const half = w / 2 - 5;
+  const bulb = (dir: 1 | -1) => {
+    const edge = dir === 1 ? top + 2 : bottom - 2;
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - half, edge);
+    ctx.lineTo(w / 2 + half, edge);
+    ctx.quadraticCurveTo(w / 2 + half, mid - dir * 3, w / 2 + 1.5, mid);
+    ctx.lineTo(w / 2 - 1.5, mid);
+    ctx.quadraticCurveTo(w / 2 - half, mid - dir * 3, w / 2 - half, edge);
+    ctx.closePath();
+  };
+  for (const [color, grow] of [
+    [COLORS.snow, 2],
+    [COLORS.ink, 1],
+    [COLORS.glass, 0],
+  ] as const) {
+    ctx.save();
+    ctx.translate(w / 2, mid);
+    ctx.scale(1 + grow / half, 1 + grow / (mid - top));
+    ctx.translate(-w / 2, -mid);
+    ctx.fillStyle = color;
+    bulb(1);
+    ctx.fill();
+    bulb(-1);
+    ctx.fill();
+    ctx.restore();
+  }
+  // Sand: a little left on top, a pile below.
+  ctx.fillStyle = COLORS.sand;
+  ctx.beginPath();
+  ctx.moveTo(w / 2 - half * 0.45, mid - 4);
+  ctx.lineTo(w / 2 + half * 0.45, mid - 4);
+  ctx.lineTo(w / 2, mid);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(w / 2 - half + 2, bottom - 2.5);
+  ctx.quadraticCurveTo(w / 2, mid + 2, w / 2 + half - 2, bottom - 2.5);
+  ctx.closePath();
+  ctx.fill();
+  // Wooden caps.
+  ctx.fillStyle = COLORS.trunk;
+  ctx.fillRect(w / 2 - half - 2, top - 1, half * 2 + 4, 3.5);
+  ctx.fillRect(w / 2 - half - 2, bottom - 2.5, half * 2 + 4, 3.5);
+}
+
+function drawDouble(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  shadow(ctx, w / 2, h - 2, w * 0.32, 2.5);
+  const cx = w / 2;
+  const cy = h / 2 - 1;
+  const r = w / 2 - 2;
+  for (const [color, rr] of [
+    [COLORS.snow, r],
+    [COLORS.goldDark, r - 2],
+    [COLORS.gold, r - 4],
+  ] as const) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = COLORS.ink;
+  ctx.font = `700 ${Math.round(r)}px Fredoka, system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('×2', cx, cy + 1);
+}
+
 /** Obstacles, collectibles and power-ups; `variant` picks e.g. the flag colour. */
 export type EntitySprites = Record<EntityKind, Sprite[]>;
 
@@ -296,6 +412,9 @@ export function createEntitySprites(dpr: number): EntitySprites {
     ],
     heart: [makeSprite(...size('heart'), dpr, (c) => drawHeart(c, ...size('heart')))],
     magnet: [makeSprite(...size('magnet'), dpr, (c) => drawMagnet(c, ...size('magnet')))],
+    shield: [makeSprite(...size('shield'), dpr, (c) => drawShield(c, ...size('shield')))],
+    slowmo: [makeSprite(...size('slowmo'), dpr, (c) => drawHourglass(c, ...size('slowmo')))],
+    double: [makeSprite(...size('double'), dpr, (c) => drawDouble(c, ...size('double')))],
   };
 }
 

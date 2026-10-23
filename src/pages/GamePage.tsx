@@ -3,7 +3,7 @@ import { AvatarFace, AvatarSkier } from '../avatars/Avatar';
 import { PageHeader } from '../components/PageHeader';
 import { CHARACTERS } from '../data/characters';
 import { trip, type TravelerId } from '../data/trip';
-import { DEFAULT_PROFILE, POWER_UPS, SCORE } from '../game/constants';
+import { DEFAULT_PROFILE, POWER_UPS, SCORE, type PowerUpId } from '../game/constants';
 import {
   createGameController,
   type ControllerStatus,
@@ -19,21 +19,30 @@ import { appStore } from '../lib/storage/safeStorage';
 import { syncSettings } from '../lib/sync/settings';
 
 const CHARACTER_KEY = 'game:character';
-/** Set once the start-screen tip about hearts and power-ups was dismissed. */
+/** The start-screen tip about hearts and power-ups; bumped when power-ups are added so it shows again. */
 const POWER_HINT_KEY = 'game:powerHintSeen';
+const POWER_HINT_VERSION = '2';
+const POWER_UP_LIST = Object.values(POWER_UPS);
 
 /** One-time tip on the start screen; remembered on this device. */
 function PowerHint() {
-  const [seen, setSeen] = useState(() => appStore.get(POWER_HINT_KEY) === '1');
+  const [seen, setSeen] = useState(() => appStore.get(POWER_HINT_KEY) === POWER_HINT_VERSION);
   if (seen) return null;
   return (
     <div class="game__tip" role="note">
-      <p>❤️ = extra life · {POWER_UPS.magnet.icon} = pulls items to you</p>
+      <ul class="game__tip-list">
+        <li>❤️ = extra life</li>
+        {POWER_UP_LIST.map((p) => (
+          <li key={p.label}>
+            {p.icon} = {p.hint}
+          </li>
+        ))}
+      </ul>
       <button
         type="button"
         class="chip-button chip-button--small"
         onClick={() => {
-          appStore.set(POWER_HINT_KEY, '1');
+          appStore.set(POWER_HINT_KEY, POWER_HINT_VERSION);
           setSeen(true);
         }}
       >
@@ -149,10 +158,12 @@ function CharacterPicker({
             Catch a ❤️ for an extra life (up to {DEFAULT_PROFILE.lives.max}). They get rarer as the
             run goes on.
           </li>
-          <li>
-            {POWER_UPS.magnet.icon} The magnet pulls nearby khachapuri, snowflakes and hearts to you
-            for {DEFAULT_PROFILE.powerUps.magnet.duration} seconds.
-          </li>
+          {(Object.keys(POWER_UPS) as PowerUpId[]).map((id) => (
+            <li key={id}>
+              {POWER_UPS[id].icon} <strong>{POWER_UPS[id].label}</strong>
+              {` (${DEFAULT_PROFILE.powerUps[id].duration} s): ${POWER_UPS[id].detail}.`}
+            </li>
+          ))}
         </ul>
       </section>
     </>
@@ -306,7 +317,8 @@ function Game({
                     {result.meters} m skied · {result.khachapuri} khachapuri · {result.snowflakes}{' '}
                     snowflakes
                     {result.hearts > 0 && ` · ${result.hearts} ❤️`}
-                    {result.powerUps > 0 && ` · ${result.powerUps} ${POWER_UPS.magnet.icon}`}
+                    {result.powerUps > 0 &&
+                      ` · ${result.powerUps} power-up${result.powerUps === 1 ? '' : 's'}`}
                   </p>
                   <p class="game__hint">
                     {name}’s best: <strong>{Math.max(personalBest, result.score)}</strong>

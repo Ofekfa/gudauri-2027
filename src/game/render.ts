@@ -1,6 +1,6 @@
 import { ENTITY, KMH_PER_MPS, METERS_PER_PX, SKIER, TRAIL } from './constants';
 import { FLOATER_SECONDS, LIVES_PULSE_SECONDS, type Effects } from './effects';
-import { score, skierScreenY, type GameState } from './engine';
+import { score, skierScreenY, slopeSpeed, type GameState } from './engine';
 import type { EntitySprites, Sprite } from './sprites';
 
 const SNOW = '#f7fbff';
@@ -22,6 +22,11 @@ const HEART_SPACING = 22;
 const PAUSE_BUTTON_ROOM = 48;
 const LIVES_PULSE_SCALE = 0.4;
 const MAGNET_RING = 'rgba(214, 40, 57, 0.28)';
+const SHIELD_FILL = 'rgba(31, 111, 209, 0.12)';
+const SHIELD_RING = 'rgba(31, 111, 209, 0.55)';
+const SHIELD_RADIUS = 30;
+/** A cool wash over the slope while slow-mo is on. */
+const SLOWMO_TINT = 'rgba(61, 139, 253, 0.07)';
 const MAGNET_GLOW = 'rgba(214, 40, 57, 0.07)';
 /** The ring breathes this much (fraction of its radius) and this fast. */
 const RING_BREATH = 0.04;
@@ -125,6 +130,32 @@ function magnetActive(state: GameState): boolean {
   return false;
 }
 
+/** Seconds left on the active power-up with this flag, or 0. */
+function activeWith(state: GameState, flag: 'absorbsCrash' | 'slopeSpeedFactor'): number {
+  for (let i = 0; i < state.powerUpDefs.length; i++)
+    if (state.powerUpDefs[i]![flag] && state.powerUpTime[i]! > 0) return state.powerUpTime[i]!;
+  return 0;
+}
+
+/** A bubble around the skier while the shield is up. */
+function drawShieldBubble(ctx: CanvasRenderingContext2D, state: GameState, reducedMotion: boolean) {
+  if (activeWith(state, 'absorbsCrash') <= 0) return;
+  const breath = reducedMotion ? 0 : Math.sin(state.time * Math.PI * 2 * RING_BREATH_HZ);
+  ctx.beginPath();
+  ctx.arc(
+    state.skierX,
+    skierScreenY(state),
+    SHIELD_RADIUS * (1 + RING_BREATH * breath),
+    0,
+    Math.PI * 2,
+  );
+  ctx.fillStyle = SHIELD_FILL;
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = SHIELD_RING;
+  ctx.stroke();
+}
+
 function haloText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number) {
   ctx.lineWidth = 4;
   ctx.strokeStyle = HUD_HALO;
@@ -141,7 +172,7 @@ function drawHud(ctx: CanvasRenderingContext2D, state: GameState, opts: RenderOp
   ctx.font = HUD_FONT;
   haloText(ctx, `${score(state)}`, HUD_PADDING, HUD_PADDING);
   ctx.font = HUD_SMALL_FONT;
-  const kmh = Math.round(state.speed * METERS_PER_PX * KMH_PER_MPS);
+  const kmh = Math.round(slopeSpeed(state) * METERS_PER_PX * KMH_PER_MPS);
   haloText(ctx, `${kmh} km/h`, HUD_PADDING, HUD_PADDING + 24);
   if (opts.presetLabel) haloText(ctx, `Preset: ${opts.presetLabel}`, HUD_PADDING, HUD_PADDING + 42);
 
@@ -217,7 +248,12 @@ export function renderFrame(ctx: CanvasRenderingContext2D, state: GameState, opt
   const skierWorldY = state.distance + skierScreenY(state);
   drawEntities(ctx, state, opts.sprites, -Infinity, skierWorldY);
   drawSkier(ctx, state, opts.skier, opts.reducedMotion);
+  drawShieldBubble(ctx, state, opts.reducedMotion);
   drawEntities(ctx, state, opts.sprites, skierWorldY, Infinity);
+  if (activeWith(state, 'slopeSpeedFactor') > 0) {
+    ctx.fillStyle = SLOWMO_TINT;
+    ctx.fillRect(0, 0, state.width, state.height);
+  }
   drawFloaters(ctx, opts.effects, opts.reducedMotion);
   drawHud(ctx, state, opts);
 }

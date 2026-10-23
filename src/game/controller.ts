@@ -55,6 +55,7 @@ export interface ControllerOptions {
 /** Long frames (tab switches, GC pauses) are capped so the skier doesn't teleport. */
 const MAX_FRAME_SECONDS = 0.25;
 const CRASH_VIBRATION_MS = 60;
+const SHIELD_VIBRATION_MS = 25;
 /** Floating text appears this far above the skier. */
 const FLOATER_OFFSET_Y = 34;
 
@@ -186,6 +187,10 @@ export async function createGameController({
   const react = () => {
     const x = state.skierX;
     const y = skierScreenY(state) - FLOATER_OFFSET_Y;
+    if (state.shieldBrokeThisStep) {
+      navigator.vibrate?.(SHIELD_VIBRATION_MS);
+      addFloater(effects, '🛡️ Saved!', x, y);
+    }
     if (state.crashedThisStep) {
       navigator.vibrate?.(CRASH_VIBRATION_MS);
       pulseLives(effects, state.lives);

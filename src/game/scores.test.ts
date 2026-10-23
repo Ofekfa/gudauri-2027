@@ -4,6 +4,7 @@ import { DEFAULT_PROFILE, HIGH_SCORES_PER_CHARACTER, PRESETS } from './constants
 import { createGameState, score, startGame, step, type GameInput } from './engine';
 import { createRng } from './random';
 import {
+  MAX_DURATION_MS,
   maxPlausibleScore,
   mergeTables,
   mergeTop,
@@ -106,7 +107,8 @@ describe('plausibility', () => {
       for (let i = 0; i < 120 * 600; i++) {
         // Never dies, the magnet never runs out, and hearts at the cap score points.
         state.lives = profile.lives.max;
-        state.powerUpTime.fill(10);
+        // Every power-up always on (double points included), except slow-mo, which only lowers scores.
+        state.powerUpDefs.forEach((d, n) => (state.powerUpTime[n] = d.slopeSpeedFactor ? 0 : 10));
         if (i % 3 === 0) input = botInput(state);
         step(state, input, 1 / 120, random);
       }
@@ -122,7 +124,9 @@ describe('plausibility', () => {
     expect(submit({ score: 5_000_000, durationMs: 2_000 })).toMatchObject({ status: 422 });
     // Scores from before syncing carry no duration: checked against the longest run.
     expect(submit({ score: 5_000, durationMs: undefined }).ok).toBe(true);
-    expect(submit({ score: 50_000_000, durationMs: undefined })).toMatchObject({ status: 422 });
+    const longest = maxPlausibleScore(MAX_DURATION_MS / 1000);
+    expect(submit({ score: longest, durationMs: undefined }).ok).toBe(true);
+    expect(submit({ score: longest + 1, durationMs: undefined })).toMatchObject({ status: 422 });
   });
 
   it('validates the shape (400)', () => {

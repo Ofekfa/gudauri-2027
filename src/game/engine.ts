@@ -13,6 +13,7 @@ import {
   PICKUP_CLEARANCE,
   POOL_SIZE,
   SCORE,
+  SHIELD_GRACE_SECONDS,
   SKIER,
   SKIER_Y_RATIO,
   SPAWN,
@@ -20,7 +21,9 @@ import {
   type DifficultyProfile,
   type EntityKind,
 } from './constants';
-import { powerUpsFor, type PowerUpDef } from './powerUps';
+import { powerUpsFor, slopeSpeed, type PowerUpDef } from './powerUps';
+
+export { slopeSpeed } from './powerUps';
 
 export type Random = () => number;
 
@@ -88,6 +91,8 @@ export interface GameState {
   lifeGainedThisStep: boolean;
   /** Index of the power-up picked up this step, or -1. */
   poweredUpThisStep: number;
+  /** A crash-absorbing power-up (the shield) took a hit this step. */
+  shieldBrokeThisStep: boolean;
 }
 
 export interface GameOptions {
@@ -148,6 +153,7 @@ export function createGameState(
     collectedThisStep: null,
     lifeGainedThisStep: false,
     poweredUpThisStep: -1,
+    shieldBrokeThisStep: false,
   };
   resetGame(state);
   return state;
@@ -181,6 +187,7 @@ export function resetGame(state: GameState): void {
   state.collectedThisStep = null;
   state.lifeGainedThisStep = false;
   state.poweredUpThisStep = -1;
+  state.shieldBrokeThisStep = false;
 }
 
 export function resizeGame(state: GameState, width: number, height: number): void {
@@ -236,6 +243,13 @@ export function powerUpLeft(state: GameState, id: string): number {
   return 0;
 }
 
+/** Index of an active power-up that absorbs a crash (the shield), or -1. */
+function activeShield(state: GameState): number {
+  for (let i = 0; i < state.powerUpDefs.length; i++)
+    if (state.powerUpTime[i]! > 0 && state.powerUpDefs[i]!.absorbsCrash) return i;
+  return -1;
+}
+
 function pointsMultiplier(state: GameState): number {
   let m = 1;
   for (let i = 0; i < state.powerUpDefs.length; i++)
@@ -268,16 +282,24 @@ function powerUpOnSlope(state: GameState): boolean {
 
 /** Picks the row's special item (a heart or a power-up), if any: kind, power-up index. */
 function rollSpecial(state: GameState, random: Random): number {
-  const rowSeconds = rowGap(state) / state.speed;
+  const rowSeconds = rowGap(state) / slopeSpeed(state);
   if (
     state.time >= state.heartReadyAt &&
     random() < heartChance(state.profile, state.lives, pressure(state), rowSeconds)
   )
     return SPECIAL_HEART;
   if (state.time < state.powerUpReadyAt || powerUpOnSlope(state)) return SPECIAL_NONE;
+  // One roll for "any power-up", then pick which by rate, so registry order doesn't matter.
+  let total = 0;
+  for (const def of state.powerUpDefs)
+    if (state.time >= def.spawn.minSeconds) total += def.spawn.perSecond;
+  if (total === 0 || random() >= total * rowSeconds) return SPECIAL_NONE;
+  let pick = random() * total;
   for (let i = 0; i < state.powerUpDefs.length; i++) {
     const spawn = state.powerUpDefs[i]!.spawn;
-    if (state.time >= spawn.minSeconds && random() < spawn.perSecond * rowSeconds) return i;
+    if (state.time < spawn.minSeconds) continue;
+    pick -= spawn.perSecond;
+    if (pick < 0) return i;
   }
   return SPECIAL_NONE;
 }
@@ -377,7 +399,7 @@ function movePulled(state: GameState, dt: number, skierWorldY: number): void {
       continue;
     }
     let ax = state.skierVx + (dx / d) * MAGNET.maxSpeed - e.vx;
-    let ay = state.speed + (dy / d) * MAGNET.maxSpeed - e.vy;
+    let ay = slopeSpeed(state) + (dy / d) * MAGNET.maxSpeed - e.vy;
     const a = Math.sqrt(ax * ax + ay * ay);
     if (a > maxDv) {
       ax *= maxDv / a;
@@ -431,6 +453,7 @@ export function step(state: GameState, input: GameInput, dt: number, random: Ran
   state.collectedThisStep = null;
   state.lifeGainedThisStep = false;
   state.poweredUpThisStep = -1;
+  state.shieldBrokeThisStep = false;
   if (state.status !== 'playing') return;
 
   state.time += dt;
@@ -449,7 +472,7 @@ export function step(state: GameState, input: GameInput, dt: number, random: Ran
     state.skierVx = 0;
   }
 
-  state.distance += state.speed * dt;
+  state.distance += slopeSpeed(state) * dt;
   const skierWorldY = state.distance + skierScreenY(state);
 
   // Ski tracks
@@ -498,6 +521,12 @@ export function step(state: GameState, input: GameInput, dt: number, random: Ran
       state.powerUpTime[e.powerUp] = def.duration;
       state.poweredUpThisStep = e.powerUp;
       state.collectedPowerUps++;
+    } else if (state.invulnerableFor === 0 && activeShield(state) >= 0) {
+      // The shield takes the hit: no life lost, no slowdown, and the obstacle is gone.
+      state.powerUpTime[activeShield(state)] = 0;
+      e.active = false;
+      state.invulnerableFor = SHIELD_GRACE_SECONDS;
+      state.shieldBrokeThisStep = true;
     } else if (state.invulnerableFor === 0) {
       state.crashedThisStep = true;
       state.lives--;
