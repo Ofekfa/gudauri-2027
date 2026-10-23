@@ -29,6 +29,7 @@
 | 10.5  | Shared ski-game high scores + crew leaderboard                           | ✅ Done | v1.14.0 |
 | 10.6  | Ski game: hearts, power-up system, magnet, 3–6 min pacing                | ✅ Done | v1.15.0 |
 | 10.6a | Ski game retune: faster and harder (profiles + 3 trial presets)          | ✅ Done | v1.15.1 |
+| 10.6c | Score epochs; all game scores reset for the new difficulty               | ✅ Done | v1.15.2 |
 | 10.6b | Lock in Ofek's preset; remove the trial switch                           | ⏳ Next |         |
 | 10.7  | Ski game: shield, slow-mo, double points (approved, queued)              | Queued  |         |
 

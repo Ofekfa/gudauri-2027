@@ -2,7 +2,7 @@
 
 ## Current state
 
-The last tag is **`v1.15.1`**: the ski game retuned faster and harder, with three trial presets (#103). `main` is at the docs PR for it, and its CI is green.
+The last tag is **`v1.15.2`**: score epochs, and every game score reset for the new difficulty (#105, #106). `main` is at the docs PR for it, and its CI is green.
 
 - **Live site:** https://ofekfa.github.io/gudauri-2027/
 - **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev
@@ -10,7 +10,7 @@ The last tag is **`v1.15.1`**: the ski game retuned faster and harder, with thre
 Both match `main`:
 
 - Pages deploys on every push to `main`.
-- The Worker was last deployed from `22c2c4b` (#103: the score bound covers every trial preset), and `ALBUM_SIGNING_KEY` is set.
+- The Worker was last deployed from `c40451a` (#106: `SCORE_EPOCH = "2"`), and `ALBUM_SIGNING_KEY` is set.
 
 There are no open PRs and no work-in-progress branches; old merged branches remain on the remote. Read `PLAN.md` (status, queue, decisions) and `CLAUDE.md` (conventions, gotchas) first.
 
@@ -54,6 +54,17 @@ Retune `v1.15.1` (#103) is shipped:
   - https://ofekfa.github.io/gudauri-2027/#/game?preset=faster
   - https://ofekfa.github.io/gudauri-2027/#/game?preset=fastest
 - **After he picks:** lock it in (one profile), delete `src/game/presets.ts`, `presets.test.ts`, the `presetLabel` HUD line and the `PRESETS` map, and the score bound falls back to that one profile. Re-run `balance.test.ts`, then patch-tag.
+
+Score reset `v1.15.2` (#105, #106) is done:
+
+- **Score epochs:** `SCORE_EPOCH` in `worker/wrangler.toml`. `GET /game/scores` returns `{scores, epoch, runs}`, and an old-epoch `POST` gets 409. Phones that see a newer epoch clear their local records and pending runs and skip the first upload.
+- **One-command reset:** `cd worker && npm run scores:reset` (`--dry-run` first). Documented in `CLAUDE.md`.
+- **The reset on 2026-10-23 (Ofek confirmed in chat):**
+  - all **46 runs** were deleted: Maya 22, Ron 14, Ofek 9, Roi 1 (top bests 8653 / 6571 / 2413 / 1257);
+  - the backup (the public top fives plus a purge log with all 46 runs) is in the session scratchpad, **not** in git, and was given to Ofek in chat;
+  - live is now `{scores: {}, epoch: 2, runs: {}}`.
+- **Verified live:** a fresh browser seeded with old records, an unsent run and the first-upload flag not set showed every Best at 0 and an empty leaderboard. Its storage was cleared (`migrated: true`, epoch 2) and it posted nothing.
+- No new live scores were posted, so the leaderboard starts empty for Ofek.
 
 Left to do: Ofek's real-phone test (camera, gallery multi-select, airplane mode, plus the `v1.13.0` checklist: swiping a card, adding "Breakfast", the snowflakes).
 
