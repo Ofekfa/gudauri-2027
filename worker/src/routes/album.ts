@@ -71,8 +71,8 @@ const bearer = (request: Request) => {
   return auth.startsWith('Bearer ') ? auth.slice('Bearer '.length) : '';
 };
 
-/** The token's payload, or an error response. */
-async function authorise({
+/** The token's payload, or an error response (also used by the game scores). */
+export async function authorise({
   request,
   env,
   cors,

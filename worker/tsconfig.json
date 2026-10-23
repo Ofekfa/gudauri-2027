@@ -29,6 +29,8 @@
     "../src/data/album.ts",
     "../src/lib/album/protocol.ts",
     "../src/lib/album/jpeg.ts",
-    "../src/lib/album/moments.ts"
+    "../src/lib/album/moments.ts",
+    "../src/game/constants.ts",
+    "../src/game/scores.ts"
   ]
 }

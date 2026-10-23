@@ -48,6 +48,11 @@ class_name = "ListsStore"
 name = "ALBUM"
 class_name = "AlbumStore"
 
+# Shared ski-game high scores (one object for the group).
+[[durable_objects.bindings]]
+name = "SCORES"
+class_name = "ScoresStore"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["ListsStore"]
@@ -55,6 +60,10 @@ new_sqlite_classes = ["ListsStore"]
 [[migrations]]
 tag = "v2"
 new_sqlite_classes = ["AlbumStore"]
+
+[[migrations]]
+tag = "v3"
+new_sqlite_classes = ["ScoresStore"]
 
 [vars]
 # Comma-separated list of sites allowed to call the assistant.
