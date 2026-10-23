@@ -2,7 +2,7 @@
 
 ## Current state
 
-The last tag is **`v1.15.2`**: score epochs, and every game score reset for the new difficulty (#105, #106). `main` is at the docs PR for it, and its CI is green.
+The last tag is **`v1.16.0`**: shield, slow-mo and double-points power-ups (#108). `main` is at the docs PR for it, and its CI is green.
 
 - **Live site:** https://ofekfa.github.io/gudauri-2027/
 - **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev
@@ -10,7 +10,7 @@ The last tag is **`v1.15.2`**: score epochs, and every game score reset for the 
 Both match `main`:
 
 - Pages deploys on every push to `main`.
-- The Worker was last deployed from `c40451a` (#106: `SCORE_EPOCH = "2"`), and `ALBUM_SIGNING_KEY` is set.
+- The Worker was last deployed from `43569a7` (#108: the score bound's ×2 multiplier); `SCORE_EPOCH` is `"2"` and `ALBUM_SIGNING_KEY` is set.
 
 There are no open PRs and no work-in-progress branches; old merged branches remain on the remote. Read `PLAN.md` (status, queue, decisions) and `CLAUDE.md` (conventions, gotchas) first.
 
@@ -43,7 +43,11 @@ Phase 10.6 (`v1.15.0`, #101) is shipped:
 - **Game:** hearts (cap 5, none spawn at the cap), a power-up registry (`src/game/powerUps.ts`), the magnet, time-based `pressure()`, a seeded RNG per run.
 - **Balance:** a bot over 30 seeds, median 3.5 min.
 - **Verified live on 2026-10-23:** 60 fps at 4× throttle on phone (touch) and desktop (keys), and the start tip shows. No scores were posted during the check.
-- **Next:** Phase 10.7 (shield, slow-mo, double points) is approved and queued. Each one is a `POWER_UPS` entry, a behaviour in `powerUps.ts` and a sprite. Double points sets `scoreMultiplier`; the bound already uses it.
+- **Phase 10.7 (`v1.16.0`, #108) is shipped:**
+  - 🛡️ shield (12 s, takes one crash), ⏳ slow-mo (6 s, slope at 60 %), 2× double points (10 s);
+  - generic flags on the power-up tuning; weighted spawning;
+  - bot median 176 s on `faster`; live at 60 fps (4× throttle, `fastest`).
+- **Still pending:** Ofek's preset pick (10.6b), which locks the profile and removes the trial switch.
 
 Retune `v1.15.1` (#103) is shipped:
 
