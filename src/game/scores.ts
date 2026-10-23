@@ -27,6 +27,14 @@ export interface ScoreEntry {
 export type ScoreTable = Partial<Record<TravelerId, ScoreEntry[]>>;
 
 export const RUN_ID = /^[A-Za-z0-9-]{8,64}$/;
+/**
+ * Score "seasons": resetting the shared scores bumps the epoch, and phones
+ * that see a newer one drop their old records. Runs sent without one (older
+ * app versions) count as the first epoch.
+ */
+export const FIRST_EPOCH = 1;
+const isEpoch = (v: unknown): v is number =>
+  Number.isSafeInteger(v) && (v as number) >= FIRST_EPOCH;
 export const MIN_DURATION_MS = 1_000;
 export const MAX_DURATION_MS = 3 * 3_600_000;
 /** Rows already on screen when a run starts (any phone or monitor height). */
@@ -128,6 +136,8 @@ export interface ScoreSubmission {
   achievedAt: string;
   /** Play time (pauses excluded). Absent for scores from before syncing. */
   durationMs?: number;
+  /** The score epoch the phone knew when sending (absent = FIRST_EPOCH). */
+  epoch?: number;
 }
 
 export type ParsedSubmission =
@@ -140,7 +150,7 @@ const isRecord = (v: unknown): v is Record<string, unknown> =>
 export function parseScoreSubmission(raw: unknown, nowMs: number): ParsedSubmission {
   const bad = (error: string) => ({ ok: false as const, status: 400 as const, error });
   if (!isRecord(raw)) return bad('Invalid request');
-  const { character, score, runId, durationMs, achievedAt } = raw;
+  const { character, score, runId, durationMs, achievedAt, epoch } = raw;
   if (!isTraveler(character)) return bad('Unknown skier');
   if (typeof runId !== 'string' || !RUN_ID.test(runId)) return bad('Bad run id');
   if (!Number.isSafeInteger(score) || (score as number) < 1) return bad('Bad score');
@@ -151,6 +161,7 @@ export function parseScoreSubmission(raw: unknown, nowMs: number): ParsedSubmiss
       (durationMs as number) > MAX_DURATION_MS)
   )
     return bad('Bad duration');
+  if (epoch !== undefined && !isEpoch(epoch)) return bad('Bad epoch');
   let at = nowMs;
   if (achievedAt !== undefined) {
     const parsed = typeof achievedAt === 'string' ? Date.parse(achievedAt) : NaN;
@@ -168,9 +179,16 @@ export function parseScoreSubmission(raw: unknown, nowMs: number): ParsedSubmiss
       runId,
       achievedAt: new Date(at).toISOString(),
       ...(durationMs !== undefined ? { durationMs: durationMs as number } : {}),
+      ...(epoch !== undefined ? { epoch } : {}),
     },
   };
 }
+
+/** The epoch in a GET /game/scores (or 409) body; FIRST_EPOCH when absent (older Worker). */
+export const epochOf = (raw: unknown): number => {
+  const e = isRecord(raw) ? raw.epoch : undefined;
+  return isEpoch(e) ? e : FIRST_EPOCH;
+};
 
 /** Validates GET /game/scores on the phone; bad entries are dropped. */
 export function parseScoreTable(raw: unknown): ScoreTable {

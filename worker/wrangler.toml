@@ -70,3 +70,6 @@ new_sqlite_classes = ["ScoresStore"]
 ALLOWED_ORIGINS = "https://ofekfa.github.io,http://localhost:5173,http://localhost:4173"
 # Bigger/smarter but ~6x costlier per request: "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
 MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8"
+# Ski-game score epoch. Raising it deletes every shared score and makes phones
+# drop theirs. Use `npm run scores:reset` (it backs up and asks first).
+SCORE_EPOCH = "1"
