@@ -1,5 +1,12 @@
 # CLAUDE.md — Gudauri 2027
 
+## Start here
+
+- **New session?** First read `docs/HANDOFF.md`, then `PLAN.md` and `docs/CODEBASE_REPORT.md` as needed. Copy-paste procedures (deploys, secret rotation, score reset, data scripts) are in `docs/OPERATIONS.md`.
+- **Before changing anything:** check `git status`, open PRs (`gh pr list`) and the latest tag (`git describe --tags --abbrev=0`); report any mismatch with `HANDOFF.md` to Ofek.
+- **At the end of every phase or session:** update `docs/HANDOFF.md`, `PLAN.md` and `docs/CODEBASE_REPORT.md` (and this file if a pattern changed), and push through a PR.
+- **Ofek** is the owner (they/them). Destructive or outward-facing actions (deleting data, resetting scores, rotating secrets) need Ofek's explicit "yes" first. Never ask for secrets in chat.
+
 Companion site for a 4-person ski trip. Static Preact + TypeScript app on GitHub Pages; a Cloudflare Worker (`/worker`) proxies the AI assistant and serves cached live data (`/itinerary`, `/weather`, `/rates`). The full plan and phase status live in `PLAN.md`.
 
 ## Commands
@@ -18,7 +25,7 @@ Companion site for a 4-person ski trip. Static Preact + TypeScript app on GitHub
 | `npm run og-image`          | Regenerate the link-preview card `public/og-image.png` (needs a running preview and `CHROME_PATH`); run after changing avatars |
 | `npm run fetch:dish-images` | Download, crop and encode dish photos from Wikimedia Commons; review every image by eye before committing                      |
 
-Worker (`cd worker`): `npm test`, `npm run typecheck`, `npx wrangler dev`, `npx wrangler deploy` (normally done by CI, see below), `npx wrangler tail`.
+Worker (`cd worker`): `npm test`, `npm run typecheck`, `npm run scores:reset`, `npx wrangler dev`, `npx wrangler deploy` (normally done by CI, see below), `npx wrangler tail`. Procedures: `docs/OPERATIONS.md`.
 
 Run lint, typecheck, test and build (and the Worker's tests if you touched it or the shared data) before every PR.
 
@@ -62,7 +69,7 @@ Run lint, typecheck, test and build (and the Worker's tests if you touched it or
     - Adding one: bump `POWER_HINT_VERSION` in `GamePage`, so the tip shows again.
   - **Difficulty:** every number lives in one `DifficultyProfile` (`constants.ts`), read from `state.profile`; never scatter difficulty constants. Density follows time (`pressure()`, `density.fullAfterSeconds`).
   - **Speed:** a two-phase curve (`earlyRamp` to `cruise`, then `lateRamp` to `max`), capped per screen by `MIN_REACTION_SECONDS` (`speedCap`).
-  - **Trial presets (temporary):** `PRESETS` plus `#/game?preset=<name>` (`presets.ts`); the score bound takes the most generous one.
+  - **Trial presets (temporary, until Ofek picks; Phase 10.6b):** `PRESETS` plus `#/game?preset=<name>` (`presets.ts`); the score bound takes the most generous one. Removal steps: `docs/OPERATIONS.md`.
   - **Tunnelling:** `fairness.test.ts` keeps `max × FIXED_STEP` under the thinnest hitbox overlap; keep it passing when raising speeds.
   - **Balance changes:** re-run `balance.test.ts` (a bot over 30 seeds; the default's median is 2–3.5 min, between the original and v1.15.0). Anything that adds points (new items, multipliers) must stay inside `maxPlausibleScore`, which reads the item scores and `scoreMultiplier`.
 - **Shared game scores:**
@@ -73,7 +80,7 @@ Run lint, typecheck, test and build (and the Worker's tests if you touched it or
     - `GET` returns `{scores, epoch, runs}` (`runs` = stored runs per character), and phones send their epoch with each `POST`; an older one gets `409` and the phone drops it quietly.
     - When the `ScoresStore` sees a higher configured epoch, it logs every run (`scores-reset`, visible in `wrangler tail`), deletes them, and stores the new epoch. A lower one never undoes a reset.
     - A phone that sees a newer epoch clears `game:highScores` and `game:pendingScores`, marks the first upload done, and stores `game:scoreEpoch`.
-  - **To reset every score:** `cd worker && npm run scores:reset -- --dry-run` (a backup outside the repo plus the counts), then `npm run scores:reset`. It asks for "yes", bumps `SCORE_EPOCH`, deploys, captures the purge log, and checks the live scores are empty. Then commit `wrangler.toml` in a PR so CI deploys keep the new epoch. It's not an HTTP route on purpose. Never commit backups (personal data).
+  - **To reset every score:** `cd worker && npm run scores:reset` (dry run first); full procedure in `docs/OPERATIONS.md`. Not an HTTP route on purpose. Never commit backups (personal data).
   - Worker: `GET /game/scores` (public, `max-age=20`) and `POST /game/scores` (album token, `RL_DATA`, 400 bad shape / 422 implausible, idempotent by `runId`, `playedBy` from the token) on the `ScoresStore` Durable Object (one instance, SQLite, every run kept; top 5 is a query).
 - **Background music:** `src/lib/music/` — `machine.ts` (pure reducer; playback is derived, so nothing plays once muted), `shuffleBag.ts`, `settings.ts`, `player.ts` (lazy chunk; owns playback, Media Session) and `musicStore.ts` (always loaded, tiny: creates the single audio element and unlocks it synchronously inside the first gesture, then lazy-loads the player). `src/lib/speech/activity.ts` lets voice features pause/duck music. `MusicControl` sits in the header.
 - **Detail routes:** a section takes detail segments via `PARAM_PAGES` in `app.tsx` and `matchRoute` in `hashRouter.ts`. The default is 1 (`#/food/khinkali`); `PARAM_SEGMENTS` raises it (`/album` allows 2: `#/album/<frame>/<photo>`). Exact routes win (`#/album/story`). Navigation, titles and fact pop-ups follow the section (`basePath`). No router library.
@@ -90,8 +97,9 @@ Run lint, typecheck, test and build (and the Worker's tests if you touched it or
 - **Privacy:** first names and public flight info only. No surnames, booking refs, seats, passport or phone data.
 - **Secrets:** never in code or git. `.env*` is ignored; document variables in `.env.example`. The Worker uses `wrangler secret put`:
   - `CALENDAR_ICS_URL`;
-  - `GROUP_CODE`: shared lists and the album. To rotate it, put a new one; phones re-join with it.
-  - `ALBUM_SIGNING_KEY`: rotating it logs every phone out of the album, and they get a new token silently with the stored group code.
+  - `GROUP_CODE`: shared lists, the album and score posting. Phones re-join after a rotation.
+  - `ALBUM_SIGNING_KEY`: rotating it logs every phone out of the album; they get a new token silently with the stored group code.
+  - Rotation commands: `docs/OPERATIONS.md`.
 - **Content:** facts and dishes are written in our own words, each with `https` sources (dishes need two). Never hotlink or copy the official piste map. Map data comes from OpenStreetMap (ODbL) and needs attribution. Diet flags describe the usual version, conservatively; put variations in `dietNote`.
 - **Images:** only from Wikimedia Commons under CC0, public domain, CC BY or CC BY-SA (the script refuses anything else). Pin each file in `scripts/dish-image-sources.ts` with alt text that describes the actual photo, and check every image by eye (Commons categories contain mislabeled photos). Output is AVIF + WebP at 320/640 px, ≤ 60 kB each (tested), in `<picture>` with width/height and `loading="lazy"`. Never hotlink. No suitable photo means the drawn illustration, never a wrong photo. Large media isn't precached; the service worker caches it at runtime.
 - **Audio:** only tracks under the licences in `ALLOWED_LICENSES` (`src/data/tracks.ts`), listed in `scripts/track-sources.ts` with licence, source page and attribution; run `npm run analyze:tracks` after changes. Stream from the original host (Commons/archive.org MP3); never commit audio, never re-encode or trim (ND licences). Even out loudness with `gainDb` applied as volume. Load nothing audio-related before the first user gesture, never play after the user muted, respect Save-Data, and skip failing tracks. Third-party players (YouTube) are tap-to-load from official channels only, and background music steps aside while one is open.
@@ -103,6 +111,7 @@ Run lint, typecheck, test and build (and the Worker's tests if you touched it or
 - **Background queues must never retry silently forever** (the `v1.12.1` album bug: a `501` from `/album/session` was retried with no limit, so the photo sat at "Uploading 0%" and the upload was never sent). Errors that waiting can't fix (not set up, wrong code, not joined, 4xx) fail at once with a reason. Retries are capped (`MAX_ATTEMPTS`), each try has a deadline, and offline time doesn't count. Show a percentage only while bytes are moving. Error responses need CORS headers, or the browser reports status 0 and the client can't tell them from "offline".
 - **CORS:** every new request header (e.g. `If-Match`) must be added to `Access-Control-Allow-Headers` in `worker/src/cors.ts`, or browsers block the request while unit tests still pass. Routes with `public: true` skip the origin/CORS pipeline, so set any CORS headers in the handler.
 - **Durable Objects:** a new class needs a new `[[migrations]]` tag in `wrangler.toml` (`v1` ListsStore, `v2` AlbumStore, `v3` ScoresStore). The Worker's vitest config aliases `cloudflare:workers` to `worker/test/stubs/cloudflare-workers.ts`. Album rules live in `worker/src/album/logic.ts` so tests can run them in memory.
+- **Slow game tests:** the simulation tests time out on a busy CPU. Close leftover headless Chromes from QA scripts (`pkill -f "user-data-dir=/private/tmp/claude"`) before blaming the code.
 - **Local end-to-end checks:** `cd worker && npx wrangler dev --port 8787 --var GROUP_CODE:<test> --var ALBUM_SIGNING_KEY:<test>` (test values only), plus `VITE_ASSISTANT_URL=http://localhost:8787 npm run build && npx vite preview --port 4173`. Local Durable Object data persists in `worker/.wrangler/state`; delete it for a clean run. The local rate limiters are real (`RL_DATA` 60/min, `RL_AUTH` 5/min), so poll slowly.
 - **Shell editing:** scripted find-and-replace (Python `str.replace`, `sed`) fails silently once Prettier has rewrapped a line. Assert that the pattern exists, or use an exact edit tool. Don't pipe `npm run lint` into `tail` inside `&&` chains (it hides failures). macOS has no `timeout` command.
 - **Albums and git:** photos never go in git. Test fixtures are generated (`sharp`) in tests.

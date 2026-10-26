@@ -30,46 +30,33 @@
 | 10.6  | Ski game: hearts, power-up system, magnet, 3–6 min pacing                | ✅ Done | v1.15.0 |
 | 10.6a | Ski game retune: faster and harder (profiles + 3 trial presets)          | ✅ Done | v1.15.1 |
 | 10.6c | Score epochs; all game scores reset for the new difficulty               | ✅ Done | v1.15.2 |
-| 10.6b | Lock in Ofek's preset; remove the trial switch                           | ⏳ Next |         |
 | 10.7  | Ski game: shield, slow-mo, double points                                 | ✅ Done | v1.16.0 |
+| 10.6b | Lock in Ofek's preset; remove the trial switch                           | ⏳ Next |         |
 
 **Live:** https://ofekfa.github.io/gudauri-2027/ · **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev · Session handoff: `docs/HANDOFF.md`
 
 ### Current phase
 
-**10.3 Album** is shipped and **adding photos works live** (`v1.12.1`). The upload bug was caused by `ALBUM_SIGNING_KEY` not being set (`501`), which the client retried forever without telling anyone. Token errors now fail at once with a reason, retries are capped at 5 with an attempt deadline, the photo shows "Upload failed — tap to retry", and the key is set. See "Resolved bug" in `docs/HANDOFF.md`.
+**Round 4 is shipped through `v1.16.0`** (2026-10-23). Everything is merged, deployed and verified live; see `docs/HANDOFF.md` for the exact state. Summaries of each Round 4 phase are under "Round 4" at the end of this file.
 
-**10.4** (`v1.13.0`, PRs #95–#97):
+**Next action:** Ofek picks a game preset (`fast`, `faster` or `fastest`, via `#/game?preset=<name>`), then Phase 10.6b locks it in (steps in `docs/OPERATIONS.md`) and tags `v1.16.1`.
 
-- browse a moment's photos on its grid card;
-- add, edit, move and delete **our own moments** (stored by the Worker, string fractional order keys, delete cascades to photos);
-- bigger snowflakes, more of them on bigger screens (`36 + 18 × MP`, max 110; 4.5–12 px).
+### Open items (waiting for Ofek)
 
-All three are verified live.
+1. **10.6b preset pick** (above).
+2. **Real-phone tests** (iOS Safari + Android Chrome): album (camera, gallery multi-select, HEIC, airplane mode, card swipe, adding a moment), scores sync between two phones, each power-up, touch steering; plus the older iPhone music, Kudebi cam and Georgian-script checks. Checklist in `docs/HANDOFF.md`.
+3. **Two-phone shared-lists check** (`v1.11.0`): not reported.
+4. **Day-1 calendar times.** Ofek: "let's deal with the time later". The feed is UTC and parsed correctly; Ofek's Google Calendar display/event time zone is probably Israel.
+5. **Stale Backup text** ("Lists are saved on this device only", `BackupPanel.tsx`): fix offered, not requested yet.
 
-**10.5** (`v1.14.0`, #99): ski-game high scores are shared across phones (top 5 per character, played-by, crew leaderboard).
+### Ideas not yet started (offered to Ofek, not requested or scheduled)
 
-- **Storage:** a `ScoresStore` Durable Object (migration v3); `POST` needs the album token and is checked against a plausibility bound derived from the game constants.
-- **Offline:** runs wait in a pending queue and sync later. Existing local scores were uploaded once.
-- **Verified live with two browsers.** Test runs left on the leaderboard (Ofek's OK): Ofek 268, Maya 301.
+- Expenses / settle-up between the four of us.
+- A ski-day briefing (weather, lifts, plan for the day on one card).
+- An offline safety card (emergency numbers, hotel address in Georgian, insurance reminder; no personal data).
+- Trip awards (the crew leaderboard shipped in 10.5; awards would build on it and the album).
 
-**10.6** (`v1.15.0`, #101): the ski game has collectible hearts (start 3, cap 5; none spawn at the cap), a generic power-up system with the magnet (8 s), slower pacing (a decent run now lasts ~3–6 min) and a seeded RNG. The shared score bound covers the new items; old records were kept (Ofek's choice). Verified live at 60 fps with 4× throttle on phone and desktop.
-
-**10.6a** (`v1.15.1`, #103): Ofek found v1.15.0 too slow and too easy. All difficulty numbers now live in one `DifficultyProfile`, and the default (`faster`) reaches ~94 km/h in ~20 s. Bot median: 170 s, between the original's 57 s and v1.15.0's 204 s. Three trial presets can be picked with `#/game?preset=fast|faster|fastest`. **Waiting for Ofek to pick one;** then 10.6b locks it in and removes the switch.
-
-**Next action:** Ofek's real-phone tests (album checklist, plus scores: a record on phone A shows on phone B, and an offline run syncs once back online).
-
-### Queued (in order)
-
-1. Real-phone album test by Ofek (iOS Safari + Android Chrome).
-2. Day-1 calendar times. Ofek: "let's deal with the time later". The feed is UTC and parsed correctly; his Google Calendar display/event time zone is probably Israel.
-3. Ideas offered to Ofek, **not yet requested or scheduled**:
-   - expenses / settle-up;
-   - a ski-day briefing;
-   - an offline safety card;
-   - a leaderboard and trip awards.
-
-### Decisions made in Round 4 (Ofek, 2026-10-22)
+### Decisions made in Round 4 (Ofek, 2026-10-22 → 10-23)
 
 Reasons are given where Ofek or the analysis stated them.
 
@@ -86,6 +73,14 @@ Reasons are given where Ofek or the analysis stated them.
 | **Storage: Durable Objects SQLite**, sharded per frame                                                                                                         | R2 most likely needs a payment card; KV's free limits (1 GB, 1,000 writes/day) don't fit                       |
 | **Quick add** card on Home during the trip                                                                                                                     | Fastest path to add a photo                                                                                    |
 | Day-1 calendar time issue deferred                                                                                                                             | Ofek: "let's deal with the time later"                                                                         |
+| Album moments: anyone can **add, edit, move and delete our own moments**; predefined moments can't be edited (10.4)                                            | Ofek's request; delete cascades to the moment's photos                                                         |
+| Game scores **shared per character** (top 5), with who played them and a crew leaderboard (10.5)                                                               | Ofek's request; posting reuses the album token, so no new secret                                               |
+| Game runs should last **3–6 min** (10.6), then **~2–3.5 min, faster and harder** (10.6a)                                                                       | Ofek: runs ended too fast (~1 min); then v1.15.0 felt too slow and too easy                                    |
+| Hearts cap at 5; the next power-ups are **shield, slow-mo, double points** (10.6, 10.7)                                                                        | Ofek's picks from the offered list                                                                             |
+| Keep old records through 10.6; then **reset every score** for the new difficulty (10.6c, Ofek typed "yes" after seeing the counts)                             | Old records were set under easier rules; backups exported first and kept out of git (personal-ish data)        |
+| The reset is an **admin script, never a public HTTP route**                                                                                                    | Ofek's requirement: nobody with the site link can wipe scores                                                  |
+| Three **trial presets** behind hidden links until Ofek picks one (10.6a)                                                                                       | Easier to choose by playing than from numbers                                                                  |
+| To-do lists were assumed per-device, but they already sync (no change made, 2026-10-23)                                                                        | Ofek: their mistake; they sync since `v1.11.0`                                                                 |
 
 ### Deviations from the original plan
 
@@ -96,7 +91,7 @@ Reasons are given where Ofek or the analysis stated them.
 - Phase 2: the map page doesn't use pinch-zoom; zoom buttons (100–300%) plus native scrolling keep it simple and accessible. Phones open at 200%.
 - Between phases 2 and 3: avatar tweaks per feedback (Maya brown eyes + glasses, Roy undercut, Ofek warmer skin), tagged as part of v0.3.0.
 - Phase 10.2 (`v1.11.1`): hair colours per feedback: Ron brown (was black), Ofek light/ash brown (was blond). `og-image.png` regenerated with `npm run og-image`.
-- `v1.11.2`: Roy's name is spelled **Roi** everywhere it's shown (his id stays `roy`, so stored lists, scores and sync keep working).
+- `v1.11.2`: Roy's name is spelled **Roi** everywhere it's shown (the id stays `roy`, so stored lists, scores and sync keep working).
 - Phase 10.3 (`v1.12.0`):
   - Album images also send `Access-Control-Allow-Origin: *`, so "Download all" can `fetch` them. They're public anyway, and no credentials are involved.
   - Viewed photos rely on the browser's HTTP cache (`immutable`) rather than a separate Cache Storage, and the service worker doesn't precache them.
@@ -117,7 +112,7 @@ Reasons are given where Ofek or the analysis stated them.
 
 - Phase 8.3: the to-do list has five lists (four travelers + Shared). Day-based deadlines are the **end of that day in Israel time**, and check-ins are exact (departure − 3 h, shown in Israel time; LY5110's appears as 18:55 Israel = 20:55 Tbilisi). The El Al check-in window stays unverified and is worded as "usually ~24 h; confirm in the El Al app". The passport item points to Georgia's current entry rules rather than stating a validity requirement. The Home card reads storage synchronously so it never shifts the layout. Testing lesson: tap UI by DOM `click()` in headless tests (the fixed tab bar intercepts coordinate taps at 375 px), and wait for colour transitions before axe contrast checks.
 
-- Phase 8.4: Ofek set `CALENDAR_ICS_URL` from his own terminal; it was never seen or echoed. The live feed gave 38 trip events. ical.js 2.2.1 adds about 60 kB gzipped to the Worker. A 2,000-event feed parses in ~1.2 ms thanks to the text pre-filter. Flights from `trip.ts` are merged unless the calendar already names the flight number. **Calendar data note for Ofek:** the calendar's flight events look ~2 h off; LY 5107 is stored as 09:15–11:50 Tbilisi time vs the real 07:15–09:50, and the return lands at 01:55 on 1 Mar vs a 23:55 departure on 28 Feb. Day-1 events were probably typed in Tbilisi times with the event time zone set to Israel. The site shows the calendar as stored. Lesson: after `npm install` in `worker/`, check the lockfile still lists the `@rolldown/binding-*` packages; if not, regenerate it from scratch.
+- Phase 8.4: Ofek set `CALENDAR_ICS_URL` from their own terminal; it was never seen or echoed. The live feed gave 38 trip events. ical.js 2.2.1 adds about 60 kB gzipped to the Worker. A 2,000-event feed parses in ~1.2 ms thanks to the text pre-filter. Flights from `trip.ts` are merged unless the calendar already names the flight number. **Calendar data note for Ofek:** the calendar's flight events look ~2 h off; LY 5107 is stored as 09:15–11:50 Tbilisi time vs the real 07:15–09:50, and the return lands at 01:55 on 1 Mar vs a 23:55 departure on 28 Feb. Day-1 events were probably typed in Tbilisi times with the event time zone set to Israel. The site shows the calendar as stored. Lesson: after `npm install` in `worker/`, check the lockfile still lists the `@rolldown/binding-*` packages; if not, regenerate it from scratch.
 - Phase 8.5: both Vitamin Cafe streams were re-checked through YouTube oEmbed on 2026-10-22 (Soliko `vBVWcSjPAZM`, Kudebi `aCHJ-r15RLM`); if a stream restarts with a new id, update `src/data/zones.ts`. One Open-Meteo call covers all three zones (elevation downscaling); the upstream response is ~70 kB and the Worker payload ~2.6 kB. Open-Meteo snaps all three zones to grid cells 3–8 km away, so only the elevation separates them, and snow depth is always labelled a model estimate. Nothing from YouTube loads until a cam is tapped. The forecast strip was made a 7-column grid because a sideways-scrolling list failed axe (keyboard-unreachable scroll region).
 - Phase 8.6: the live-data block budget is **1,500** characters, not the planned 1,200. With the real calendar, the busiest two days plus weather and rates came to 1,299. Live checks showed the 8B model inverting the GEL rate (50 GEL → "42 ILS") and padding the plan with invented details. Fixed with ready-made conversions in the rates line, a plan header stating Tbilisi times and that day 1 starts in Israel, and prompt rules against inverting rates or adding durations, distances or places; it now answers "50 GEL = 60 ILS". Minor event mislabels can remain (a model limit). The chat tests had been calling real upstream APIs; they now stub `fetch`. Round 2 audit (live, 2026-10-22): 13 routes × 3 viewports with no overflow; axe 0 in light and dark on every route plus interactive states (words filter, currency swap, to-do Shared, weather Top with the cam playing, packing template); one `<h1>` per page; no console errors; Lighthouse mobile performance 97–100, accessibility 100, best practices 100, CLS 0 everywhere. The calendar's day-1 times now look corrected (the flight shows 07:15).
 - Phase 8.7: **hand-written service worker** instead of `vite-plugin-pwa` (which would add `workbox-build`'s 37 dependencies and a runtime `workbox-window`); `sw.js` is 2 kB. **No service-worker caching of the Worker's data routes** (a planned item, dropped): the pages already keep versioned copies on the device with "Offline: updated X ago" labels, and a service-worker cache would answer offline as if live and hide them. The baked rate comes from NBG directly in the Pages deploy (`npm run fetch:rates`, never fails the build). The offline test found a router race: a hash change before `useHashPath` subscribed was ignored; fixed. Verified live: first visit controlled immediately; 29 files cached; with the network cut, all 12 pages open (including never-visited Map/Game/To-do); Itinerary/Weather/Currency show their saved copies with offline labels; a fresh device with no saved rate shows the "Approximate" baked rate; a real deploy triggered the "New version available" toast and Refresh loaded it.
@@ -1146,7 +1141,11 @@ Packing lists and to-dos lived only on each phone. Decisions (Ofek, 2026-10-22):
 - **Tests:** record diff/merge, adapters, client merge during an in-flight sync, Durable Object merge rules, route auth/validation.
 - **Manual step for Ofek:** choose a long passphrase, run `npx wrangler secret put GROUP_CODE` in `worker/`, and share the code privately with Ron, Roy and Maya.
 
-**Status (2026-10-22):** shipped as `v1.11.0`. The Durable Object deployed on the Workers Free plan. Verified end to end with a local Worker (emulated Durable Object) and two separate browser profiles: join, see the other phone's item with "· Ofek", tick it and see it packed with "· Maya" on the first phone, wrong code rejected. Live `/sync` answered `501` until Ofek set `GROUP_CODE`. It's now set (wrong codes get `401`), but Ofek hasn't reported his two-phone check yet.
+**Status (2026-10-22):** shipped as `v1.11.0`. The Durable Object deployed on the Workers Free plan. Verified end to end with a local Worker (emulated Durable Object) and two separate browser profiles: join, see the other phone's item with "· Ofek", tick it and see it packed with "· Maya" on the first phone, wrong code rejected. Live `/sync` answered `501` until Ofek set `GROUP_CODE`. It's now set (wrong codes get `401`), but Ofek hasn't reported the two-phone check yet.
+
+## Phase 10.2 — Avatar hair colours → `v1.11.1`, `v1.11.2`
+
+Ofek's feedback: Ron's hair brown (was black), Ofek's light/ash brown (was blond); `og-image.png` regenerated. `v1.11.2` spells Roi's name correctly everywhere (the id stays `roy`, so stored data keeps working).
 
 ## Phase 10.3 — Album: our trip in photos → `v1.12.0`
 
@@ -1205,6 +1204,24 @@ A page of frames, one per moment of the trip in story order; any of us adds phot
 - **Live:** viewing works. `POST /album/session` answers `501` because `ALBUM_SIGNING_KEY` isn't set. **Open bug:** in that state an added photo sits at "Uploading 0%" forever with no error (reproduced locally; see `docs/HANDOFF.md`).
 - **Not checked:** real iPhone and Android phones (camera, HEIC → JPEG, upload on mountain signal) still need Ofek's test.
 
+### Phase 10.3a — Fix: uploads stuck at "Uploading 0%" → `v1.12.1` (#93)
+
+Root cause: `ALBUM_SIGNING_KEY` wasn't set, so `POST /album/session` returned `501`, and the client retried every token error silently forever. Now errors that waiting can't fix fail at once with a reason, retries are capped (`MAX_ATTEMPTS` 5, a 3-minute deadline per try, offline time not counted), and a failed photo shows "Upload failed — tap to retry". The key was then set (Ofek's OK) and two live uploads succeeded. Lesson recorded in `CLAUDE.md` → Gotchas.
+
+## Phase 10.4 — Album cards, our own moments, bigger snowfall → `v1.13.0` (#95–#97)
+
+- **Card carousel:** each moment card browses its photos (arrows, swipe, ← →, dots or "2 / 7"); tapping opens `#/album/<moment>/<photo>`.
+- **Our own moments:** "+ Add moment" (title ≤ 40, emoji from a fixed set, optional prompt ≤ 80, placed after any moment), edit, move and delete (cascades to its photos). Stored by the Worker with string fractional order keys, so moving never renumbers; cap of 30. Predefined moments can't be changed (403).
+- **Snowfall:** 4.5–12 px flakes, `36 + 18 × megapixels` (max 110), paused in hidden tabs.
+- **Verified live (2026-10-22):** browsing, a test moment added after Bowling and deep-linked, then deleted; 60 fps at 4× throttle; axe 0; Lighthouse 96–100 / 100 / 100.
+
+## Phase 10.5 — Shared game high scores → `v1.14.0` (#99)
+
+- Top 5 per character, shared across phones, with who played each run and a crew leaderboard on the game page.
+- **Worker:** `GET /game/scores` (public, cached 20 s) and `POST` (album token, `RL_DATA`, a plausibility bound derived from the game constants, idempotent by run id) on the `ScoresStore` Durable Object (migration `v3`), which keeps every run.
+- **Phone:** runs wait in a pending queue (offline, or during a run) and sync later with backoff; old local scores were uploaded once; a "🏆 New record for …" toast.
+- **Verified live (2026-10-23)** with two browsers, including an offline run that synced on reconnect. Those test runs were later removed by the 10.6c reset.
+
 ## Phase 10.6 — Ski game: hearts, power-ups and the magnet → `v1.15.0`
 
 Runs ended after ~1–1.5 min: the speed cap arrived at ~57 s, and difficulty stopped rising with it. Decisions (Ofek, 2026-10-23): **target 3–6 min runs**; **keep the old records**; next power-ups **shield, slow-mo and double points** (Phase 10.7, after the magnet ships).
@@ -1231,6 +1248,14 @@ Ofek (2026-10-23): v1.15.0 felt too slow and too easy. Target: harder than v1.15
 - **Status (2026-10-23):** shipped. Live: 59.5–60 fps at 4× throttle on `fastest` (phone touch and desktop).
 - **Follow-up (10.6b):** once Ofek picks a preset, make it the only profile, remove `presets.ts`, the link switch and the HUD label, and let the score bound use that one profile.
 
+## Phase 10.6c — Score epochs and the score reset → `v1.15.2` (#105, #106)
+
+Ofek asked to clear every score because the old records were set under easier rules, with three conditions: export the scores first (to Ofek in chat, never in git), show the counts and wait for an explicit "yes", and no public HTTP route.
+
+- **Epochs:** `SCORE_EPOCH` in `worker/wrangler.toml`. When the `ScoresStore` sees a higher one it logs every run (`scores-reset`, captured with `wrangler tail`), deletes them and stores the new epoch; a lower one never undoes a reset. `GET` returns `{scores, epoch, runs}`; an old-epoch `POST` gets `409`; phones that see a newer epoch drop their local records and pending runs quietly.
+- **Admin script:** `cd worker && npm run scores:reset` (see `docs/OPERATIONS.md`).
+- **Run on 2026-10-23** after Ofek's "yes": 46 runs deleted (Maya 22, Ron 14, Ofek 9, Roi 1). Backups are on Ofek's Mac in `~/gudauri-2027-backups/`. Verified live: empty leaderboard, and a phone seeded with old records cleared them and posted nothing. The crew has posted new runs since.
+
 ## Phase 10.7 — Ski game: shield, slow-mo, double points → `v1.16.0`
 
 **Status (2026-10-23):** shipped (#108). Generic hooks on the power-up tuning: `absorbsCrash`, `slopeSpeedFactor` and `scoreMultiplier`. Spawning makes one roll for "any power-up", then a weighted pick. The `faster` bot median moved from 170 s to 176 s, with ~2 power-ups per run. The score bound now multiplies by 2. Live: 60 fps at 4× throttle on `fastest`, on phone and desktop. The start tip was bumped to version 2 (it shows once more).
@@ -1240,3 +1265,7 @@ Original design:
 - **Shield:** absorbs the next crash (no life lost, no slowdown); lasts until hit or 12 s.
 - **Slow-mo:** the slope at 60 % speed for 6 s. Distance points slow accordingly.
 - **Double points:** collectibles ×2 for 10 s. The score bound already multiplies by the largest `scoreMultiplier`.
+
+## Phase 10.6b — Lock in the difficulty preset → `v1.16.1` (next, waiting for Ofek)
+
+Ofek plays the three trial links and picks one. Then that profile becomes the only one: delete `presets.ts`, `PRESETS`, the link switch and the HUD label, and the score bound uses that profile alone. Steps in `docs/OPERATIONS.md`.

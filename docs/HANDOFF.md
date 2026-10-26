@@ -1,145 +1,90 @@
-# Handoff — 2026-10-23
+# Handoff — 2026-10-26
+
+Read this first in a new session, then `PLAN.md` (phases, decisions, ideas) and `docs/CODEBASE_REPORT.md` (architecture) as needed. Procedures with commands are in `docs/OPERATIONS.md`.
 
 ## Current state
 
-The last tag is **`v1.16.0`**: shield, slow-mo and double-points power-ups (#108). `main` is at the docs PR for it, and its CI is green.
-
-- **Live site:** https://ofekfa.github.io/gudauri-2027/
-- **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev
-
-Both match `main`:
-
-- Pages deploys on every push to `main`.
-- The Worker was last deployed from `43569a7` (#108: the score bound's ×2 multiplier); `SCORE_EPOCH` is `"2"` and `ALBUM_SIGNING_KEY` is set.
-
-There are no open PRs and no work-in-progress branches; old merged branches remain on the remote. Read `PLAN.md` (status, queue, decisions) and `CLAUDE.md` (conventions, gotchas) first.
+- **Last tag:** `v1.16.0` (shield, slow-mo, double points; #108). `main` is at the `docs/handoff` PR that wrote this file, right after `70828d4` (#109).
+- **Live site:** https://ofekfa.github.io/gudauri-2027/ — Pages deploys every push to `main`. Last checked 2026-10-26: the Pages deployment is at `70828d4` (then `main`), and every CI/deploy run on `main` is green.
+- **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev — last deployed 2026-10-23 20:48Z by CI from `43569a7` (#108). Nothing the Worker bundles has changed since, so it matches `main`. `SCORE_EPOCH` is `"2"`.
+- **Branches and PRs:** only `main` on the remote; no open PRs; no work-in-progress branches; nothing stashed.
+- **Live data in use:** since 2026-10-23 the crew has posted real game runs (epoch 2) and Ofek has 2 album photos (McDonald's). Treat both as personal data: never delete or reset them without Ofek's explicit "yes".
+- **Tests:** 477 site + 103 Worker, all passing.
 
 ## In progress
 
-Phase 10.3 Album shipped in PRs #86–#91; the upload bug was fixed in #93 (`v1.12.1`). **Adding photos works on the live site** (verified 2026-10-22, see "Resolved bug").
+Nothing is half-built. One temporary item waits for Ofek:
 
-Phase 10.4 (`v1.13.0`) is shipped and verified live:
-
-- **#95:** moment cards are a mini carousel (arrows, swipe, ← →, dots / "2 / 7", tap → `#/album/<moment>/<photo>`).
-- **#96:** our own moments. "+ Add moment", stored by the Worker (`/album/moments` routes), with string fractional order keys; edit, move and delete (which cascades to photos).
-- **#97:** snowflakes 4.5–12 px, `36 + 18 × MP` (max 110), paused in hidden tabs.
-
-Live checks on 2026-10-22:
-
-- 3 test photos browsed on a card, plus the deep link; a test moment added after Bowling, deep-linked after a reload, then deleted. All test data was removed. Ofek's own 2 McDonald's photos are untouched.
-- 60 fps at 4× throttle with 42/59/102 flakes; axe 0 on 17 routes in light and dark; Lighthouse mobile 96–100 / 100 / 100, CLS 0.
-
-Phase 10.5 (`v1.14.0`, #99) is shipped:
-
-- **Shared high scores:** `GET`/`POST /game/scores`; the `ScoresStore` Durable Object; `src/game/scores.ts` shared with the Worker; the synced repository in `src/game/highScores.ts`; `src/game/scoreSync.ts`; `ScoreSyncHost`.
-- **Verified live on 2026-10-23 with two browsers:**
-  - A (Ofek's Chrome) ran 268 as Ofek and got the "🏆 New record" toast;
-  - B (a separate Chrome, joined as Maya) saw it, then played offline (301, "1 waiting to send") and synced on reconnect;
-  - A then showed Maya 301 on top.
-- These two runs stay on the shared leaderboard (no delete route; Ofek agreed).
-
-Phase 10.6 (`v1.15.0`, #101) is shipped:
-
-- **Game:** hearts (cap 5, none spawn at the cap), a power-up registry (`src/game/powerUps.ts`), the magnet, time-based `pressure()`, a seeded RNG per run.
-- **Balance:** a bot over 30 seeds, median 3.5 min.
-- **Verified live on 2026-10-23:** 60 fps at 4× throttle on phone (touch) and desktop (keys), and the start tip shows. No scores were posted during the check.
-- **Phase 10.7 (`v1.16.0`, #108) is shipped:**
-  - 🛡️ shield (12 s, takes one crash), ⏳ slow-mo (6 s, slope at 60 %), 2× double points (10 s);
-  - generic flags on the power-up tuning; weighted spawning;
-  - bot median 176 s on `faster`; live at 60 fps (4× throttle, `fastest`).
-- **Still pending:** Ofek's preset pick (10.6b), which locks the profile and removes the trial switch.
-
-Retune `v1.15.1` (#103) is shipped:
-
-- **`DifficultyProfile`** in `constants.ts`. The default is `faster`: 54 → 94 km/h in ~22 s, top 130 km/h, rarer hearts and magnets.
-- **Bot median 170 s** (original 57 s, v1.15.0 204 s).
-- **Trial links, waiting for Ofek's pick:**
-  - https://ofekfa.github.io/gudauri-2027/#/game?preset=fast
-  - https://ofekfa.github.io/gudauri-2027/#/game?preset=faster
-  - https://ofekfa.github.io/gudauri-2027/#/game?preset=fastest
-- **After he picks:** lock it in (one profile), delete `src/game/presets.ts`, `presets.test.ts`, the `presetLabel` HUD line and the `PRESETS` map, and the score bound falls back to that one profile. Re-run `balance.test.ts`, then patch-tag.
-
-Score reset `v1.15.2` (#105, #106) is done:
-
-- **Score epochs:** `SCORE_EPOCH` in `worker/wrangler.toml`. `GET /game/scores` returns `{scores, epoch, runs}`, and an old-epoch `POST` gets 409. Phones that see a newer epoch clear their local records and pending runs and skip the first upload.
-- **One-command reset:** `cd worker && npm run scores:reset` (`--dry-run` first). Documented in `CLAUDE.md`.
-- **The reset on 2026-10-23 (Ofek confirmed in chat):**
-  - all **46 runs** were deleted: Maya 22, Ron 14, Ofek 9, Roi 1 (top bests 8653 / 6571 / 2413 / 1257);
-  - the backup (the public top fives plus a purge log with all 46 runs) is in the session scratchpad, **not** in git, and was given to Ofek in chat;
-  - live is now `{scores: {}, epoch: 2, runs: {}}`.
-- **Verified live:** a fresh browser seeded with old records, an unsent run and the first-upload flag not set showed every Best at 0 and an empty leaderboard. Its storage was cleared (`migrated: true`, epoch 2) and it posted nothing.
-- No new live scores were posted, so the leaderboard starts empty for Ofek.
-
-Left to do: Ofek's real-phone test (camera, gallery multi-select, airplane mode, plus the `v1.13.0` checklist: swiping a card, adding "Breakfast", the snowflakes).
-
-**Lighthouse gotcha:** pass hash routes with a literal `#` (`"<url>/#/album"`). A `%23` makes it request a real path that 404s, which shows up as best practices 96.
+- **Phase 10.6b — pick a game difficulty preset.** Three trial presets are live behind hidden links (the normal game uses `faster`):
+  - https://ofekfa.github.io/gudauri-2027/#/game?preset=fast (280 → 480 → 680 px/s)
+  - https://ofekfa.github.io/gudauri-2027/#/game?preset=faster (300 → 520 → 720, the default)
+  - https://ofekfa.github.io/gudauri-2027/#/game?preset=fastest (340 → 600 → 800)
+  - Bot medians: fast 171 s, faster 176 s (with all four power-ups), fastest 153 s.
+  - After the pick: lock it in and remove the switch. Steps are in `docs/OPERATIONS.md` → "Lock in the game difficulty preset". If Ofek says "keep the default", the pick is `faster`.
 
 ## Open questions for Ofek
 
-- Two-phone shared-lists check (`v1.11.0`): did it work?
-- Day-1 calendar times: still deferred ("let's deal with the time later")?
-- Which, if any, of the queued ideas next: expenses, ski-day briefing, safety card, leaderboard?
+1. Which preset: `fast`, `faster` (current default) or `fastest`?
+2. Real-phone results (see the checklist below): album, scores sync, the power-ups.
+3. Did the two-phone shared-lists check (`v1.11.0`) work?
+4. Day-1 calendar times: still deferred ("let's deal with the time later")?
+5. What's next, if anything, from the unscheduled ideas in `PLAN.md` (expenses / settle-up, ski-day briefing, offline safety card, trip awards)?
+6. Should the stale "Lists are saved on this device only" text in Backup be fixed (bug 1 below)? It's a one-line fix, offered but not done.
 
-## Manual steps Ofek owes
+### Real-phone checklist (owed by Ofek; not testable here)
 
-| Step                                                                                                             | Status                                                                                    | How verified                                                                                                   |
-| ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `GROUP_CODE` Worker secret                                                                                       | ✅ Done                                                                                   | `wrangler secret list`; wrong codes get `401`                                                                  |
-| `CALENDAR_ICS_URL` Worker secret                                                                                 | ✅ Done                                                                                   | `wrangler secret list`; itinerary is live                                                                      |
-| `ALBUM_SIGNING_KEY` Worker secret                                                                                | ✅ Done (2026-10-22, random key piped to `wrangler secret put`, never printed; Ofek's OK) | `wrangler secret list`; live session gives `401` for a wrong code (was `501`); two live uploads succeeded      |
-| `ALBUM_PASSCODE`                                                                                                 | n/a                                                                                       | Doesn't exist: the album reuses `GROUP_CODE` (Ofek's decision)                                                 |
-| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (GitHub Actions secrets)                                         | ✅ Done                                                                                   | `gh secret list` (set 2026-10-21); Worker deploys succeed                                                      |
-| Album storage (Durable Object `AlbumStore`, migration `v2`) and bindings `ALBUM`, `LISTS`, `RL_AUTH`, KV `CACHE` | ✅ Done (by CI; nothing manual)                                                           | Deploy of `e549726` succeeded; live `GET /album` → `200 {"frames":{},"photos":[]}`; preflight lists `If-Match` |
-| R2 bucket                                                                                                        | n/a                                                                                       | Not used                                                                                                       |
-| Two-phone shared-lists test                                                                                      | ❓ Unknown                                                                                | Not reported                                                                                                   |
-| Real-phone album test (iOS Safari, Android Chrome)                                                               | ❌ Not done                                                                               | Unblocked: the bug is fixed and the key is set                                                                 |
-| iPhone music test; Kudebi cam phone test                                                                         | ❓ Unknown                                                                                | Not reported                                                                                                   |
+- **Album:** camera and gallery multi-select on iOS Safari and Android Chrome; HEIC photos arrive as JPEG; airplane mode → "Waiting for connection", then uploads; swipe a moment card; add a "Breakfast" moment; snowflakes look right.
+- **Scores:** a record on phone A appears on phone B; an offline run syncs when back online; a phone that had pre-reset records shows them gone.
+- **Game:** each power-up (❤️ 🧲 🛡️ ⏳ 2×) works and shows its timer; the shield saves a crash ("🛡️ Saved!"); slow-mo slows the slope but not steering; 2× doubles khachapuri points; touch steering feels right.
+- **Older items:** iPhone music playback; Kudebi webcam on a phone; Georgian script rendering.
 
-To rotate the key (logs every phone out of the album; they get a new token silently): run `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))" | npx wrangler secret put ALBUM_SIGNING_KEY` in `worker/`.
+## Known bugs and risks
 
-## Known issues and risks
+1. **Stale UI text:** `src/components/common/BackupPanel.tsx:66` still says "Lists are saved on this device only" (plus a comment in `src/lib/todo/repository.ts:6`). Lists have synced since `v1.11.0`. Cosmetic.
+2. **Trial-preset code is temporary:** `presets.ts`, `PRESETS` and the HUD label exist until 10.6b. Meanwhile the score bound uses the most generous preset (slightly looser than needed).
+3. **`RL_AUTH` (5/min per IP)** also covers token renewals. Four phones behind one hotel IP could hit it; the client retries (capped at 5 tries) and then shows "Upload failed — tap to retry".
+4. **Album `uploadedBy`** comes from the upload's details, not the token, so any member can credit a photo to someone else. Low risk among four friends.
+5. **Album images offline** rely on the browser HTTP cache (`immutable`), not the service worker.
+6. **Not verified on real phones:** iOS camera input, HEIC → JPEG, IndexedDB Blobs on older iOS, uploads on weak signal, game touch feel, Web Speech on iOS.
+7. **Rate limits are approximate** (free binding; bursts of ~75 got through in testing). The Workers AI daily allowance is the hard cap.
+8. **No CSP** (a deliberate decision, see `PLAN.md`).
+9. **QA scripts aren't in the repo.** The puppeteer checks (`album-e2e`, `gamelive`, `snowperf`, balance `metrics.sh` …) lived in session scratchpads and are gone. The committed tests are unit-level. Recreate scripts as needed (puppeteer-core is a dev dependency).
+10. **Score-reset backups** (epoch 1 → 2, 46 runs) are only on Ofek's Mac in `~/gudauri-2027-backups/` (Ofek also got a copy in chat). Never commit them.
 
-- The Worker's `RL_AUTH` rate limit (5/min per IP) also applies to token renewals. Four phones behind one hotel IP could hit it while retrying, which the client treats as "retry" (5 tries, then "Upload failed — tap to retry").
-- The Worker takes `uploadedBy` from the upload's own details, not from the token's `who`. Any member can credit a photo to someone else. Low risk among four friends.
-- Album images are fetched from the Worker on each view; only the browser's HTTP cache (`immutable`) keeps them offline. They aren't in the service-worker cache.
-- Not verified on real phones: the iOS camera input, HEIC → JPEG conversion via `accept="image/jpeg,image/*"`, IndexedDB Blob storage on older iOS, and uploads on weak signal.
-- The QA scripts (`album-e2e.mjs`, `round2.mjs`, …) and `ship-pr.sh` lived in the session scratchpad and are **not in the repo**. Ship with `gh pr create` → wait for CI → `gh pr merge --squash --delete-branch`.
+## Manual setup status (names only)
 
-## Resolved bug — Album upload stuck at "Uploading 0%" (fixed in `v1.12.1`, #93)
+| Item                                                                       | Status                                   | How it's checked                                                                  | How to rotate                                                                |
+| -------------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `GROUP_CODE` (Worker secret)                                               | ✅ Set                                   | `cd worker && npx wrangler secret list`; `/sync` gives 401 for a wrong code       | `npx wrangler secret put GROUP_CODE` (Ofek types it); phones re-join         |
+| `ALBUM_SIGNING_KEY` (Worker secret)                                        | ✅ Set 2026-10-22                        | `secret list`; `POST /album/session` gives 401 (not 501) for a wrong code         | `openssl rand -base64 48 \| npx wrangler secret put ALBUM_SIGNING_KEY`       |
+| `CALENDAR_ICS_URL` (Worker secret)                                         | ✅ Set                                   | `secret list`; `/itinerary` returns events                                        | Reset the secret address in Google Calendar, then `secret put`               |
+| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (GitHub secrets)           | ✅ Set 2026-10-21                        | `gh secret list`; Worker deploys succeed                                          | New token in the Cloudflare dashboard → `gh secret set CLOUDFLARE_API_TOKEN` |
+| `VITE_ASSISTANT_URL` (GitHub variable)                                     | ✅ Set                                   | `gh variable list`                                                                | Only if the Worker URL changes                                               |
+| Wrangler login on Ofek's Mac                                               | ✅ Logged in (OAuth, checked 2026-10-26) | `npx wrangler whoami`                                                             | `npx wrangler login`                                                         |
+| KV `CACHE`, DOs `LISTS`/`ALBUM`/`SCORES` (migrations v1–v3), rate limiters | ✅ Created by deploys                    | `wrangler deployments list`; live routes answer                                   | Nothing to rotate                                                            |
+| `ALBUM_PASSCODE`, R2 bucket                                                | n/a                                      | Don't exist by design (the album reuses `GROUP_CODE`; storage is Durable Objects) | —                                                                            |
 
-**Root cause:** `ALBUM_SIGNING_KEY` wasn't set, so `POST /album/session` returned `501`. The client mapped every token error (`not-set-up`, `wrong-code`, `not-joined`) to a silent retry with no limit, so the upload `POST` was never sent.
+## Things that may expire or drift (recheck after a few weeks)
 
-**Evidence (live, 2026-10-22):** Chrome plus `wrangler tail`. The only album request was `POST /album/session 501`, repeated at +0, +3, +6 and +15 s. The IndexedDB item stayed `queued` with its attempts climbing, and there were no console errors.
+- **Wrangler OAuth login** on the Mac expires or gets revoked → `npx wrangler login`. CI doesn't depend on it.
+- **Cloudflare API token:** check whether it has an expiry date (Cloudflare dashboard → API Tokens). If CI's "Deploy Worker" starts failing with an auth error, rotate it.
+- **Album tokens** expire at the later of 2027-03-15 23:59 UTC and issue + 30 days, and renew silently with < 14 days left. Nothing to do before the trip; after 2027-03-15 a phone that hasn't opened the site for 30 days re-joins silently with its stored code.
+- **Free-tier limits** (as understood in 2026-10; recheck on Cloudflare's pricing pages): Workers 100k requests/day; Workers AI ~10k neurons/day; KV 100k reads and 1,000 writes/day, 1 GB; Durable Objects SQLite on the Free plan (request, duration and storage quotas; 2 MB per row is why images are sharded per moment). Also GitHub Pages (1 GB site, soft 100 GB/month) and Open-Meteo's non-commercial limit (10k calls/day; we use ~50).
+- **External APIs:** NBG rates JSON (`fetch:rates` in every Pages deploy, plus the Worker), open.er-api.com fallback, Open-Meteo, the Google Calendar iCal feed, Overpass (only `fetch:pistes`).
+- **Webcams:** the Vitamin Cafe YouTube live streams (Soliko `vBVWcSjPAZM`, Kudebi `aCHJ-r15RLM` in `src/data/zones.ts`) get a new id when a stream restarts; check them closer to the trip.
+- **Music:** Commons/archive.org MP3 URLs and the six YouTube embeds can disappear; run `npm run analyze:tracks` and open `#/music`.
+- **Tooling:** Node 22 (`engines`), Wrangler 4.151 with `compatibility_date` 2026-10-01, ESLint pinned to 9 (jsx-a11y). Check `npm outdated` before upgrading anything; there's no Dependabot.
+- **Trip-time features** only show during the trip (2027-02-24 → 02-28, Tbilisi): Quick add, Today's plan, dinner suggestions. Test them by injecting `now` in unit tests, not by waiting.
+- **Score epoch:** a deploy from a branch with an older `SCORE_EPOCH` can't undo a reset (a lower epoch is ignored), but keep `wrangler.toml` at `"2"` or later.
 
-**Ruled out:**
+## Recent history (2026-10-22 → 10-23, details in `PLAN.md`)
 
-- the `/chat` 16 kB body limit (`/chat` only; a 1.6 MB upload is accepted, tested);
-- CORS preflights (POST/PATCH/PUT/DELETE with `Authorization`/`If-Match` pass, live and tested; errors carry CORS headers);
-- the routes not being deployed (`GET /album` 200);
-- a 401 from an expired token, and 429s;
-- the image pipeline and IndexedDB (the item was stored with its preview);
-- the dispatcher not starting (the session requests show it running).
-
-**Fix:**
-
-- `src/lib/album/uploader.ts`: token errors that waiting can't fix fail at once with a reason. A `401` on upload drops the cached token.
-- `queue.ts`:
-  - `MAX_ATTEMPTS` 5 online tries;
-  - an `ATTEMPT_TIMEOUT_MS` 3-minute deadline per try;
-  - a throw counts as a retry;
-  - offline time doesn't use up tries.
-- UI:
-  - honest states via `uploadStatus` (`selectors.ts`);
-  - "⚠️ Upload failed — tap to retry" plus the reason in the viewer;
-  - a toast with the reason.
-- Also: canvases are freed after encoding (iOS), and the Worker deploy filter covers the shared album, sync and countdown files.
-
-**Verified:**
-
-- Local, with no key: fails in about 1 s with "The album isn't set up on the server yet."
-- Local, with a key: offline shows "Waiting for connection…", then the upload resumes (session 200, upload 201), and the photo survives a reload.
-- Live, after the key was set: two uploads (one on the old bundle, one on the new) were listed by `GET /album`. The photo showed at full size after a reload. Both test photos were then deleted (204), so the live album is empty.
+- `v1.12.0`–`v1.12.1`: album, then the fix for uploads stuck at 0 % (the signing key wasn't set and the client retried forever; now capped and explained).
+- `v1.13.0`: moment card carousel, our own moments, bigger snowfall.
+- `v1.14.0`: shared game high scores and crew leaderboard.
+- `v1.15.0`–`v1.15.2`: hearts, power-up system and magnet; the faster retune with trial presets; score epochs and the reset of all 46 old runs (Ofek confirmed).
+- `v1.16.0`: shield, slow-mo and double points.
 
 ## Next action
 
-Ofek's real-phone album test. After that, ask which queued idea is next.
+Ask Ofek which game preset to keep (`fast`, `faster` or `fastest`), then do Phase 10.6b (`docs/OPERATIONS.md` → "Lock in the game difficulty preset") and tag `v1.16.1`; meanwhile collect Ofek's real-phone checklist results.

@@ -1,6 +1,26 @@
 # Gudauri 2027 — Codebase Report
 
-_Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **every numbered section re-verified against `main` @ `17fbf1e` (tag `v1.12.0`)**. The changelog below lists what each phase added. Items marked **(unverified)** are informed estimates that need checking._
+_Generated 2026-10-22 from `main` @ `b7cb618` (`v1.0.0`). **Every numbered section re-verified against `main` @ `70828d4` (`v1.16.0`) on 2026-10-26.** The changelog lists what each phase added; the numbered sections describe the code as it is now. Items marked **(unverified)** are informed estimates._
+
+## Features at a glance
+
+| Feature                                                 | Route                     | Since         | Main code                                      | Server side                               |
+| ------------------------------------------------------- | ------------------------- | ------------- | ---------------------------------------------- | ----------------------------------------- |
+| Countdown, crew, flights                                | `#/`, `#/flights`         | v0.1          | `data/trip.ts`, `lib/time`                     | —                                         |
+| Ski map (OSM)                                           | `#/map`                   | v0.2          | `data/pistes.json`, `components/map`           | —                                         |
+| Packing lists (synced)                                  | `#/packing`               | v0.3 / v1.11  | `lib/packing`, `lib/sync`, `components/common` | `POST /sync` → `ListsStore`               |
+| Fun facts + Georgian words                              | `#/facts`, pop-ups        | v0.4 / v1.2   | `data/facts.ts`, `data/words.ts`, `lib/facts`  | bundled into the assistant prompt         |
+| Ski game (hearts, 5 power-ups, profiles, shared scores) | `#/game`                  | v0.5 → v1.16  | `src/game/` (§11)                              | `GET`/`POST /game/scores` → `ScoresStore` |
+| Voice AI assistant                                      | `#/assistant`             | v0.6 / v1.7   | `assistant/`, `lib/speech`                     | `POST /chat` (Workers AI + live context)  |
+| Currency converter                                      | `#/currency`              | v1.3          | `lib/currency`                                 | `GET /rates` (NBG, KV cache)              |
+| Pre-flight to-do (synced)                               | `#/todo`                  | v1.4 / v1.11  | `lib/todo`, `lib/sync`                         | `POST /sync`                              |
+| Itinerary (Google Calendar)                             | `#/itinerary`, Home       | v1.5          | `lib/itinerary`                                | `GET /itinerary` (secret ICS, KV cache)   |
+| Weather, snow, webcams                                  | `#/weather`               | v1.6          | `lib/weather`, `data/zones.ts`                 | `GET /weather` (Open-Meteo, KV cache)     |
+| Offline mode                                            | all                       | v1.8          | `src/sw`, `lib/pwa`                            | —                                         |
+| Georgian food                                           | `#/food`, `#/food/<dish>` | v1.9          | `data/dishes.ts`, `lib/food`                   | dish list in the assistant prompt         |
+| Background music                                        | header control, `#/music` | v1.10         | `lib/music`, `data/tracks.ts`                  | — (streams from Commons / archive.org)    |
+| Album (multi-photo, custom moments, story, ZIP)         | `#/album…`                | v1.12 / v1.13 | `lib/album`, `components/album`                | `/album*` → `AlbumStore`                  |
+| Credits                                                 | `#/credits`               | v1.9          | `CreditsPage`                                  | —                                         |
 
 ## Changelog since v1.0.0
 
@@ -426,12 +446,12 @@ _Generated 2026-10-22 from the code at `main` @ `b7cb618` (tag `v1.0.0`); **ever
 **Repo, URL and state**
 
 - Repo: `github.com/Ofekfa/gudauri-2027` (public). Default branch `main`.
-- 91 squash-merged PRs. 24 tags: `v0.1.0`, `v0.1.1`, `v0.2.0`–`v0.6.0`, `v1.0.0`–`v1.12.0`, plus patches `v1.5.1`, `v1.10.1`, `v1.11.1`, `v1.11.2`. GitHub Releases: `v1.0.0`, `v1.7.0`, `v1.8.0`.
+- 110 squash-merged PRs (through the `docs/handoff` PR). 31 tags: `v0.1.0`, `v0.1.1`, `v0.2.0`–`v0.6.0`, `v1.0.0`–`v1.16.0`, plus patches `v1.5.1`, `v1.10.1`, `v1.11.1`, `v1.11.2`, `v1.12.1`, `v1.15.1`, `v1.15.2`. GitHub Releases: `v1.0.0`, `v1.7.0`, `v1.8.0`.
 - Live site: https://ofekfa.github.io/gudauri-2027/
-- Worker (AI proxy + data, sync and album routes): `https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev`
-- `PLAN.md`: phases 1–7, 8.0–8.7, 9.1–9.2 and 10.1–10.3 are done.
-- Live Worker status (checked 2026-10-22, after `v1.12.1`): `/album` lists (empty after the live test photos were deleted); `/sync` answers 401 without a code, so `GROUP_CODE` is set; `POST /album/session` answers 401 for a wrong code, because `ALBUM_SIGNING_KEY` is set.
-- Open item: hands-on testing on real phones (iOS Safari speech, camera/HEIC uploads, Android Chrome, game touch steering).
+- Worker (AI proxy + data, sync, album and game-score routes): `https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev`
+- `PLAN.md`: phases 1–7, 8.0–8.7, 9.1–9.2 and 10.1–10.7 are done; 10.6b (lock in the game preset) waits for Ofek.
+- Live Worker status (checked 2026-10-26): last deployed by CI from `43569a7` (`v1.16.0`); secrets `GROUP_CODE`, `ALBUM_SIGNING_KEY`, `CALENDAR_ICS_URL` set; `SCORE_EPOCH` 2; `/game/scores` holds the crew's real runs since the reset.
+- Open item: hands-on testing on real phones (iOS Safari speech, camera/HEIC uploads, Android Chrome, game touch steering). See `docs/HANDOFF.md`.
 
 **Stack and versions** (from `package.json` / `worker/package.json`)
 
@@ -460,7 +480,7 @@ There's no router library, state library, CSS framework, date library or icon li
 - **Fun facts:**
   - 55 facts (beating the 40+ target) plus 27 Georgian words = 82.
   - The Facts page shows **one fact at a time** (swipe / ← → / buttons), per feedback.
-- **Game:** flags are obstacles, not slalom gates.
+- **Game:** flags are obstacles, not slalom gates. Round 4 added hearts, power-ups, difficulty profiles and shared scores (§11).
 - **Assistant:**
   - The proxy uses **Cloudflare Workers AI** with no API key.
   - The planned per-IP **daily cap was dropped**: the free rate limiter only supports 10 s/60 s windows and is approximate.
@@ -474,7 +494,7 @@ There's no router library, state library, CSS framework, date library or icon li
 .
 ├─ .github/workflows/        ci.yml (PR checks), deploy.yml (Pages on push to main), worker-deploy.yml (Worker on push to main, path-filtered)
 ├─ build/serviceWorkerPlugin.ts  emits sw.js with the precache list + content version
-├─ docs/                     CODEBASE_REPORT.md (this report)
+├─ docs/                     HANDOFF.md (session state), OPERATIONS.md (procedures), CODEBASE_REPORT.md (this report)
 ├─ public/                   copied verbatim to dist/
 │  ├─ 404.html               GitHub Pages fallback → redirects to /gudauri-2027/
 │  ├─ favicon.svg, apple-touch-icon.png, og-image.png, manifest.webmanifest, icon-192/512/maskable-512.png
@@ -489,7 +509,8 @@ There's no router library, state library, CSS framework, date library or icon li
 │  ├─ assistant/             client.ts(+test): fetch to the Worker, error mapping
 │  ├─ avatars/               FaceArt.tsx, Avatar.tsx (AvatarFace, AvatarSkier)
 │  ├─ components/            shared UI (Header, BottomTabBar, PageHeader, Icon, ToastHost, Countdown, FlightCard, Crew, SectionCards, Snowfall, Footer)
-│  │  ├─ album/              FrameCard, AddPhotoButtons, AlbumJoin, QuickAdd, AlbumQueueHost, useCarousel
+│  │  ├─ album/              FrameCard, CardCarousel, MomentForm, AddPhotoButtons, AlbumJoin, QuickAdd, AlbumQueueHost, useCarousel
+│  │  ├─ game/               ScoreSyncHost (flushes pending runs on app load)
 │  │  ├─ common/             ProfileSwitcher, ProgressSummary, BackupPanel, TemplateOffer, SyncPanel, JoinGroupForm, ChangedBy
 │  │  ├─ facts/              FactPopups, WordCard
 │  │  ├─ food/               DishCard, DishPhoto, DishIllustration, DietBadges
@@ -501,9 +522,11 @@ There's no router library, state library, CSS framework, date library or icon li
 │  │  └─ weather/            MountainZones, WebcamCard
 │  ├─ data/                  trip, characters, facts, words, packingTemplate, todoTemplate, pistes.json, zones, dishes,
 │  │                         dishImages(.json), tracks(.json), musicEmbeds, fallbackRates, album (+tests)
-│  ├─ game/                  canvas game: constants, engine (pure), powerUps, random, effects, render, sprites, input, controller, highScores, bot (test-only) (+tests)
+│  ├─ game/                  canvas game (§11): constants, engine (pure), powerUps, random, effects, render, sprites, input, controller,
+│  │                         presets (temporary), scores (shared with Worker), highScores, scoreSync, bot (test-only) (+tests)
 │  ├─ lib/                   pure logic, framework-light, unit-tested
-│  │  ├─ album/              protocol, jpeg, pipeline, queue, repository, token, uploader, selectors, zip, download, service, useAlbum
+│  │  ├─ album/              protocol, jpeg, moments (shared with Worker), pipeline, queue, repository, token, uploader, cardCarousel,
+│  │  │                      selectors, zip, download, service, useAlbum
 │  │  ├─ currency/           rates (shared with Worker), convert, fallback, ratesClient, useRates
 │  │  ├─ facts/              types, rotation, settings, carousel
 │  │  ├─ food/               types, selectors, lastViewed
@@ -511,9 +534,11 @@ There's no router library, state library, CSS framework, date library or icon li
 │  │  ├─ list/               ids, text, backup
 │  │  ├─ map/                types, catalog
 │  │  ├─ music/              machine, shuffleBag, settings, player, musicStore, useMusic
+│  │  ├─ net/                backoff (shared by the album queue and score sync)
 │  │  ├─ packing/, todo/     model, reducer, selectors, importExport, repository, use* (+ todo/due)
 │  │  ├─ pwa/                register (service worker + update offer)
 │  │  ├─ router/             hashRouter, lazyPage
+│  │  ├─ snowfall/           flakes (count by screen size, sizes)
 │  │  ├─ speech/             recognition, synthesis, voices, useVoice, activity
 │  │  ├─ storage/            safeStorage, versioned
 │  │  ├─ sync/               protocol (shared with Worker), records, adapters, syncClient, settings, useListSync, useSyncSettings
@@ -522,16 +547,18 @@ There's no router library, state library, CSS framework, date library or icon li
 │  │  ├─ weather/            openMeteo, types, codes, validate (shared), weatherClient, useWeather, graphic
 │  │  └─ worker/             config (WORKER_URL)
 │  ├─ pages/                 one component per route (see §3)
-│  ├─ styles/                tokens.css (tokens + @font-face + dark mode), global.css (all component CSS, ~3,190 lines)
+│  ├─ styles/                tokens.css (tokens + @font-face + dark mode), global.css (all component CSS, ~3,460 lines)
 │  └─ sw/                    sw.ts, routing.ts(+test), own tsconfig (WebWorker)
 ├─ worker/                   Cloudflare Worker (separate npm package)
 │  ├─ src/index.ts           route list + exports of the Durable Object classes
 │  ├─ src/router.ts          route table + shared pipeline; src/cors.ts, http.ts, env.ts, limits.ts, cache.ts
-│  ├─ src/routes/            health, chat, rates, itinerary, weather, sync, album
+│  ├─ src/routes/            health, chat, rates, itinerary, weather, sync, album, game
 │  ├─ src/album/             token, logic, AlbumStore (Durable Object)
 │  ├─ src/sync/              recordStore, ListsStore (Durable Object)
+│  ├─ src/game/              logic (epochs, submit, list), ScoresStore (Durable Object)
+│  ├─ scripts/reset-scores.mjs  admin score reset (`npm run scores:reset`, docs/OPERATIONS.md)
 │  ├─ src/itinerary/ics.ts, src/upstream/fetchJson.ts, src/prompt.ts, src/dishList.ts, src/liveContext.ts
-│  ├─ test/                  10 test files, fixtures/, stubs/cloudflare-workers.ts
+│  ├─ test/                  11 test files, fixtures/, stubs/cloudflare-workers.ts
 │  ├─ wrangler.toml          bindings + vars + migrations
 │  └─ README.md              setup/deploy guide
 ├─ index.html                Vite entry: meta/OG tags, manifest, font preload, #app
@@ -555,6 +582,7 @@ There's no router library, state library, CSS framework, date library or icon li
    - `Footer`
    - `ToastHost`
    - `AlbumQueueHost` (loads album code only if uploads are pending)
+   - `ScoreSyncHost` (sends game runs that are still waiting)
    - `FactPopups` (lazily imports `facts.ts`)
    - `BottomTabBar`
 
@@ -638,6 +666,7 @@ There's no router library, state library, CSS framework, date library or icon li
 - `UploadMeta` = `AlbumPhoto` without `frameId`, `version`, `caption`. Note `uploadedBy` comes from the phone's meta, not from the token.
 - Limits: `MAX_FULL_BYTES` 1,600,000, `MAX_THUMB_BYTES` 150,000, `MAX_UPLOAD_BYTES` = sum + 20,000, `MAX_IMAGE_EDGE` 4096. `PHOTO_ID = /^[A-Za-z0-9-]{8,64}$/` (the client uses `crypto.randomUUID()`).
 - Validators: `cleanCaption` (control chars removed, whitespace collapsed, ≤ 120), `parseUploadMeta`, `parseListing` (drops unknown frames and bad photos), `parsePhotoResponse`.
+- **Custom moments** (`v1.13.0`): `CustomMoment { id ("m-" + 10 base-36), title ≤ 40 (MAX_MOMENT_TITLE), emoji ∈ MOMENT_EMOJIS, prompt? ≤ 80, orderKey, createdBy, createdAt, custom: true, version }`; `parseMomentInput`; `MAX_CUSTOM_MOMENTS` 30. `AlbumListing` also carries `moments`. Order keys are base-36 fractional strings (`lib/album/moments.ts`: `keyBetween`, `keyAfter`, `mergeMoments`, `applyMomentOps`); predefined moments get `"01"`, `"02"`… from their position. The client always uses `momentsOf(snapshot)` (merged order plus this phone's unconfirmed changes), never `ALBUM_FRAMES` directly.
 
 **Times and timezones** (no library, only `Intl`)
 
@@ -667,24 +696,26 @@ There's no router library, state library, CSS framework, date library or icon li
 
 **Keys in use** (all through `appStore`)
 
-| Key                                  | Owner                                      | Value                                       |
-| ------------------------------------ | ------------------------------------------ | ------------------------------------------- |
-| `packing`                            | `lib/packing/repository.ts` (versioned)    | `PackingState`                              |
-| `packing:profile`                    | `PackingPage`                              | last selected traveler                      |
-| `todo`                               | `lib/todo/repository.ts` (versioned)       | `TodoState`                                 |
-| `todo:profile`                       | `TodoPage`, `NextTodos`                    | last selected list                          |
-| `facts:muted` / `facts:lastShownAt`  | `lib/facts/settings.ts`                    | `'true'/'false'` / epoch ms                 |
-| `game:highScores` / `game:character` | `game/highScores.ts` / `GamePage`          | top-5 per character / last pick             |
-| `game:powerHintSeen`                 | `GamePage`                                 | `'1'` once the start tip was dismissed      |
-| `assistant:speak`                    | `AssistantPage`                            | `'true'/'false'`                            |
-| `currency:rates`                     | `lib/currency/ratesClient.ts` (versioned)  | last rates payload                          |
-| `itinerary:last`                     | `lib/itinerary/itineraryClient.ts` (vers.) | last itinerary payload                      |
-| `weather:last`                       | `lib/weather/weatherClient.ts` (versioned) | last weather payload                        |
-| `music:settings` / `music:bag`       | `lib/music/settings.ts` / `player.ts`      | `{ enabled, volume, chosen }` / shuffle bag |
-| `sync:settings`                      | `lib/sync/settings.ts` (versioned)         | `{ code, me }` (group code, whose phone)    |
-| `sync:packing` / `sync:todo`         | `lib/sync/syncClient.ts` (versioned)       | last agreed base, revision, changed-by      |
-| `album:token`                        | `lib/album/token.ts` (versioned)           | `{ token, expiresAt, who }`                 |
-| `album:pending`                      | `lib/album/service.ts`, `AlbumQueueHost`   | `'1'` while uploads wait                    |
+| Key                                  | Owner                                      | Value                                         |
+| ------------------------------------ | ------------------------------------------ | --------------------------------------------- |
+| `packing`                            | `lib/packing/repository.ts` (versioned)    | `PackingState`                                |
+| `packing:profile`                    | `PackingPage`                              | last selected traveler                        |
+| `todo`                               | `lib/todo/repository.ts` (versioned)       | `TodoState`                                   |
+| `todo:profile`                       | `TodoPage`, `NextTodos`                    | last selected list                            |
+| `facts:muted` / `facts:lastShownAt`  | `lib/facts/settings.ts`                    | `'true'/'false'` / epoch ms                   |
+| `game:highScores` / `game:character` | `game/highScores.ts` (v2) / `GamePage`     | top-5 per character / last pick               |
+| `game:pendingScores`                 | `game/highScores.ts`, `ScoreSyncHost`      | runs waiting to be sent (+ first-upload flag) |
+| `game:scoreEpoch`                    | `game/highScores.ts`                       | the score epoch this phone last saw           |
+| `game:powerHintSeen`                 | `GamePage`                                 | tip version dismissed (`POWER_HINT_VERSION`)  |
+| `assistant:speak`                    | `AssistantPage`                            | `'true'/'false'`                              |
+| `currency:rates`                     | `lib/currency/ratesClient.ts` (versioned)  | last rates payload                            |
+| `itinerary:last`                     | `lib/itinerary/itineraryClient.ts` (vers.) | last itinerary payload                        |
+| `weather:last`                       | `lib/weather/weatherClient.ts` (versioned) | last weather payload                          |
+| `music:settings` / `music:bag`       | `lib/music/settings.ts` / `player.ts`      | `{ enabled, volume, chosen }` / shuffle bag   |
+| `sync:settings`                      | `lib/sync/settings.ts` (versioned)         | `{ code, me }` (group code, whose phone)      |
+| `sync:packing` / `sync:todo`         | `lib/sync/syncClient.ts` (versioned)       | last agreed base, revision, changed-by        |
+| `album:token`                        | `lib/album/token.ts` (versioned)           | `{ token, expiresAt, who }`                   |
+| `album:pending`                      | `lib/album/service.ts`, `AlbumQueueHost`   | `'1'` while uploads wait                      |
 
 - **IndexedDB** (outside `appStore`): database `gudauri-album`, object store `uploads` (keyPath `id`) holds queued photos with their Blobs (`lib/album/queue.ts`); falls back to memory if IndexedDB is unavailable.
 - Service worker caches: `gudauri-precache-<version>` and `gudauri-images` (§9).
@@ -708,9 +739,9 @@ There's no router library, state library, CSS framework, date library or icon li
 - **Token** (`token.ts`): `getAlbumToken()` needs `sync:settings` joined; reuses the stored token if it has > 14 days left (`RENEW_BEFORE_MS`); otherwise `POST /album/session` (15 s timeout) with `{ code, who }` and, if the old token is still valid, `Authorization: Bearer` for silent renewal. Results: `{ token }` or `{ error: 'not-joined' | 'wrong-code' (401, token cleared) | 'not-set-up' (501) | 'offline' }`; when offline or on other errors a still-valid old token is used.
 - **Pipeline** (`pipeline.ts`): decode with `createImageBitmap` (applies EXIF orientation), falling back to `<img>.decode()`; otherwise `UnsupportedImageError` ("share it as JPEG"). Canvas re-encode to **JPEG** (Safari can't encode WebP): full ≤ 2048 px long edge, qualities 0.82 → 0.72 → 0.62, then edges 1600 and 1280, until ≤ 1.5 MB (`MAX_FULL_OUTPUT`); thumbnail 480 px at 0.78. Never upscales.
 - **JPEG helpers** (`jpeg.ts`, shared with the Worker): `isJpeg`, `hasExif`, `stripJpegMetadata` (drops APP1–APP15 and COM, keeps APP0/JFIF). Run on both sides.
-- **Queue** (`queue.ts`): states `queued | uploading | waiting-offline | failed`; `MAX_PARALLEL_UPLOADS = 2`; backoff `BASE_BACKOFF_MS` 2 s doubling to `MAX_BACKOFF_MS` 5 min, ±25 % jitter. **No maximum number of attempts** and no per-item timeout other than the XHR's. Resumes after reloads (`uploading` → `queued`), on `online`, and on returning to the tab. Events `uploaded`, `failed`, `undone-late`.
-- **Repository** (`repository.ts`): `list()` (20 s timeout), `imageUrl`, `upload` via **XMLHttpRequest** (multipart `meta`/`full`/`thumb`, `upload.onprogress`, 120 s timeout), `caption` (PATCH) and `setCover` (PUT) with `If-Match: "<version>"` (409 → `conflict` with the server's current value), `remove` (DELETE). Upload outcomes: 200/201 → `done`; **400, 409, 413, 415 → `failed`** (with a reason); everything else (401, 429, 5xx, network error, timeout, unparsable body) → `retry`.
-- **Service** (`service.ts`): a module singleton holding the listing, queue view and local previews (object URLs). The queue's `upload` asks for a token first; **any token error maps to `{ kind: 'retry', status: 401 }`**. Sets `album:pending` while anything not failed is queued; warns on `beforeunload`. `addPhotos` processes files and shows an "Added" toast with **Undo** (6 s); undo cancels queued items or deletes landed ones. Also `deletePhoto`, `retryUpload`, `editCaption`, `makeCover` (conflicts show "Someone just updated this").
+- **Queue** (`queue.ts`): states `queued | uploading | waiting-offline | failed`; `MAX_PARALLEL_UPLOADS = 2`; backoff `BASE_BACKOFF_MS` 2 s doubling to `MAX_BACKOFF_MS` 5 min, ±25 % jitter. `MAX_ATTEMPTS` 5 online tries (offline time doesn't count), then `failed` with a reason; `ATTEMPT_TIMEOUT_MS` 3 min per try; a throw counts as a retry. Resumes after reloads (`uploading` → `queued`), on `online`, and on returning to the tab. Events `uploaded`, `failed`, `undone-late`.
+- **Repository** (`repository.ts`): `list()` (20 s timeout), `imageUrl`, `upload` via **XMLHttpRequest** (multipart `meta`/`full`/`thumb`, `upload.onprogress`, 120 s timeout), `caption` (PATCH) and `setCover` (PUT) with `If-Match: "<version>"` (409 → `conflict` with the server's current value), `remove` (DELETE). Upload outcomes: 200/201 → `done`; **400, 409, 410 (moment deleted), 413, 415 → `failed`** (with a reason); everything else (401, 429, 5xx, network error, timeout, unparsable body) → `retry`.
+- **Service** (`service.ts`): a module singleton holding the listing, queue view and local previews (object URLs). The queue's `upload` goes through `uploader.ts`: it asks for a token first; `offline` → retry, while `not-set-up`, `wrong-code` and `not-joined` fail at once with a reason (`TOKEN_FAILURE`); a 401 on upload drops the cached token. Sets `album:pending` while anything not failed is queued; warns on `beforeunload`. `addPhotos` processes files and shows an "Added" toast with **Undo** (6 s); undo cancels queued items or deletes landed ones. Also `deletePhoto`, `retryUpload`, `editCaption`, `makeCover` (conflicts show "Someone just updated this").
 - **`useAlbum`**: subscribes, starts the queue, refreshes on mount and every 60 s while visible.
 - **`AlbumQueueHost`** (always in the shell): if `album:pending` is set, lazy-imports the service and resumes uploads; otherwise no album code loads.
 - `selectors.ts` (`photosByFrame`, `coverFor`, `albumProgress`, `suggestFrame` with dinner from 17:00 Tbilisi, `storySlides`), `zip.ts` (stored ZIP writer) and `download.ts` ("Download all" in story order).
@@ -781,7 +812,7 @@ There's no router library, state library, CSS framework, date library or icon li
 
 - Cloudflare Worker in `/worker` (separate npm package), deployed by CI (`worker-deploy.yml`; the `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` secrets are set). `npx wrangler deploy` still works manually.
 - AI: **Cloudflare Workers AI**, model `@cf/meta/llama-3.1-8b-instruct-fp8` (`MODEL` var), through the **`AI` binding**, so no API key.
-- The Worker bundles `src/data/**` and parts of `src/lib/**` (see §10 for the deploy-filter gap). Shared code must stay pure (no storage or Preact imports).
+- The Worker bundles `src/data/**`, parts of `src/lib/**` and `src/game/{constants,scores}.ts`. Every bundled file is in `worker/tsconfig.json` `include` and in the `worker-deploy.yml` path filter (§9). Shared code must stay pure (no storage or Preact imports).
 
 **Router** (`worker/src/router.ts`)
 
@@ -807,6 +838,11 @@ There's no router library, state library, CSS framework, date library or icon li
 | DELETE | `/album/photos/:photoId`       | `RL_DATA`; token                     | Removes metadata, then the frame's images; always 204                                                                                                                                                                                                                                           |
 | PUT    | `/album/:frameId/cover`        | `RL_DATA`; token                     | `{ photoId }`; optional `If-Match`; 400 unknown frame / bad id; 404 photo not in frame; 409 `{ error, current }`; 200 with `ETag`                                                                                                                                                               |
 | GET    | `/album/photos/:photoId/image` | **public** (no origin check)         | `?size=full`, else thumb; 501 if `ALBUM` unbound; 404; `image/jpeg`, `Cache-Control: public, max-age=31536000, immutable`, `ETag`, `X-Robots-Tag: noindex`, `X-Content-Type-Options: nosniff`, `Access-Control-Allow-Origin: *` (for "Download all")                                            |
+| POST   | `/album/moments`               | `RL_DATA`; token                     | `{ title, emoji, prompt?, after }` → 201 `CustomMoment`; 400 invalid; 409 over 30 custom moments                                                                                                                                                                                                |
+| PATCH  | `/album/moments/:momentId`     | `RL_DATA`; token                     | Any of title/emoji/prompt/after (partial, so concurrent edits of different fields both stay); 403 for predefined ids; 404 / 200                                                                                                                                                                 |
+| DELETE | `/album/moments/:momentId`     | `RL_DATA`; token                     | 403 for predefined ids; cascades to its photos, cover and the whole `frame:<id>` image store; uploads to it afterwards get 410                                                                                                                                                                  |
+| GET    | `/game/scores`                 | `RL_DATA` (origin-checked, no token) | `{ scores (top 5 per character), epoch, runs (stored runs per character) }`; `Cache-Control: public, max-age=20`; 501 if `SCORES` unbound                                                                                                                                                       |
+| POST   | `/game/scores`                 | `RL_DATA`; album token               | `{ character, score, runId, achievedAt?, durationMs?, epoch? }` ≤ 1 kB; 400 bad shape/epoch, 413, 422 above `maxPlausibleScore`; 409 `{ error, epoch }` for an older epoch; 201 new / 200 known `runId` (idempotent) → `{ character, top, newBest }`; `playedBy` comes from the token           |
 
 Album changes without a token, or with an invalid/expired one, get 401 "Join the group to change the album"; with the album not set up, 501.
 
@@ -817,6 +853,8 @@ Album changes without a token, or with an invalid/expired one, get 401 "Join the
   - **`frame:<id>`**: table `images (photo_id, size, bytes BLOB)`; `putImages` writes full + thumb in one transaction. One object per frame keeps each small (Free plan: 2 MB per row).
 - `logic.ts`: rules over an `IndexDb`/`ImageDb` interface (memory implementations for tests). `addPhoto` returns `exists` for a known id and `full` at 30 photos per frame (count checked inside the transaction); `setCaption`/`setCover` bump versions and check `ifMatch` when given; `removePhoto` resets the frame's cover (bumping its version) if it pointed at the deleted photo. Listing is sorted by `uploadedAt`, then id.
 - `token.ts`: `base64url(JSON { v: 1, who, exp })` + `.` + `base64url(HMAC-SHA256)` with `ALBUM_SIGNING_KEY`; verify via `crypto.subtle.verify` (constant time), checks `v`, a known traveler and `exp`. Expiry = max(2027-03-15T23:59:59Z, now + 30 days). Rotating the key logs everyone out.
+
+**Game scores storage** (`worker/src/game/`): one `ScoresStore` Durable Object (SQLite, `idFromName('scores')`) keeps every run in a `runs` table (top 5 is a query) plus a `meta` table with the epoch. `logic.ts` (`applyEpoch`, `submitScore`, `listScores`, in-memory db for tests): on a higher configured `SCORE_EPOCH` it logs every run as one `scores-reset` JSON line, deletes them and stores the epoch; a lower configured epoch is ignored.
 
 **Shared lists storage** (`worker/src/sync/`): `ListsStore` Durable Object (SQLite) applies each sync in `transactionSync`; `recordStore.applySync` keeps a group-wide revision, last arrival wins per record, tombstones, 3,000 records per doc.
 
@@ -831,11 +869,13 @@ Album changes without a token, or with an invalid/expired one, get 401 "Join the
 | KV             | `CACHE`              | Upstream cache for `getOrRefresh` (rates, weather, itinerary)                                                             |
 | Durable Object | `LISTS`              | `ListsStore` (migration `v1`, `new_sqlite_classes`)                                                                       |
 | Durable Object | `ALBUM`              | `AlbumStore` (migration `v2`, `new_sqlite_classes`)                                                                       |
+| Durable Object | `SCORES`             | `ScoresStore` (migration `v3`, `new_sqlite_classes`)                                                                      |
 | Var            | `ALLOWED_ORIGINS`    | `https://ofekfa.github.io,http://localhost:5173,http://localhost:4173`                                                    |
 | Var            | `MODEL`              | AI model id                                                                                                               |
+| Var            | `SCORE_EPOCH`        | Game score epoch (now `"2"`); raising it resets every score (`npm run scores:reset`)                                      |
 | Secret         | `CALENDAR_ICS_URL`   | Google Calendar secret iCal address (set)                                                                                 |
 | Secret         | `GROUP_CODE`         | Unlocks shared lists and album changes (set)                                                                              |
-| Secret         | `ALBUM_SIGNING_KEY`  | HMAC key for album tokens (**not set in production yet**)                                                                 |
+| Secret         | `ALBUM_SIGNING_KEY`  | HMAC key for album (and score-posting) tokens (set 2026-10-22)                                                            |
 | Build var      | `VITE_ASSISTANT_URL` | GitHub repo **variable** (not a secret), read in `deploy.yml`; local dev uses `.env.local` (documented in `.env.example`) |
 
 **Limits** (`worker/src/limits.ts`)
@@ -855,7 +895,7 @@ Album changes without a token, or with an invalid/expired one, get 401 "Join the
 
 - **Content Security Policy: none.** No CSP `<meta>` in `index.html`; GitHub Pages can't set headers. The decision is recorded in `PLAN.md`. A future meta CSP would need `connect-src` for the Worker, `img-src` for the Worker's album images, `frame-src` for youtube-nocookie, `media-src` for Commons and archive.org audio.
 - **Runtime requests from the site:**
-  - **Worker** (`WORKER_URL`): `/chat`, `/rates`, `/itinerary`, `/weather`, `/sync`, `/album*` (fetch/XHR and `<img>`).
+  - **Worker** (`WORKER_URL`): `/chat`, `/rates`, `/itinerary`, `/weather`, `/sync`, `/album*` (fetch/XHR and `<img>`), `/game/scores`.
   - **Audio:** MP3s streamed from Wikimedia Commons and archive.org, only after the first user gesture.
   - **Iframes:** `youtube-nocookie.com` (webcams and music embeds), tap-to-load only; outbound links to youtube.com.
   - No third-party scripts, stylesheets, fonts or analytics. The font is self-hosted.
@@ -865,6 +905,7 @@ Album changes without a token, or with an invalid/expired one, get 401 "Join the
 - **Auth:**
   - Shared lists: Bearer group code compared in constant time with `GROUP_CODE`.
   - Album: group code → HMAC token (`RL_AUTH` 5/min on attempts); viewing is public by design (anyone with the site can see the photos; image responses say `noindex`).
+  - Game scores: reading is public; posting needs the album token, the server sets `playedBy` from it and rejects implausible scores (422). Resets only through the admin script (no HTTP route).
   - Album privacy: EXIF/GPS removed by canvas re-encoding and `stripJpegMetadata` on the phone **and** the Worker; JPEG only.
 - **Privacy rule** (CLAUDE.md): first names and public flight info only. The site and the album are public.
 
@@ -873,37 +914,38 @@ Album changes without a token, or with an invalid/expired one, get 401 "Join the
 **Commands**
 
 - Site: `npm run dev`, `lint` (ESLint + `prettier --check`), `format`, `typecheck` (app, `scripts/` and `src/sw` tsconfigs), `test`, `build` (typecheck + Vite), `preview`, `fetch:pistes`, `fetch:rates`, `fetch:dish-images`, `analyze:tracks`, `og-image`.
-- Worker: `npm test`, `npm run typecheck`, `npx wrangler dev|deploy|tail`.
+- Worker: `npm test`, `npm run typecheck`, `npm run scores:reset`, `npx wrangler dev|deploy|tail`. Copy-paste procedures: `docs/OPERATIONS.md`.
 
-**Tests: 404 site (52 files) + 75 Worker (10 files)** as of `v1.12.0`, all pure or unit-level in Node. There are no component, DOM or committed E2E tests; local end-to-end checks (puppeteer, `wrangler dev`) are run by hand and not in the repo.
+**Tests: 477 site (61 files) + 103 Worker (11 files)** as of `v1.16.0`, all pure or unit-level in Node. The game's simulation tests (`balance`, `fairness`, and the long runs in `engine`/`powerUps`/`scores`) are CPU-heavy: on a busy machine they hit the 5 s / 60 s timeouts, so close stray headless browsers before running them. There are no component, DOM or committed E2E tests; local end-to-end checks (puppeteer, `wrangler dev`) are run by hand and not in the repo.
 
-| Area                                                                  | Covers                                                                                                                               |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `lib/time`, `lib/router`, `navigation`                                | Trip phases and day boundaries in Tbilisi; formatting in zones; hash parsing, `matchRoute`/`basePath`; 5 tab-bar items               |
-| `lib/storage`, `lib/list`                                             | Prefixing, throwing/missing storage; versioned load/save/migrations; list helpers                                                    |
-| `lib/packing`, `lib/todo`                                             | Reducers, selectors, import/export validation, repositories, due dates                                                               |
-| `lib/sync`                                                            | Records, adapters, client merge without losing in-flight edits                                                                       |
-| `lib/album` (4 files)                                                 | Protocol validation, JPEG stripping, tokens, queue/backoff/undo, selectors, ZIP                                                      |
-| `lib/facts`, `lib/speech`, `lib/music`, `lib/toast`                   | Shuffle bag and gate, carousel; voices and recognition; music machine, shuffle bag, settings; toast queue                            |
-| `lib/currency`, `lib/weather`, `lib/itinerary`, `lib/food`, `lib/map` | Parsers and validators, conversion and rounding, plan building, dish search/filter, run grouping                                     |
-| `data/*.test.ts` (9 files)                                            | Characters, facts, words, templates, dishes and images (≤ 60 kB), tracks and licences, embeds, album frames                          |
-| `sw/routing.test.ts`, `game/*`, `assistant/`                          | Request classification and cache names; game engine and high scores; assistant client                                                |
-| `worker/test/` (10 files)                                             | Router (params, methods, 405, CORS), chat, cache, rates, weather (captured fixture), itinerary, live context, dish list, sync, album |
+| Area                                                                  | Covers                                                                                                                                                                                         |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/time`, `lib/router`, `navigation`                                | Trip phases and day boundaries in Tbilisi; formatting in zones; hash parsing, `matchRoute`/`basePath`; 5 tab-bar items                                                                         |
+| `lib/storage`, `lib/list`                                             | Prefixing, throwing/missing storage; versioned load/save/migrations; list helpers                                                                                                              |
+| `lib/packing`, `lib/todo`                                             | Reducers, selectors, import/export validation, repositories, due dates                                                                                                                         |
+| `lib/sync`                                                            | Records, adapters, client merge without losing in-flight edits                                                                                                                                 |
+| `lib/album` (4 files)                                                 | Protocol validation, JPEG stripping, tokens, queue/backoff/undo, selectors, ZIP                                                                                                                |
+| `lib/facts`, `lib/speech`, `lib/music`, `lib/toast`                   | Shuffle bag and gate, carousel; voices and recognition; music machine, shuffle bag, settings; toast queue                                                                                      |
+| `lib/currency`, `lib/weather`, `lib/itinerary`, `lib/food`, `lib/map` | Parsers and validators, conversion and rounding, plan building, dish search/filter, run grouping                                                                                               |
+| `data/*.test.ts` (9 files)                                            | Characters, facts, words, templates, dishes and images (≤ 60 kB), tracks and licences, embeds, album frames                                                                                    |
+| `sw/routing.test.ts`, `assistant/`                                    | Request classification and cache names; assistant client                                                                                                                                       |
+| `game/*` (7 files)                                                    | Engine, power-ups (registry, each effect), fairness (tunnelling, reaction cap), balance (bot over seeds), presets, scores bound, high-score sync and epochs                                    |
+| `worker/test/` (11 files)                                             | Router (params, methods, 405, CORS), chat, cache, rates, weather (captured fixture), itinerary, live context, dish list, sync, album (incl. moments), game scores (bound, idempotency, epochs) |
 
 **CI** (`.github/workflows/`)
 
 - `ci.yml` on PRs: **`check`** (`npm ci`, lint, typecheck, test, test with `TZ=America/Los_Angeles`, build) and **`worker`** (`npm ci`, typecheck, test in `worker/`).
 - `deploy.yml` on push to `main` and manual dispatch: `npm ci`, lint, test, `fetch:rates`, build (with `VITE_ASSISTANT_URL`), then the Pages actions.
-- `worker-deploy.yml` on push to `main` touching `worker/**`, `src/data/**`, `src/lib/facts/types.ts`, `src/lib/{weather,itinerary,currency}/**` or the workflow itself (and manual dispatch): typecheck, test, then `cloudflare/wrangler-action@v4`. Skips the deploy with a warning when the secrets are missing (they're set).
+- `worker-deploy.yml` on push to `main` touching `worker/**`, `src/data/**`, `src/lib/facts/types.ts`, `src/lib/{weather,itinerary,currency}/**`, `src/lib/album/{protocol,jpeg,moments}.ts`, `src/lib/sync/protocol.ts`, `src/lib/time/countdown.ts`, `src/game/{constants,scores}.ts` or the workflow itself (and manual dispatch): typecheck, test, then `cloudflare/wrangler-action@v4`. Skips the deploy with a warning when the secrets are missing (they're set).
 
 **Conventions actually followed**
 
-- `main` + short-lived branches (merged PRs: 50 `feat/`, 25 `docs/`, 10 `fix/`, 3 `refactor/`, 1 each `chore/`, `ci/`, `perf/`).
+- `main` + short-lived branches (merged PRs through #109: 56 `feat/`, 33 `docs/`, 13 `fix/`, 3 `refactor/`, 1 each `chore/`, `ci/`, `perf/`, `tune/`).
 - Conventional Commits with `Co-Authored-By: Claude …` trailers; one PR per slice with a description + checklist; green CI, then `gh pr merge --squash --delete-branch`.
-- After each phase: a docs PR updating `PLAN.md` and this report, then an annotated tag.
+- After each phase: a docs PR updating `PLAN.md`, `docs/HANDOFF.md` and this report, then an annotated tag.
 - No `CONTRIBUTING.md`.
 
-**Bundle** (local production build at `v1.12.0`; gzip sizes)
+**Bundle** (local production build at `v1.12.0`, not re-measured since; the game chunk has grown with Round 4; gzip sizes)
 
 - Main chunk: `index` JS 15.6 kB + shared Preact/JSX runtime 6.2 kB + CSS 10.6 kB. `sw.js` 1.6 kB.
 - Largest lazy chunks: dishes data 9.3 kB, GamePage 7.0 kB, facts data 6.5 kB, album service 6.5 kB, packing state 5.7 kB, TodoPage 4.8 kB, WeatherPage 4.5 kB, tracks 4.3 kB, pistes 3.9 kB, AssistantPage 3.3 kB, AlbumPage 2.6 kB, AlbumFramePage 2.1 kB.
@@ -915,27 +957,30 @@ Album changes without a token, or with an invalid/expired one, get 401 "Join the
 
 ## 10. Known issues & recommendations
 
-**Bugs, risks and fragile areas**
+**Bugs, risks and fragile areas** (current list also in `docs/HANDOFF.md`)
 
-1. **Album uploads never complete while `ALBUM_SIGNING_KEY` is unset (open bug).** `POST /album/session` returns 501, `getAlbumToken` returns `not-set-up`, and `service.ts` maps any token error to a `retry` outcome. The queue has no attempt limit, so it retries forever with backoff (up to 5 min), and the UI shows "Uploading…"/0 % with no error. Setting the secret unblocks uploads; the missing error state is still a bug (also true for `not-joined` and `wrong-code`). Details in `docs/HANDOFF.md`.
-2. **Worker deploy path-filter gap.** `worker-deploy.yml` doesn't include `src/lib/album/**` or `src/lib/sync/**`, yet the Worker bundles `src/lib/album/protocol.ts`, `src/lib/album/jpeg.ts` and `src/lib/sync/protocol.ts` (also `src/lib/time/countdown.ts`, and the type-only `src/lib/food/types.ts`). A change to only those files merges without redeploying the Worker, so the site and the Worker can disagree on the wire format or limits. Add the paths (or `src/lib/**`).
-3. **Album not tested on real phones:** iOS Safari camera capture and HEIC decoding, Android Chrome, background/resume behaviour. Only emulated devices and a local Worker were used.
-4. **Album `uploadedBy` is taken from the upload meta**, not the token's `who`; any group member can attribute a photo to someone else. Low risk among four friends.
-5. **Rate limiter is approximate** (~75-request bursts got through). The free AI allowance is the hard cap.
-6. **No CSP.** Decided deliberately (see `PLAN.md`); revisit if third-party content grows.
-7. **Unused or duplicated code:**
+1. **Stale text:** `BackupPanel.tsx` says "Lists are saved on this device only" (and a comment in `lib/todo/repository.ts`), but lists sync since `v1.11.0`.
+2. **Temporary trial presets** (`presets.ts`, `PRESETS`, HUD label) until Ofek picks one (Phase 10.6b); the score bound uses the most generous preset meanwhile.
+3. **Not tested on real phones:** iOS Safari camera and HEIC, Android Chrome, background/resume, game touch feel, iOS speech.
+4. **Album `uploadedBy`** is taken from the upload meta, not the token's `who` (game scores do use the token). Low risk among four friends.
+5. **`RL_AUTH` 5/min per IP** also covers token renewals; several phones behind one hotel IP could hit it (retries are capped, then "tap to retry").
+6. **Rate limiter is approximate** (~75-request bursts got through). The free AI allowance is the hard cap.
+7. **No CSP.** Decided deliberately (see `PLAN.md`); revisit if third-party content grows.
+8. **Unused or duplicated code:**
    - `ComingSoonPage` and the `comingSoon` flag are unused.
    - `--breakpoint-desktop` is unused in media queries.
    - `MAX_FIELD_WIDTH` (game, 480 px) is duplicated as `30rem` in CSS.
-   - `album:pending` is defined in both `service.ts` and `AlbumQueueHost.tsx` (on purpose, to keep the shell small).
-8. **Tests:** no component, DOM or E2E tests in the repo; UI checks are manual or ad-hoc scripts.
-9. **Packing filter state is per page visit:** not persisted, by design.
+   - `album:pending` and `game:pendingScores` keys are defined both in their module and in the always-loaded host component (on purpose, to keep the shell small).
+9. **Tests:** no component, DOM or E2E tests in the repo; UI checks were ad-hoc puppeteer scripts that weren't committed. The game simulation tests are slow under CPU load.
+10. **Packing filter state is per page visit:** not persisted, by design.
+
+**Fixed since the previous report:** the album's silent infinite retry (`v1.12.1`), `ALBUM_SIGNING_KEY` set, and the Worker deploy path filter now covers every bundled shared file.
 
 **What happened to the `v1.0.0` recommendations**
 
 | Recommendation (v1.0.0)                         | Status                                                                          |
 | ----------------------------------------------- | ------------------------------------------------------------------------------- |
-| Worker route table + CI deploy                  | Done in 8.0; deploy secrets set; path filters need extending (item 2)           |
+| Worker route table + CI deploy                  | Done in 8.0; deploy secrets set; path filters extended (v1.12.1, v1.14.0)       |
 | Desktop nav overflow, grouped More page         | Done in 8.0 (header shows the 5 tab-bar items; More grouped Plan / Tools / Fun) |
 | Generic list toolkit + storage migration helper | Done in 8.0 (`lib/list`, `components/common`, `versioned.ts`)                   |
 | Fact discriminated union, Georgian words        | Done in 8.0/8.1                                                                 |
@@ -945,7 +990,29 @@ Album changes without a token, or with an invalid/expired one, get 401 "Join the
 
 **Next steps**
 
-1. Set `ALBUM_SIGNING_KEY` (`npx wrangler secret put ALBUM_SIGNING_KEY` in `worker/`), then check a live upload end to end.
-2. Show a clear error for album token failures (`not-set-up`, `wrong-code`, `not-joined`) instead of retrying silently, and consider an attempt cap.
-3. Extend `worker-deploy.yml` path filters.
-4. Test the album on real iPhones and Android phones.
+1. Phase 10.6b: lock in Ofek's preset and delete the trial-preset code (`docs/OPERATIONS.md`).
+2. Real-phone tests (album, scores, game) by Ofek.
+3. Fix the stale Backup text if Ofek wants it.
+4. Optionally commit a small puppeteer smoke test so UI checks survive between sessions.
+
+## 11. Ski game and shared scores
+
+**Files** (`src/game/`; the page is `src/pages/GamePage.tsx`)
+
+| File                                    | Role                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `constants.ts`                          | All tuning: `DifficultyProfile` (speed curve, density, hearts, power-up balance, `magnetRadius`, invulnerability, lives), `PRESETS` (`fast`, `faster` = `DEFAULT_PROFILE`, `fastest`; temporary), `POWER_UPS` (icon, label, `hint`, `detail`, `slopeSpeedFactor`, `absorbsCrash`, `scoreMultiplier`), `SCORE` (1 per metre, khachapuri 50, snowflake 15, heart at the cap 50), `ENTITY` (kind → role `obstacle`/`collectible`/`powerup`), `MIN_REACTION_SECONDS` 0.45, `FIXED_STEP` 1/120 s, `SHIELD_GRACE_SECONDS` 0.6, `HIGH_SCORES_PER_CHARACTER` 5. No imports, so the Worker can bundle it. |
+| `engine.ts`                             | Pure, deterministic, allocation-free `step(state, input, dt, random)`: a two-phase speed ramp (`rampSpeed`) capped per screen height (`reactionSpeedCap`), time-based `pressure()` for density, pooled entities, spawning (one special per row: heart by `heartChance`, or a power-up by one "any" roll and a weighted pick, with obstacle clearance), crashes with invulnerability, the shield absorbing a crash.                                                                                                                                                                               |
+| `powerUps.ts`                           | Registry: `powerUpsFor(profile)`, per-step behaviour (the magnet's pull, `movePulled`), `slopeSpeed(state)` (slow-mo). Use `slopeSpeed`, never `state.speed`, for anything the slope moves.                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `random.ts`                             | `createRng(seed)` (mulberry32), `randomSeed()`; the controller seeds each run.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `render.ts`, `sprites.ts`, `effects.ts` | Canvas drawing (HUD hearts, stacked power-up timers, magnet field, shield bubble, slow-mo tint, reduced-motion variants), original sprites (the skier from `AvatarSkier`), floaters and the lives pulse.                                                                                                                                                                                                                                                                                                                                                                                         |
+| `controller.ts`, `input.ts`             | The run loop (fixed step, max 8 steps/frame), pause/resume, keys and touch, turning engine events into feedback ("🛡️ Saved!", "+1 ❤️"), the result (`seconds` of play).                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `presets.ts`                            | Temporary: `presetFromQuery` for `#/game?preset=<name>` and the HUD label. Removed in Phase 10.6b.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `scores.ts`                             | Shared with the Worker: `ScoreEntry`, `mergeTop`/`mergeTables`, `maxPlausibleScore(seconds)` (distance at top speed + best item in every slot × the biggest multiplier, most generous profile, ×1.1), `parseScoreSubmission`, `parseScoreTable`, `FIRST_EPOCH`, `epochOf`.                                                                                                                                                                                                                                                                                                                       |
+| `highScores.ts`                         | Repository: local versioned v2 table; synced queue (`game:pendingScores`, backoff from `lib/net/backoff.ts`, a one-time upload of old local scores, `hold()` so nothing is sent during a run); epoch handling (`game:scoreEpoch`: a newer epoch clears local records and pending runs).                                                                                                                                                                                                                                                                                                          |
+| `scoreSync.ts`                          | App singleton: re-syncs on `online` and on a new album token; "🏆 New record for …" toasts. `components/game/ScoreSyncHost.tsx` flushes pending runs on app load.                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `bot.ts`                                | Test-only lane-scoring player used by `balance.test.ts`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+
+**Balance and fairness** (tests): the bot's median run on the default profile is 2–3.5 min (176 s at `v1.16.0`, ~2 power-ups per run); `fairness.test.ts` keeps `max × FIXED_STEP` under the thinnest hitbox overlap for every profile; the score bound accepts a 10-minute all-out run with power-ups always on and rejects bound + 1.
+
+**Adding a power-up:** tuning in `POWER_UPS` and every profile's `powerUps`, a sprite, behaviour as a step function in `powerUps.ts` or one of the generic flags, then bump `POWER_HINT_VERSION` in `GamePage` so the start tip shows again. Anything that adds points must stay inside `maxPlausibleScore`.
