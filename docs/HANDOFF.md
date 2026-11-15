@@ -1,15 +1,15 @@
-# Handoff — 2026-10-26
+# Handoff — 2026-11-15
 
 Read this first in a new session, then `PLAN.md` (phases, decisions, ideas) and `docs/CODEBASE_REPORT.md` (architecture) as needed. Procedures with commands are in `docs/OPERATIONS.md`.
 
 ## Current state
 
-- **Last tag:** `v1.16.0` (shield, slow-mo, double points; #108). `main` is at the `docs/handoff` PR that wrote this file, right after `70828d4` (#109).
-- **Live site:** https://ofekfa.github.io/gudauri-2027/ — Pages deploys every push to `main`. Last checked 2026-10-26: the Pages deployment is at `70828d4` (then `main`), and every CI/deploy run on `main` is green.
-- **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev — last deployed 2026-10-23 20:48Z by CI from `43569a7` (#108). Nothing the Worker bundles has changed since, so it matches `main`. `SCORE_EPOCH` is `"2"`.
+- **Last tag:** `v1.16.1` (new Kudebi live-cam stream + a fallback card when a cam can't play; #111). `main` is at the `docs/v1.16.1` PR that updated this file, right after `d217e88` (#111).
+- **Live site:** https://ofekfa.github.io/gudauri-2027/ — Pages deploys every push to `main`. Last checked 2026-11-15: the Pages deployment is at `d217e88` (#111), and every CI/deploy run on `main` is green. The Kudebi cam was verified playing (muted) on the live site in headless Chrome, desktop and iPhone 13 emulation.
+- **Worker:** https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev — last deployed 2026-11-15 by CI from `d217e88` (#111, because `src/data/zones.ts` changed; the Worker doesn't use the webcam field). It matches `main`. `SCORE_EPOCH` is `"2"`.
 - **Branches and PRs:** only `main` on the remote; no open PRs; no work-in-progress branches; nothing stashed.
 - **Live data in use:** since 2026-10-23 the crew has posted real game runs (epoch 2) and Ofek has 2 album photos (McDonald's). Treat both as personal data: never delete or reset them without Ofek's explicit "yes".
-- **Tests:** 477 site + 103 Worker, all passing.
+- **Tests:** 488 site + 103 Worker, all passing.
 
 ## In progress
 
@@ -39,6 +39,8 @@ Nothing is half-built. One temporary item waits for Ofek:
 - **Older items:** iPhone music playback; Kudebi webcam on a phone; Georgian script rendering.
 
 ## Known bugs and risks
+
+0. **Local machine: iCloud evicts repo files.** The repo is under `~/Documents`, which iCloud "Optimize Mac Storage" offloads. Evicted (`dataless`) files in `node_modules`, `worker/node_modules` and `.git/objects` make `eslint`, `gh`, git and Node hang at ~0 % CPU inside the sandbox. Check with `find node_modules .git -flags +dataless | wc -l`; fix with `npm ci` (both folders) and by reading the `.git` files outside the sandbox. Long-term fix (Ofek): move the repo out of `~/Documents` or mark the folder "Keep Downloaded" in Finder.
 
 1. **Stale UI text:** `src/components/common/BackupPanel.tsx:66` still says "Lists are saved on this device only" (plus a comment in `src/lib/todo/repository.ts:6`). Lists have synced since `v1.11.0`. Cosmetic.
 2. **Trial-preset code is temporary:** `presets.ts`, `PRESETS` and the HUD label exist until 10.6b. Meanwhile the score bound uses the most generous preset (slightly looser than needed).
@@ -71,7 +73,7 @@ Nothing is half-built. One temporary item waits for Ofek:
 - **Album tokens** expire at the later of 2027-03-15 23:59 UTC and issue + 30 days, and renew silently with < 14 days left. Nothing to do before the trip; after 2027-03-15 a phone that hasn't opened the site for 30 days re-joins silently with its stored code.
 - **Free-tier limits** (as understood in 2026-10; recheck on Cloudflare's pricing pages): Workers 100k requests/day; Workers AI ~10k neurons/day; KV 100k reads and 1,000 writes/day, 1 GB; Durable Objects SQLite on the Free plan (request, duration and storage quotas; 2 MB per row is why images are sharded per moment). Also GitHub Pages (1 GB site, soft 100 GB/month) and Open-Meteo's non-commercial limit (10k calls/day; we use ~50).
 - **External APIs:** NBG rates JSON (`fetch:rates` in every Pages deploy, plus the Worker), open.er-api.com fallback, Open-Meteo, the Google Calendar iCal feed, Overpass (only `fetch:pistes`).
-- **Webcams:** the Vitamin Cafe YouTube live streams (Soliko `vBVWcSjPAZM`, Kudebi `aCHJ-r15RLM` in `src/data/zones.ts`) get a new id when a stream restarts; check them closer to the trip.
+- **Webcams:** the Vitamin Cafe YouTube live streams (Soliko `vBVWcSjPAZM`, Kudebi `7uoyrER_QB4` since 2026-11-15, in `src/data/zones.ts`) get a new id when a stream restarts (Kudebi's old `aCHJ-r15RLM` died that way). A dead id now shows a fallback card (thumbnail + "Watch on YouTube") instead of an empty player. Check both ids closer to the trip: `curl "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=<id>"` (404 = gone), then find the new id on the channel `@Cafe_Vitamin_Gudauri` → Live. Procedure in `docs/OPERATIONS.md` → "Replace a webcam stream".
 - **Music:** Commons/archive.org MP3 URLs and the six YouTube embeds can disappear; run `npm run analyze:tracks` and open `#/music`.
 - **Tooling:** Node 22 (`engines`), Wrangler 4.151 with `compatibility_date` 2026-10-01, ESLint pinned to 9 (jsx-a11y). Check `npm outdated` before upgrading anything; there's no Dependabot.
 - **Trip-time features** only show during the trip (2027-02-24 → 02-28, Tbilisi): Quick add, Today's plan, dinner suggestions. Test them by injecting `now` in unit tests, not by waiting.
@@ -87,4 +89,4 @@ Nothing is half-built. One temporary item waits for Ofek:
 
 ## Next action
 
-Ask Ofek which game preset to keep (`fast`, `faster` or `fastest`), then do Phase 10.6b (`docs/OPERATIONS.md` → "Lock in the game difficulty preset") and tag `v1.16.1`; meanwhile collect Ofek's real-phone checklist results.
+Ask Ofek which game preset to keep (`fast`, `faster` or `fastest`), then do Phase 10.6b (`docs/OPERATIONS.md` → "Lock in the game difficulty preset") and tag `v1.16.2`; meanwhile collect Ofek's real-phone checklist results.

@@ -93,7 +93,16 @@ When Ofek picks `fast`, `faster` or `fastest`:
 1. In `src/game/constants.ts` make that profile `DEFAULT_PROFILE` (today `PRESETS.faster`) and delete the `PRESETS` map and `PresetName`.
 2. Delete `src/game/presets.ts` and `presets.test.ts`; remove `presetLabel` from `controller.ts`, `render.ts` and `GamePage.tsx`.
 3. `scores.ts`: `SCORING_PROFILES` becomes `[DEFAULT_PROFILE]`. Tests that loop over `Object.values(PRESETS)` (`balance`, `fairness`, `powerUps`, `scores`) switch to `DEFAULT_PROFILE`.
-4. Re-run `balance.test.ts`, `fairness.test.ts`, the Worker tests; patch-tag (`v1.16.1`). The bound only shrinks if the slowest preset is picked; scores already stored stay.
+4. Re-run `balance.test.ts`, `fairness.test.ts`, the Worker tests; patch-tag (the next patch, `v1.16.2`). The bound only shrinks if the slowest preset is picked; scores already stored stay.
+
+## Replace a webcam stream
+
+Vitamin Cafe's YouTube live streams get a new id when a broadcast restarts; the card then shows "This live cam can't play here right now".
+
+1. Check the ids in `src/data/zones.ts`: `curl -s -o /dev/null -w "%{http_code}\n" "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=<id>"` (200 exists, 404 gone).
+2. Find the new id on https://www.youtube.com/@Cafe_Vitamin_Gudauri/streams (the title names the camera: Soliko or Kudebi). Confirm it with oEmbed (200, matching title).
+3. Update `id` and `checkedOn` in `src/data/zones.ts`; `npm test` (the data test checks the id's shape).
+4. `fix:` PR, merge, then open `#/weather` → the zone → Play live cam.
 
 ## Local end-to-end (Worker + site)
 
