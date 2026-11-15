@@ -24,6 +24,13 @@ _Generated 2026-10-22 from `main` @ `b7cb618` (`v1.0.0`). **Every numbered secti
 
 ## Changelog since v1.0.0
 
+### Fix — Kudebi live cam (`v1.16.1`)
+
+- `src/data/zones.ts`: the top zone's Kudebi stream id `aCHJ-r15RLM` (gone after a stream restart) → `7uoyrER_QB4`.
+- `src/lib/weather/webcam.ts` (new, tested): `webcamEmbedUrl` (youtube-nocookie, `autoplay=1&mute=1&playsinline=1&enablejsapi=1&origin=<page>`), `webcamWatchUrl`, `webcamThumbnailUrl`, `playerErrorCode` (origin-checked parse of the player's `onError` postMessage), `YOUTUBE_ID_PATTERN`.
+- `WebcamCard`: states `idle` / `playing` / `failed`. After the iframe loads it posts `listening` to the player (every 250 ms, up to 40 tries, until the player answers); an `onError` switches to a fallback card (thumbnail, hidden for YouTube's 120 px placeholder, plus "Watch on YouTube"). The 16:9 box is unchanged (no layout shift).
+- Tests: `src/data/zones.test.ts` (zone and webcam data validity), `src/lib/weather/webcam.test.ts`. 488 site tests.
+
 ### Phase 10.7 — Shield, slow-mo, double points (`v1.16.0`)
 
 - **`constants.ts`:**
@@ -273,7 +280,7 @@ _Generated 2026-10-22 from `main` @ `b7cb618` (`v1.0.0`). **Every numbered secti
 **Site**
 
 - `src/lib/weather/{weatherClient,useWeather,graphic}.ts`: `weather:last` offline copy; graphic geometry.
-- `components/weather/MountainZones.tsx` (original SVG with `<title>`/`<desc>`) and `WebcamCard.tsx` (tap-to-load youtube-nocookie, unmounts when off-screen or hidden).
+- `components/weather/MountainZones.tsx` (original SVG with `<title>`/`<desc>`) and `WebcamCard.tsx` (tap-to-load youtube-nocookie, unmounts when off-screen or hidden; fallback card on player errors since `v1.16.1`).
 - `#/weather` is **in the tab bar** (Home · Itinerary · Packing · Weather · More); Game moved to More → Fun.
 - Icons: `cloudSnow`, `video`.
 
@@ -446,7 +453,7 @@ _Generated 2026-10-22 from `main` @ `b7cb618` (`v1.0.0`). **Every numbered secti
 **Repo, URL and state**
 
 - Repo: `github.com/Ofekfa/gudauri-2027` (public). Default branch `main`.
-- 110 squash-merged PRs (through the `docs/handoff` PR). 31 tags: `v0.1.0`, `v0.1.1`, `v0.2.0`–`v0.6.0`, `v1.0.0`–`v1.16.0`, plus patches `v1.5.1`, `v1.10.1`, `v1.11.1`, `v1.11.2`, `v1.12.1`, `v1.15.1`, `v1.15.2`. GitHub Releases: `v1.0.0`, `v1.7.0`, `v1.8.0`.
+- 112 squash-merged PRs (through the `docs/v1.16.1` PR). 32 tags: `v0.1.0`, `v0.1.1`, `v0.2.0`–`v0.6.0`, `v1.0.0`–`v1.16.0`, plus patches `v1.5.1`, `v1.10.1`, `v1.11.1`, `v1.11.2`, `v1.12.1`, `v1.15.1`, `v1.15.2`, `v1.16.1`. GitHub Releases: `v1.0.0`, `v1.7.0`, `v1.8.0`.
 - Live site: https://ofekfa.github.io/gudauri-2027/
 - Worker (AI proxy + data, sync, album and game-score routes): `https://gudauri-2027-assistant.gudauri-2027-assistant.workers.dev`
 - `PLAN.md`: phases 1–7, 8.0–8.7, 9.1–9.2 and 10.1–10.7 are done; 10.6b (lock in the game preset) waits for Ofek.
@@ -645,11 +652,23 @@ There's no router library, state library, CSS framework, date library or icon li
 | `facts.ts` + `words.ts`                 | 55 general facts + 27 `WordFact`s = 82 `FACTS`                                              |
 | `packingTemplate.ts`, `todoTemplate.ts` | 37 packing starter items; personal and shared to-do templates (deadlines derived from trip) |
 | `pistes.json`                           | Map data (§6)                                                                               |
-| `zones.ts`                              | 3 weather zones (2,000 / 2,700 / 2,950 m) with webcam ids                                   |
+| `zones.ts`                              | 3 weather zones (2,000 / 2,700 / 2,950 m) with webcam ids (sources below)                   |
 | `dishes.ts`, `dishImages.ts(.json)`     | 38 dishes in 7 categories; 34 photo credits                                                 |
 | `tracks.ts(.json)`, `musicEmbeds.ts`    | 49 music tracks with licence and loudness; 6 YouTube embeds                                 |
 | `fallbackRates.ts`                      | Baked NBG rate, regenerated on each Pages deploy                                            |
 | `album.ts`                              | 22 album frames (below)                                                                     |
+
+**Webcam sources** (`src/data/zones.ts`, `Webcam { provider: 'youtube'; id; label; checkedOn }`)
+
+| Zone                 | Cam                   | Source                                                      | Last checked |
+| -------------------- | --------------------- | ----------------------------------------------------------- | ------------ |
+| Village (2,000 m)    | none                  | `webcamNote`: no public cam at the hotel; points to Soliko  | —            |
+| Mid-mountain (2,700) | Soliko (Vitamin Cafe) | YouTube live `vBVWcSjPAZM`, channel `@Cafe_Vitamin_Gudauri` | 2026-10-22   |
+| Top (2,950 m)        | Kudebi (Vitamin Cafe) | YouTube live `7uoyrER_QB4`, channel `@Cafe_Vitamin_Gudauri` | 2026-11-15   |
+
+- Both streams are on one channel (`UC-QMnZzun6BKCdJsh7-gxNw`) streaming at the same time, so a channel-based live embed can't pick a camera; ids are fixed and change when a stream restarts (Kudebi's `aCHJ-r15RLM` died on such a restart before 2026-11-15).
+- Check an id: oEmbed `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=<id>` (200 = exists; 404 = gone); the watch page's `isLiveNow` and `playableInEmbed`.
+- Rendering: tap-to-load `youtube-nocookie` iframe, muted (never clashes with background music), unmounted off-screen; a player `onError` shows the fallback card.
 
 **Album data** (`src/data/album.ts`)
 
@@ -916,7 +935,7 @@ Album changes without a token, or with an invalid/expired one, get 401 "Join the
 - Site: `npm run dev`, `lint` (ESLint + `prettier --check`), `format`, `typecheck` (app, `scripts/` and `src/sw` tsconfigs), `test`, `build` (typecheck + Vite), `preview`, `fetch:pistes`, `fetch:rates`, `fetch:dish-images`, `analyze:tracks`, `og-image`.
 - Worker: `npm test`, `npm run typecheck`, `npm run scores:reset`, `npx wrangler dev|deploy|tail`. Copy-paste procedures: `docs/OPERATIONS.md`.
 
-**Tests: 477 site (61 files) + 103 Worker (11 files)** as of `v1.16.0`, all pure or unit-level in Node. The game's simulation tests (`balance`, `fairness`, and the long runs in `engine`/`powerUps`/`scores`) are CPU-heavy: on a busy machine they hit the 5 s / 60 s timeouts, so close stray headless browsers before running them. There are no component, DOM or committed E2E tests; local end-to-end checks (puppeteer, `wrangler dev`) are run by hand and not in the repo.
+**Tests: 488 site (63 files) + 103 Worker (11 files)** as of `v1.16.1`, all pure or unit-level in Node. The game's simulation tests (`balance`, `fairness`, and the long runs in `engine`/`powerUps`/`scores`) are CPU-heavy: on a busy machine they hit the 5 s / 60 s timeouts, so close stray headless browsers before running them. There are no component, DOM or committed E2E tests; local end-to-end checks (puppeteer, `wrangler dev`) are run by hand and not in the repo.
 
 | Area                                                                  | Covers                                                                                                                                                                                         |
 | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
