@@ -60,9 +60,9 @@ export const ZONES: Zone[] = [
     elevationM: 2950,
     webcam: {
       provider: 'youtube',
-      id: 'aCHJ-r15RLM',
+      id: '7uoyrER_QB4',
       label: 'Kudebi (Vitamin Cafe)',
-      checkedOn: '2026-10-22',
+      checkedOn: '2026-11-15',
     },
   },
 ];
